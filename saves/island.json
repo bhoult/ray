@@ -1,0 +1,24 @@
+{
+  "description": "A raised rocky island in the sea at sunset, seen low over its plateau, with a lighthouse, a boat and clouds.",
+  "camera": {"position": [96, 26, -36], "look_at": [30, 8, -150], "fov": 60, "speed": 10},
+  "environment": {"preset": "golden", "time_of_day": 17.6, "sun_azimuth": 250, "sun_elevation": 55, "clouds": 0.25, "fog_density": 0.0015},
+  "render": {"animate_water": true},
+  "materials": {
+    "hull": {"color": [0.12, 0.2, 0.42], "roughness": 0.4, "density": 400},
+    "cabin": {"color": [0.92, 0.9, 0.85], "roughness": 0.5},
+    "mast": {"color": [0.5, 0.36, 0.2], "roughness": 0.6},
+    "tower": {"color": [0.92, 0.9, 0.86], "color2": [0.7, 0.08, 0.06], "texture": "stripes", "texture_scale": 0.35, "sharpness": 6, "roughness": 0.5},
+    "iron": {"color": [0.12, 0.12, 0.13], "metallic": 1, "roughness": 0.45},
+    "stone": {"color": [0.46, 0.43, 0.4], "color2": [0.3, 0.28, 0.26], "texture": "bricks", "texture_scale": 1.4, "roughness": 0.85, "bump": 0.3},
+    "lantern glass": {"color": [1, 0.9, 0.6], "emission": [60, 48, 28], "light_range": 40}
+  },
+  "objects": [
+    {"name": "sea", "type": "water", "level": 0},
+    {"name": "island", "type": "terrain", "noise": "eroded", "size": 260, "resolution": 1024, "height": 24, "base": 2, "frequency": 0.011, "octaves": 8, "seed": 3, "snow_line": 60, "position": [0, 0, 0]},
+    {"name": "lighthouse", "type": "union", "children": [{"type": "cylinder", "radius": 1.9, "height": 5, "position": [0, -2.2, 0], "material": "stone"}, {"type": "cone", "radius": 1.4, "top_radius": 0.9, "height": 9, "position": [0, 4.5, 0], "material": "tower"}, {"type": "cylinder", "radius": 1.15, "height": 0.25, "position": [0, 9.1, 0], "material": "iron"}, {"type": "cylinder", "radius": 0.8, "height": 1.2, "position": [0, 9.8, 0], "material": "lantern glass"}, {"type": "cone", "radius": 1.0, "height": 0.8, "position": [0, 10.8, 0], "material": "iron"}], "position": [60, 16.0, -80], "locked": true},
+    {"name": "boat", "type": "union", "children": [{"type": "box", "size": [1.4, 0.5, 3.6], "rounding": 0.2, "position": [0, 0, 0], "material": "hull"}, {"type": "box", "size": [1.1, 0.7, 1.2], "rounding": 0.08, "position": [0, 0.55, -0.4], "material": "cabin"}, {"type": "cylinder", "radius": 0.05, "height": 2.4, "position": [0, 1.3, 0.6], "material": "mast"}], "position": [15, 0.2, -105], "rotation": [0, 35, 0], "mass": 280},
+    {"name": "cloud", "type": "cloud", "position": [20, 40, -230], "rotation": [0, 15, 0], "scale": 2.4},
+    {"name": "cloud", "type": "cloud", "position": [-30, 34, -190], "rotation": [0, -20, 0], "scale": 1.95},
+    {"name": "cloud", "type": "cloud", "position": [80, 46, -210], "rotation": [0, 50, 0], "scale": 2.25}
+  ]
+}

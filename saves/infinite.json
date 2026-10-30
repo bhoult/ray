@@ -1,0 +1,16 @@
+{
+  "description": "Infinitely repeated CSG arches (iron, with bricks as a bump map) and glass orbs in drifted snow, for the cost of one of each.",
+  "camera": {"position": [0.5, 1.6, 6], "yaw": 20, "pitch": -5, "fov": 70, "speed": 6},
+  "environment": {"preset": "frozen", "sun_azimuth": 35, "sun_elevation": 28, "fog_density": 0.012, "clouds": 0.3},
+  "render": {"exposure": 0.8, "max_dist": 400},
+  "materials": {
+    "snow": {"color": [0.85, 0.88, 0.92], "roughness": 0.8, "bump_pattern": "waves", "bump_scale": 0.6, "bump": 0.8},
+    "glass": {"color": [0.8, 0.95, 1.0], "roughness": 0, "transmission": 1, "ior": 1.45, "absorption": 0.4},
+    "iron": {"color": [0.55, 0.56, 0.6], "metallic": 1, "roughness": 0.35, "bump_pattern": "bricks", "bump_scale": 2.5, "bump": 1.2}
+  },
+  "objects": [
+    {"type": "plane", "material": "snow"},
+    {"name": "forest of arches", "type": "repeat", "period": [6, 0, 6], "material": "iron", "child": {"type": "difference", "smooth": 0.1, "children": [{"type": "box", "size": [2.4, 3.2, 0.6], "position": [0, 1.6, 0], "rounding": 0.05}, {"type": "union", "children": [{"type": "cylinder", "radius": 0.85, "height": 2, "rotation": [90, 0, 0], "position": [0, 2.0, 0]}, {"type": "box", "size": [1.7, 2.0, 2], "position": [0, 1.0, 0]}]}]}},
+    {"name": "orbs", "type": "repeat", "period": [6, 0, 6], "position": [3, 0, 3], "material": "glass", "child": {"type": "sphere", "radius": 0.7, "position": [0, 0.7, 0]}}
+  ]
+}

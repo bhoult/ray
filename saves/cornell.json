@@ -1,0 +1,26 @@
+{
+  "description": "The Cornell box: the classic test of global illumination, after the room built and photographed at Cornell in 1984. A white room with a red wall on the left and a green one on the right, lit only by a panel in the ceiling, holding a mirror ball, a glass ball and a matte one. Path tracing shows the red and green bleeding onto the white walls and the balls, the soft shadows of the panel, the light the glass ball gathers into a bright spot on the floor, and the room again in the mirror. Let it gather a few hundred samples.",
+  "camera": {"position": [0, 1, 4.2], "look_at": [0, 1, 0], "fov": 40, "speed": 1},
+  "environment": {"sky": "off", "sun_level": 0, "ambient_level": 0, "fog_density": 0, "clouds": 0},
+  "render": {"mode": "path_trace", "bounces": 8, "exposure": 1.0, "max_samples": 4096, "bloom": false, "vignette": false},
+  "materials": {
+    "white": {"color": [0.73, 0.73, 0.73], "roughness": 1},
+    "red": {"color": [0.63, 0.065, 0.05], "roughness": 1},
+    "green": {"color": [0.14, 0.45, 0.09], "roughness": 1},
+    "light": {"color": [0.78, 0.78, 0.78], "emission": [100, 72, 24], "roughness": 1},
+    "mirror": {"color": [0.95, 0.95, 0.95], "metallic": 1, "roughness": 0},
+    "glass": {"color": [0.98, 0.99, 1.0], "transmission": 1, "ior": 1.5, "roughness": 0, "absorption": 0.2},
+    "matte": {"color": [0.73, 0.73, 0.73], "roughness": 0.9}
+  },
+  "objects": [
+    {"name": "floor", "type": "box", "size": [2.2, 0.1, 2.1], "position": [0, -0.05, -0.05], "material": "white", "locked": true},
+    {"name": "ceiling", "type": "box", "size": [2.2, 0.1, 2.1], "position": [0, 2.05, -0.05], "material": "white", "locked": true, "shadow": false},
+    {"name": "back wall", "type": "box", "size": [2.2, 2.2, 0.1], "position": [0, 1, -1.05], "material": "white", "locked": true},
+    {"name": "red wall", "type": "box", "size": [0.1, 2.2, 2.1], "position": [-1.05, 1, -0.05], "material": "red", "locked": true},
+    {"name": "green wall", "type": "box", "size": [0.1, 2.2, 2.1], "position": [1.05, 1, -0.05], "material": "green", "locked": true},
+    {"name": "ceiling light", "type": "box", "size": [0.5, 0.02, 0.4], "position": [0, 1.99, -0.05], "material": "light", "locked": true, "shadow": false},
+    {"name": "mirror ball", "type": "sphere", "radius": 0.4, "position": [-0.5, 0.4, -0.45], "material": "mirror"},
+    {"name": "glass ball", "type": "sphere", "radius": 0.35, "position": [0.6, 0.35, 0.3], "material": "glass", "shadow": true},
+    {"name": "matte ball", "type": "sphere", "radius": 0.28, "position": [0.15, 0.28, -0.7], "material": "matte"}
+  ]
+}

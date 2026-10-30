@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "ray": {
+      "type": "stdio",
+      "command": "/home/bhoult/programming/ai/ray/target/release/ray",
+      "args": ["mcp"]
+    }
+  }
+}

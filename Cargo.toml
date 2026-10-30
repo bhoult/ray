@@ -1,0 +1,46 @@
+[package]
+name = "ray"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.90"
+description = "Real-time ray tracing of mesh-free scenes (SDFs, fractals, heightfields) described in JSON"
+publish = false
+
+[dependencies]
+eframe = { version = "0.33.3", default-features = false, features = ["wgpu", "wayland", "x11", "default_fonts"] }
+# eframe's defaults (off: they pull in glow and accesskit) are what enable these:
+# wgpu's backends (Vulkan, GL) and winit's own defaults (client-side decorations on Wayland)
+wgpu = "27"
+winit = "0.30"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+rayon = "1"
+png = "0.18"
+# NVML (GPU load) is loaded at run time when present
+libloading = "0.8"
+# blocking on wgpu futures (adapter, device, error scopes)
+pollster = "0.4"
+# --features profile: RAY_PROFILE=out.svg samples where the time goes (no perf
+# privileges needed) and counts allocations
+pprof = { version = "0.15", features = ["flamegraph"], optional = true }
+
+[profile.release]
+opt-level = 3
+debug = false
+codegen-units = 4
+lto = "thin"
+
+# release with line tables, so profiles can name inlined functions:
+# cargo build --profile profiling --features profile
+[profile.profiling]
+inherits = "release"
+debug = "line-tables-only"
+
+[profile.dev]
+opt-level = 1
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[features]
+profile = ["dep:pprof"]

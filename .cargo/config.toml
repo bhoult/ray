@@ -1,0 +1,5 @@
+[build]
+# The CPU renderer calls AVX2 / FMA intrinsics in plain `unsafe` blocks (src/simd.rs), which is only
+# sound when the whole crate is compiled for a CPU that has them: x86-64-v3 is AVX2, FMA, F16C, BMI1/2,
+# LZCNT, MOVBE. main() checks the CPU at startup.
+rustflags = ["-C", "target-cpu=x86-64-v3"]

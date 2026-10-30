@@ -1,0 +1,6 @@
+/target
+*.ppm
+/shots
+/saves/quicksave.json
+/ray-*.png
+/videos

@@ -1,0 +1,267 @@
+{
+ "description": "NURBS surfaces in booleans and under modifiers: a cube with an exact NURBS sphere cut from its corner, a revolved vase fused smoothly with a ball, a vase twisted about its axis, and a glass NURBS sphere with a box cut out of it. Inside a union, intersection or difference, or under a modifier, a surface is measured by its distance (from a grid near it, exactly at it): slower than a surface alone, but it cuts, blends and bends like any shape. Open the objects in the list to see their parts.",
+ "camera": {
+  "position": [
+   0.5,
+   3.0,
+   7.5
+  ],
+  "look_at": [
+   0,
+   0.8,
+   0
+  ],
+  "fov": 50
+ },
+ "environment": {
+  "preset": "golden",
+  "sun_azimuth": -40,
+  "sun_elevation": 35
+ },
+ "materials": {
+  "clay": {
+   "color": [
+    0.8,
+    0.45,
+    0.3
+   ],
+   "roughness": 0.5
+  },
+  "stone": {
+   "color": [
+    0.6,
+    0.6,
+    0.62
+   ],
+   "roughness": 0.6
+  },
+  "glass": {
+   "color": [
+    0.9,
+    0.97,
+    1.0
+   ],
+   "transmission": 1,
+   "ior": 1.5,
+   "roughness": 0
+  }
+ },
+ "objects": [
+  {
+   "name": "floor",
+   "type": "plane",
+   "locked": true,
+   "material": {
+    "color": [
+     0.7,
+     0.7,
+     0.7
+    ],
+    "color2": [
+     0.4,
+     0.4,
+     0.4
+    ],
+    "texture": "checker",
+    "space": "world"
+   }
+  },
+  {
+   "name": "cut cube",
+   "type": "difference",
+   "position": [
+    -3,
+    0.8,
+    0
+   ],
+   "material": "stone",
+   "children": [
+    {
+     "type": "box",
+     "size": [
+      1.6,
+      1.6,
+      1.6
+     ]
+    },
+    {
+     "type": "revolve",
+     "profile": [
+      [
+       0,
+       -1.0
+      ],
+      [
+       1.0,
+       -1.0,
+       0.7071067811865476
+      ],
+      [
+       1.0,
+       0
+      ],
+      [
+       1.0,
+       1.0,
+       0.7071067811865476
+      ],
+      [
+       0,
+       1.0
+      ]
+     ],
+     "degree": 2,
+     "knots": [
+      0,
+      0,
+      0,
+      0.5,
+      0.5,
+      1,
+      1,
+      1
+     ],
+     "position": [
+      0.6,
+      0.6,
+      0.6
+     ]
+    }
+   ]
+  },
+  {
+   "name": "vase and ball",
+   "type": "union",
+   "smooth": 0.25,
+   "position": [
+    0,
+    0,
+    0
+   ],
+   "material": "clay",
+   "children": [
+    {
+     "type": "revolve",
+     "scale": 3
+    },
+    {
+     "type": "sphere",
+     "radius": 0.45,
+     "position": [
+      0,
+      1.4,
+      0
+     ]
+    }
+   ]
+  },
+  {
+   "name": "twisted vase",
+   "type": "twist",
+   "amount": 2.0,
+   "position": [
+    3,
+    0,
+    0
+   ],
+   "material": "clay",
+   "child": {
+    "type": "revolve",
+    "scale": 3,
+    "profile": [
+     [
+      0,
+      0
+     ],
+     [
+      0.45,
+      0
+     ],
+     [
+      0.5,
+      0.1
+     ],
+     [
+      0.3,
+      0.6
+     ],
+     [
+      0.5,
+      1.0
+     ],
+     [
+      0.3,
+      1.4
+     ],
+     [
+      0,
+      1.4
+     ]
+    ]
+   }
+  },
+  {
+   "name": "glass cut",
+   "type": "difference",
+   "position": [
+    0,
+    0.8,
+    2.6
+   ],
+   "material": "glass",
+   "children": [
+    {
+     "type": "revolve",
+     "profile": [
+      [
+       0,
+       -0.8
+      ],
+      [
+       0.8,
+       -0.8,
+       0.7071067811865476
+      ],
+      [
+       0.8,
+       0
+      ],
+      [
+       0.8,
+       0.8,
+       0.7071067811865476
+      ],
+      [
+       0,
+       0.8
+      ]
+     ],
+     "degree": 2,
+     "knots": [
+      0,
+      0,
+      0,
+      0.5,
+      0.5,
+      1,
+      1,
+      1
+     ]
+    },
+    {
+     "type": "box",
+     "size": [
+      1.0,
+      1.0,
+      1.0
+     ],
+     "position": [
+      0.5,
+      0.5,
+      0.5
+     ]
+    }
+   ]
+  }
+ ]
+}
