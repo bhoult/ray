@@ -1,0 +1,12 @@
+{
+  "description": "ray's banner: the icon's sponge over still water at dusk, room on the right for the name",
+  "camera": {"position": [10.5, 2.4, 10.5], "look_at": [6.348, 1.225, 1.403], "fov": 22},
+  "environment": {"preset": "golden", "time_of_day": 17.8, "sun_azimuth": 230, "sun_elevation": 14, "clouds": 0.3, "fog_density": 0.0},
+  "materials": {
+    "copper": {"color": [0.95, 0.55, 0.32], "metallic": 1, "roughness": 0.28, "color2": [0.2, 0.55, 0.5], "metallic2": 0, "roughness2": 0.7, "texture": "orbit", "texture_scale": 1.2, "sharpness": 1.6}
+  },
+  "objects": [
+    {"name": "sponge", "type": "menger", "iterations": 3, "position": [0, 0, 0], "material": "copper"},
+    {"name": "sea", "type": "water", "level": -1.25, "waves": 0.08}
+  ]
+}

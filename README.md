@@ -1,4 +1,4 @@
-# ray
+<p align="center"><img src="docs/images/logo.jpg" alt="ray: mesh-free ray tracing of pure maths (SDFs, fractals, NURBS) on the CPU and the GPU"></p>
 
 An experiment in how complex a scene can get when it is made only of maths: signed-distance shapes, fractals, noise heightfields, NURBS surfaces and analytic primitives, with no meshes, ray traced in real time. A JSON file describes the scene; the editor flies through it and edits it:
 - every object's parameters, editable on click;
@@ -16,6 +16,8 @@ An experiment in how complex a scene can get when it is made only of maths: sign
 - Open and Save as for scene files;
 - an MCP server, so an AI assistant can build in the running viewer and look at the result (see [Driving the viewer from an AI assistant](#driving-the-viewer-from-an-ai-assistant-mcp)).
 
+![The editor on the showcase scene: the Mandelbulb selected, with its parameters and its share of the frame's cost on the left, the render settings and timings on the right, and the CPU and GPU load below](docs/images/editor.jpg)
+
 The renderer is the CPU ray marcher of [fraktal256-rs](../fraktal256-rs), generalised:
 
 - **Taken over:**
@@ -31,6 +33,20 @@ The renderer is the CPU ray marcher of [fraktal256-rs](../fraktal256-rs), genera
 - **Left behind on purpose:** `no_std`, the hand-rolled runtime and thread pool, SDL, the 256 KB budget and the game. Those were the point of fraktal256-rs; this is an exploration tool, so it uses std, rayon, serde and eframe/egui.
 
 The same renderer also runs on the GPU as a generated WGSL compute shader, and by default every frame is shared between the GPU and the CPU (see [GPU](#gpu)).
+
+## Gallery
+
+Every picture is ray traced from a scene in `saves/` with no meshes, rendered headless (`tools/readme-images.sh` makes them all again).
+
+<table>
+<tr><td width="50%"><img src="docs/images/fractal-gallery.jpg" alt=""><br><sub>The fractal gallery: Menger sponge, Mandelbox, KIFS, Julia set, Mandelbulb, a cut sponge, Apollonian, Kleinian and Sierpinski (<code>fractals.json</code>)</sub></td><td width="50%"><img src="docs/images/sponge-window.jpg" alt=""><br><sub>Inside the Menger sponge, looking out of one of its windows at the gallery (<code>fractals3.json</code>)</sub></td></tr>
+<tr><td width="50%"><img src="docs/images/sponge-corridors.jpg" alt=""><br><sub>Deeper in the sponge's corridors, with the headlight on</sub></td><td width="50%"><img src="docs/images/kleinian.jpg" alt=""><br><sub>Inside the Kleinian fractal, with the headlight on</sub></td></tr>
+<tr><td width="50%"><img src="docs/images/bonsai.jpg" alt=""><br><sub>A bonsai on a sandbank at sunset: 341 branches and 2,574 leaves (<code>bonsai.json</code>)</sub></td><td width="50%"><img src="docs/images/glass-chess.jpg" alt=""><br><sub>A glass chess set on a walnut table at sunset: NURBS surfaces of revolution in clear and smoked glass (<code>glass.json</code>)</sub></td></tr>
+<tr><td width="50%"><img src="docs/images/night-city.jpg" alt=""><br><sub>A city at the blue hour, its windows lit: about 1,500 shapes in groups by block (<code>night-city.json</code>)</sub></td><td width="50%"><img src="docs/images/clouds.jpg" alt=""><br><sub>Volume clouds over a valley, hot-air balloons with NURBS envelopes, and a paddle steamer (<code>clouds.json</code>)</sub></td></tr>
+<tr><td width="50%"><img src="docs/images/island.jpg" alt=""><br><sub>A rocky island at sunset, with a lighthouse, a boat and clouds (<code>island.json</code>)</sub></td><td width="50%"><img src="docs/images/water.jpg" alt=""><br><sub>The sea: waves, refraction and caustics, with a pier, a rowing boat and buoys afloat (<code>water.json</code>)</sub></td></tr>
+<tr><td width="50%"><img src="docs/images/nurbs.jpg" alt=""><br><sub>A still life by a window, every curve a NURBS surface traced exactly: a draped tablecloth, a glazed vase, a glass goblet, a bottle and a bowl (<code>nurbs.json</code>)</sub></td><td width="50%"><img src="docs/images/nurbs-booleans.jpg" alt=""><br><sub>NURBS surfaces in booleans: cut and blended like any other shape (<code>nurbs-booleans.json</code>)</sub></td></tr>
+<tr><td width="50%"><img src="docs/images/cornell.jpg" alt=""><br><sub>The Cornell box, path traced: 400 samples a pixel (<code>cornell.json</code>)</sub></td><td width="50%"><img src="docs/images/materials.jpg" alt=""><br><sub>The procedural material library (<code>materials.json</code>)</sub></td></tr>
+</table>
 
 ## Build and run
 
@@ -436,6 +452,7 @@ A light is any object whose material has emission. The scene panel's **+ Light**
 | `src/mcp.rs` | the MCP server (`ray mcp`) |
 | `src/ui/remote.rs`, `control.rs` | the viewer's control socket, and the commands it carries out |
 | `src/ui/emitter.rs`, `library.rs`, `previews.rs` | emitters and their copies; the material and modifier libraries; their preview renders |
+| `tools/readme-images.sh`, `logo.py` | the README's pictures in `docs/images` (the banner is `assets/banner.json` with the name set on it) |
 | `tools/scenes/*.py` | the generators of most default scenes (`city.py` writes night-city and `bonsai.py` the bonsai, each with any seed; see `common.py` for how to run them) |
 
 ## Limitations and next steps
