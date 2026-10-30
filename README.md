@@ -479,3 +479,7 @@ A light is any object whose material has emission. The scene panel's **+ Light**
 - Transmissive fractals look dark: inside them the negated distance estimate is not a distance.
 - The path tracer has no denoiser. It caps the light one bounce may add to a path that has already bounced off a diffuse surface (8 in the brightest channel): rare paths that find the sun through a glass ball (caustics) or a small lamp were fireflies that more samples hardly averaged out, so the image speckled more as it accumulated. The cap makes such light a little dimmer than it should be; what the camera sees directly, and in mirrors and glass, is not capped.
 - Direct mode ignores dispersion. Rough reflections and refraction (frosted glass, brushed metal) blur by scattering each bounce about the mirror or refracted direction (by roughness², as in path tracing): smooth once samples accumulate, grainy while the view moves.
+
+## License
+
+ray is free software: you can redistribute it and/or modify it under the terms of the GNU General Public License as published by the Free Software Foundation, either version 3 of the License or (at your option) any later version. It comes with no warranty. See [LICENSE](LICENSE).

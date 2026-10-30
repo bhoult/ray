@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2024"
 rust-version = "1.90"
 description = "Real-time ray tracing of mesh-free scenes (SDFs, fractals, heightfields) described in JSON"
+license = "GPL-3.0-or-later"
 publish = false
 
 [dependencies]

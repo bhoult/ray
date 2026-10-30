@@ -4,3 +4,4 @@
 /saves/quicksave.json
 /ray-*.png
 /videos
+__pycache__/
