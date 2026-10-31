@@ -87,6 +87,8 @@ struct Emit {
     /// surface's offsets, flags and grid, known once it is placed), and which
     /// surface of the program it is
     surfs: Vec<(usize, u8)>,
+    /// the formula catalog's kernels it calls (formulas/mod.rs ids)
+    formulas: Vec<u16>,
 }
 
 impl Emit {
@@ -252,6 +254,16 @@ impl Emit {
                 let (b, sz, i) = (self.p3(cbox), self.p(size), self.iters(iters, lod));
                 self.fractal(d, format!("kleinian(p{p}, {b}, {sz}, {i})"), mat);
             }
+            Op::Formula { d, p, f, k, iters, lod, mat } => {
+                let v: Vec<String> = k.iter().map(|&x| self.p(x)).collect();
+                let i = self.iters(iters, lod);
+                if !self.formulas.contains(&f) {
+                    self.formulas.push(f);
+                }
+                let name = crate::formulas::get(f).wgsl_fn;
+                let call = format!("{name}(p{p}, vec4f({}), vec4f({}), vec4f({}), {i})", v[0..4].join(", "), v[4..8].join(", "), v[8..12].join(", "));
+                self.fractal(d, call, mat);
+            }
             Op::Union { a, b } => {
                 if self.tags {
                     self.line(&format!("if (d{b} < d{a}) {{ m{a} = m{b}; o{a} = o{b}; }}"));
@@ -348,15 +360,19 @@ fn regs(op: &Op) -> (Option<u8>, Option<u8>) {
         | Op::Sierpinski { d, .. }
         | Op::Apollonian { d, .. }
         | Op::Kifs { d, .. }
-        | Op::Kleinian { d, .. } => (None, Some(d)),
+        | Op::Kleinian { d, .. }
+        | Op::Formula { d, .. } => (None, Some(d)),
         _ => (None, None),
     }
 }
 
-/// The body of a program's function (distance only or with tags), its
-/// numbers, and where its NURBS leaves' words go in them (Emit::surfs).
-fn program(ops: &[Op], tags: bool) -> (String, Vec<f32>, Vec<(usize, u8)>) {
-    let mut e = Emit { code: String::new(), params: Vec::new(), tags, surfs: Vec::new() };
+/// A program's function body, its numbers, where its NURBS leaves' words go
+/// in them (Emit::surfs), and the formula kernels it calls.
+type Body = (String, Vec<f32>, Vec<(usize, u8)>, Vec<u16>);
+
+/// The body of a program's function (distance only or with tags).
+fn program(ops: &[Op], tags: bool) -> Body {
+    let mut e = Emit { code: String::new(), params: Vec::new(), tags, surfs: Vec::new(), formulas: Vec::new() };
     let (mut np, mut nd) = (0u8, 0u8);
     for op in ops {
         let (p, d) = regs(op);
@@ -376,7 +392,7 @@ fn program(ops: &[Op], tags: bool) -> (String, Vec<f32>, Vec<(usize, u8)>) {
             let _ = writeln!(head, "    var o{i} = 0.0;");
         }
     }
-    (head + &e.code, e.params, e.surfs)
+    (head + &e.code, e.params, e.surfs, e.formulas)
 }
 
 /// An object's program: its function's number, its numbers, and where its
@@ -412,12 +428,19 @@ pub fn build(scene: &Scene, held: &[Arc<crate::scene::terrain::Terrain>]) -> Upl
     let mut structures: HashMap<String, u32> = HashMap::new();
     let mut functions = String::new();
     let mut prog_of: Vec<ProgOf> = Vec::new();
+    // (only the catalog's kernels the scene calls: the shader stays small)
+    let mut kernels: Vec<u16> = Vec::new();
     for o in &scene.objects {
         let Shape::Sdf(p) = &o.shape else {
             prog_of.push((0, Vec::new(), Vec::new()));
             continue;
         };
-        let (body, params, surfs) = program(&p.ops, false);
+        let (body, params, surfs, used) = program(&p.ops, false);
+        for f in used {
+            if !kernels.contains(&f) {
+                kernels.push(f);
+            }
+        }
         let n = structures.len() as u32;
         let id = *structures.entry(body.clone()).or_insert_with(|| {
             let (tbody, ..) = program(&p.ops, true);
@@ -429,7 +452,13 @@ pub fn build(scene: &Scene, held: &[Arc<crate::scene::terrain::Terrain>]) -> Upl
         });
         prog_of.push((id, params, surfs));
     }
-    let mut generated = functions;
+    let mut generated = String::new();
+    kernels.sort_unstable();
+    for &f in &kernels {
+        generated.push_str(crate::formulas::get(f).wgsl);
+        generated.push('\n');
+    }
+    generated.push_str(&functions);
     generated.push_str("fn prog_dist(k: u32, b: u32, p: vec3f) -> f32 {\n    switch k {\n");
     for n in 0..structures.len() {
         let _ = writeln!(generated, "        case {n}u: {{ return prog{n}(p, b); }}");
@@ -446,6 +475,8 @@ pub fn build(scene: &Scene, held: &[Arc<crate::scene::terrain::Terrain>]) -> Upl
         _ => false,
     });
     let _ = writeln!(generated, "\nconst HAS_NURBS: bool = {nurbs};");
+    // and the haze's (its shadow rays inline the scene's distance once more)
+    let _ = writeln!(generated, "const HAS_HAZE: bool = {};", scene.env.haze > 0.0);
 
     // ---- terrains (shared maps are uploaded once)
     let mut terrains: Vec<Arc<crate::scene::terrain::Terrain>> = Vec::new();

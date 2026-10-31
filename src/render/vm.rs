@@ -149,6 +149,8 @@ pub fn op_cycles(op: &Op) -> f32 {
         | Op::Apollonian { iters, .. }
         | Op::Kifs { iters, .. }
         | Op::Kleinian { iters, .. } => iters,
+        // (each formula its own kind)
+        Op::Formula { f, iters, .. } => (f as u32) << 8 | iters,
         Op::Displace { octaves, .. } => octaves,
         Op::Relief { kind, .. } => kind as u32,
         _ => 0,
@@ -435,6 +437,14 @@ fn eval_ops(ops: &[Op], surfaces: &[Arc<Nurbs>], p: V8, r: &mut Regs, mats: bool
             }
             Op::Kleinian { d, p, cbox, size, iters, lod, mat } => {
                 let (dist, trap) = kleinian(r.p[p as usize], cbox, size, lod.iters(iters, r.ln_thr));
+                r.d[d as usize] = dist;
+                if mats {
+                    r.m[d as usize] = I8::splat(mat as i32);
+                    r.o[d as usize] = trap;
+                }
+            }
+            Op::Formula { d, p, f, k, iters, lod, mat } => {
+                let (dist, trap) = (crate::formulas::get(f).cpu)(r.p[p as usize], &k, lod.iters(iters, r.ln_thr));
                 r.d[d as usize] = dist;
                 if mats {
                     r.m[d as usize] = I8::splat(mat as i32);

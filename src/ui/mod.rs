@@ -310,6 +310,16 @@ struct Glide {
 
 /// The Open and Save as window: the scene files in a folder, and the name
 /// typed or picked.
+/// A screenshot rendering whole (P): the moment as it was when P went down
+/// (the file and the picture's text chunks: keyword, text, compressed),
+/// written once the view, held still at the screenshot's size, has every
+/// sample (`posted`: the job it waits for, once it is posted).
+struct Still {
+    out: PathBuf,
+    text: Vec<(&'static str, String, bool)>,
+    posted: Option<u64>,
+}
+
 struct FileDialog {
     save: bool,
     dir: PathBuf,
@@ -600,6 +610,11 @@ pub struct App {
     /// the interface)
     /// since when, and the frame and time it was last asked at (None: not yet)
     window_shot: Option<(Instant, Option<(u32, Instant)>)>,
+    /// a screenshot rendering whole (P), and MCP callers waiting for it
+    still: Option<Still>,
+    still_waiters: Vec<std::sync::mpsc::Sender<Result<serde_json::Value, String>>>,
+    /// how the last one went: its file, or why it failed
+    last_still: Option<Result<PathBuf, String>>,
     /// jobs posted to the render thread, and the one the shown image is of
     posted: u64,
     shown_serial: u64,
@@ -798,6 +813,9 @@ impl App {
             remote: if std::env::var_os("RAY_NO_SOCKET").is_some() { None } else { remote::Remote::start(ctx.clone()) },
             shots: Vec::new(),
             window_shot: None,
+            still: None,
+            still_waiters: Vec::new(),
+            last_still: None,
             posted: 0,
             shown_serial: 0,
             world: physics::World::default(),
@@ -1184,6 +1202,7 @@ impl App {
     fn file_window(&mut self, ctx: &egui::Context) {
         // (the quick save slot is named as such in the list)
         let slot = std::fs::canonicalize(self.quick_save_path()).ok();
+        let shots = config::expand(&self.config.screenshots);
         let Some(d) = &mut self.file_dialog else { return };
         let mut open = true;
         let (mut go, mut pick, mut cancel, mut into) = (false, None, false, None);
@@ -1196,6 +1215,10 @@ impl App {
                 }
                 if ui.button("saves/").on_hover_text("The scenes that come with ray, and the quick save.").clicked() {
                     into = Some(PathBuf::from("saves"));
+                }
+                if !d.save && ui.button("screenshots/").on_hover_text("Your screenshots (the folder in Preferences): open one to go back to the moment it shows.").clicked() {
+                    let _ = std::fs::create_dir_all(&shots);
+                    into = Some(shots.clone());
                 }
                 if ui.button("📁").on_hover_text("Open this folder on the desktop.").clicked() {
                     open_externally(&std::fs::canonicalize(&d.dir).unwrap_or(d.dir.clone()));
@@ -1299,10 +1322,55 @@ impl App {
             self.window_shot = Some((Instant::now(), None));
             return;
         }
-        let Some(img) = &self.shown else { return };
-        let rgba: Vec<u8> = img.pixels.iter().flat_map(|c| c.to_array()).collect();
-        let size = img.size;
-        self.save_shot(size, &rgba);
+        // (while recording: the image as it is; a steady recording holds the
+        // view for its own frames)
+        if self.recorder.is_some() {
+            let Some(img) = &self.shown else { return };
+            let rgba: Vec<u8> = img.pixels.iter().flat_map(|c| c.to_array()).collect();
+            let size = img.size;
+            return self.save_shot(size, &rgba);
+        }
+        if let Some(st) = &self.steady {
+            let wants = st.wants(self.settings.max_samples);
+            return self.say(format!("a screenshot is still rendering ({} of {wants} samples)", self.stats.samples.min(wants)));
+        }
+        // rendered whole, as a steady recording's frame is: at the
+        // preferences' size (the view's at full resolution unless set), the
+        // scene's clock held, until every pixel has its samples
+        let [w, h] = self.config.screenshot_size;
+        let (w, h) = if w > 0 && h > 0 { render_size(w as f32, h as f32) } else { render_size(self.view_px.0, self.view_px.1) };
+        let (out, text) = self.shot_moment([w, h]);
+        let mut st = record::Steady::new(self.config.video_fps, self.config.screenshot_samples, [w, h], Some(1), self.now());
+        // (no more than 90% busy, as render_video: the window stays smooth)
+        st.load = 0.9;
+        self.say(format!("screenshot: rendering {w} x {h}, {} samples a pixel", st.wants(self.settings.max_samples)));
+        self.steady = Some(st);
+        self.still = Some(Still { out, text, posted: None });
+    }
+
+    /// The screenshot rendering whole, once its view has every sample: its
+    /// pixels written with the moment it was taken at. Meanwhile how far it
+    /// has got (and the scene holds still: true).
+    fn still_frame(&mut self) -> bool {
+        let (Some(still), Some(st)) = (&self.still, &self.steady) else { return false };
+        let wants = st.wants(self.settings.max_samples);
+        let drawn = still.posted == Some(self.shown_serial) && (self.stats.samples >= wants || !self.stats.traced);
+        if !drawn {
+            self.say(format!("screenshot: {} of {wants} samples", if still.posted == Some(self.shown_serial) { self.stats.samples.min(wants) } else { 0 }));
+            return true;
+        }
+        let Some(still) = self.still.take() else { return false };
+        self.end_steady();
+        let done = match &self.shown {
+            Some(img) => {
+                let rgba: Vec<u8> = img.pixels.iter().flat_map(|c| c.to_array()).collect();
+                let size = img.size;
+                self.write_shot(&still.out, size, &rgba, &still.text)
+            }
+            None => Err("no image".into()),
+        };
+        self.last_still = Some(done);
+        false
     }
 
     /// A screenshot's pixels into the screenshots folder, named after the
@@ -1311,6 +1379,13 @@ impl App {
     /// of and the walker. Opened (File > Open, `ray` with the picture), it
     /// all comes back.
     fn save_shot(&mut self, size: [usize; 2], rgba: &[u8]) {
+        let (out, text) = self.shot_moment(size);
+        let _ = self.write_shot(&out, size, rgba, &text);
+    }
+
+    /// Where a screenshot of `size` taken now goes, and the moment it keeps:
+    /// its text chunks (keyword, text, compressed).
+    fn shot_moment(&self, size: [usize; 2]) -> (PathBuf, Vec<(&'static str, String, bool)>) {
         let stem = self.path.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_else(|| "ray".into());
         let dir = config::expand(&self.config.screenshots);
         let _ = std::fs::create_dir_all(&dir);
@@ -1343,13 +1418,23 @@ impl App {
             about += &format!("; the walker {} tall", length_text(g.height));
         }
         let scene = serde_json::to_string(&scene).unwrap_or_default();
-        let (moment, software) = (moment.to_string(), format!("ray {version}"));
-        let text = [(crate::scene::STILL_SCENE, scene.as_str(), true), (crate::scene::STILL_MOMENT, moment.as_str(), true), ("Description", about.as_str(), false), ("Software", software.as_str(), false)];
-        let msg = match crate::render::write_png_text(&out, size[0], size[1], rgba, &text) {
-            Ok(()) => format!("saved {}", out.display()),
-            Err(e) => format!("screenshot failed: {e}"),
-        };
-        self.say(msg);
+        let text = vec![(crate::scene::STILL_SCENE, scene, true), (crate::scene::STILL_MOMENT, moment.to_string(), true), ("Description", about, false), ("Software", format!("ray {version}"), false)];
+        (out, text)
+    }
+
+    /// A screenshot's pixels into `out` with its text chunks; said on screen.
+    fn write_shot(&mut self, out: &std::path::Path, size: [usize; 2], rgba: &[u8], text: &[(&'static str, String, bool)]) -> Result<PathBuf, String> {
+        let text: Vec<(&str, &str, bool)> = text.iter().map(|(k, t, z)| (*k, t.as_str(), *z)).collect();
+        match crate::render::write_png_text(out, size[0], size[1], rgba, &text) {
+            Ok(()) => {
+                self.say(format!("saved {}", out.display()));
+                Ok(out.to_path_buf())
+            }
+            Err(e) => {
+                self.say(format!("screenshot failed: {e}"));
+                Err(e)
+            }
+        }
     }
 
     /// A screenshot of the whole window: asked for (the frame being drawn is
@@ -1728,7 +1813,7 @@ impl App {
         // lost its end in a narrower window)
         if g.since.elapsed().as_secs_f32() < 10.0 {
             text = format!(
-                "Tab or Esc: back to editing · F1 these keys · F10 record\nW A S D walk or swim · Shift run (tap: keeps running) · Space jump (with W A S D: leap; in water: kick up, looking down: dive) · R / F grow / shrink\nleft button: gravity gun (hold to charge, let go to fire) · right button: rocket (look down to lean)\n{text}"
+                "Tab or Esc: back to editing · F1 these keys · F10 record\nW A S D walk or swim · Shift run (tap: keeps running) · Space jump (with W A S D: leap; in water: kick up, looking down: dive) · R / F grow / shrink · O get out (stuck)\nleft button: gravity gun (hold to charge, let go to fire) · right button: rocket (look down to lean)\n{text}"
             );
         }
         self.rocket_meter(p, r, g);
@@ -2479,7 +2564,7 @@ impl App {
             // (the walker's keys are read by game_frame; of the commands only
             // these make sense with the interface gone)
             for act in actions::pressed(ctx) {
-                if matches!(act, Act::Game | Act::Headlight | Act::Screenshot | Act::QuickSave | Act::QuickLoad | Act::Record) {
+                if matches!(act, Act::Game | Act::Headlight | Act::Screenshot | Act::QuickSave | Act::QuickLoad | Act::Record | Act::GetOut) {
                     self.run_act(act);
                 } else if act == Act::Help
                     && let Some(g) = self.game.as_mut()
@@ -2610,6 +2695,7 @@ impl App {
             Act::Reset => self.reset_scene(),
             Act::Frame => self.frame_selected(),
             Act::StartView => self.cam = crate::start_camera(&self.scene),
+            Act::GetOut => self.get_out(),
             Act::Panels => {
                 let on = !(self.show_scene || self.show_render || self.show_perf);
                 self.show_scene = on;
@@ -2815,6 +2901,32 @@ impl App {
         self.cam.place(c - f * dist.max(0.5));
     }
 
+    /// Out of whatever the camera is inside, or in game mode the walker is
+    /// stuck in: to the nearest place with room around it (a tenth of a
+    /// second's flying for the camera; the body for the walker, as tall).
+    fn get_out(&mut self) {
+        let cam = self.view_cam();
+        let eye = cam.exact();
+        let (who, moved) = if let Some(g) = self.game.as_mut() {
+            let moved = crate::render::view_query(&self.scene, &cam, &self.settings, |c, regs| g.get_out(&mut game::Probe::new(c, regs)));
+            self.cam.set_exact(g.eye());
+            self.game_eye = self.cam.exact();
+            ("the walker", moved)
+        } else {
+            let room = 0.1 * self.speed as f64;
+            let to = crate::render::view_query(&self.scene, &cam, &self.settings, |c, regs| game::open_space(&mut game::Probe::new(c, regs), eye, &[[0.0; 3]], room, (1e4 * room).max(1e3)));
+            if let Some(p) = to {
+                self.cam.set_exact(p);
+            }
+            ("the camera", to.map(|p| (0..3).map(|i| (p[i] - eye[i]).powi(2)).sum::<f64>().sqrt()))
+        };
+        match moved {
+            Some(m) if m > 0.0 => self.say(format!("got out: {who} moved {} to the nearest open space", length_text(m))),
+            Some(_) => self.say(format!("{who} has room around it already: nothing to get out of")),
+            None => self.say(format!("no open space near enough for {who} to get out to")),
+        }
+    }
+
     /// A new top-level object of type `ty` in front of the camera, on whatever is there.
     fn add_object(&mut self, ty: &str) {
         if ty == "cloud" {
@@ -2955,6 +3067,7 @@ impl App {
                 ui.separator();
                 self.item(ui, Act::Frame);
                 self.item(ui, Act::StartView);
+                self.item(ui, Act::GetOut);
                 ui.separator();
                 ui.menu_button("Render mode", |ui| {
                     for (k, m) in Mode::ALL.into_iter().enumerate() {
@@ -3093,6 +3206,12 @@ impl App {
             self.posted += 1;
             self.render.post(job.clone());
             self.last_job = Some(job);
+        }
+        // (the job a screenshot rendering whole waits for: this one)
+        if let Some(st) = &mut self.still
+            && st.posted.is_none()
+        {
+            st.posted = Some(self.posted);
         }
     }
 
@@ -3393,6 +3512,7 @@ impl eframe::App for App {
         let shooting = self.window_shot.is_some() || self.test_shot.as_ref().is_some_and(|(_, n)| self.frames >= *n);
         self.render.pause(shooting);
         self.finish_shots();
+        self.finish_stills();
         self.test_hook(ctx);
         self.had_focus = ctx.memory(|m| m.focused().is_some());
         // RAY_TEST_GAME=1: into game mode once the view has a size (tests)
@@ -3450,6 +3570,10 @@ impl App {
             self.end_steady();
         }
         let mut step = None;
+        // a screenshot rendering whole: the scene holds still meanwhile
+        if self.recorder.is_none() && self.still_frame() {
+            step = Some(false);
+        }
         if let Some(r) = &self.recorder {
             let shot = ctx.input(|i| {
                 i.events.iter().find_map(|e| match e {
@@ -3524,6 +3648,10 @@ impl App {
     /// (The title says it records, and where: a note in the window would be
     /// in the video.)
     fn start_recording(&mut self, steady: Option<record::Steady>, quality: u32) -> Result<PathBuf, String> {
+        if self.still.take().is_some() {
+            self.end_steady();
+            self.last_still = Some(Err("a recording started".into()));
+        }
         let r = record::Recorder::start(
             &config::expand(&self.config.videos),
             steady.as_ref().map_or(self.window_px, |s| s.size),

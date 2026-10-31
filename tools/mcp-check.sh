@@ -4,7 +4,7 @@
 # socket of their own, with preferences of their own (the quick save slot,
 # screenshots and videos in a temporary folder: the user's are never
 # touched), a copy of a saved scene opened, then edits, undo, a refused edit,
-# commands by name, the quick save, a screenshot, screenshots reopened as their moment, saving (and failing to),
+# commands by name, the quick save, a screenshot, screenshots reopened as their moment, saving (and failing to), get_out,
 # game mode walking on held keys, a steady recording (its frames as many
 # as the scene's clock moved on: 30 a second, at the preferences' size), and
 # render_video (a size of its own, ending by itself after its seconds), and
@@ -50,7 +50,7 @@ reqs = [
     ("hold_keys", {"keys": ["w"], "seconds": 1.0}),
     ("screenshot", {"width": 64, "samples": 100000, "timeout": 1.5}),
     ("viewer_status", {}),
-    ("set_preferences", {"set": {"video_steady": True, "video_size": [320, 180], "video_steady_samples": 2}}),
+    ("set_preferences", {"set": {"video_steady": True, "video_size": [320, 180], "video_steady_samples": 2, "screenshot_samples": 4, "screenshot_size": [640, 360]}}),
     ("run_command", {"name": "record_video"}),
     ("glide_camera", {"turn_degrees": 30, "seconds": 1.0}),
     ("screenshot", {"width": 64, "samples": 100000, "timeout": 4}),
@@ -84,6 +84,19 @@ reqs = [
     ("open_scene", {"path": "@SHOT1@"}),
     ("get_scene", {}),
     ("open_scene", {"path": "@SHOT2@"}),
+    # (get out: the walker, put inside the check bulb, comes into game mode
+    # as small as it gets, stuck; out it goes, as tall. Then the camera,
+    # inside it out of game mode)
+    ("set_camera", {"position": [0, 40, 0]}),
+    ("viewer_status", {}),
+    ("run_command", {"name": "get_out"}),
+    ("run_command", {"name": "get_out"}),
+    ("run_command", {"name": "game_mode"}),
+    ("set_camera", {"position": [0, 40, 0]}),
+    ("raycast", {"origin": [0, 40, 0], "direction": [1, 0, 0]}),
+    ("run_command", {"name": "get_out"}),
+    ("get_scene", {}),
+    ("run_command", {"name": "get_out"}),
 ]
 out, sessions = open(f"{t}/requests.jsonl", "w"), 1
 def start():
@@ -120,7 +133,7 @@ dbus-run-session -- bash -c '
   kill $shell 2>/dev/null; wait $shell 2>/dev/null || true
 ' _ "$display" "$tmp" >/dev/null 2>&1 || true
 python3 - "$tmp" <<'PY'
-import base64, json, os, sys
+import base64, json, math, os, sys
 t = sys.argv[1]
 ans = {}
 for line in open(f"{t}/answers.jsonl"):
@@ -218,6 +231,12 @@ def still(path):
     last = max((k for k, c in enumerate(seen) if c == b"iTXt"), default=len(seen))
     return out, b"IDAT" in seen and last < seen.index(b"IDAT")
 shots = sorted(glob.glob(f"{t}/shots/*.png"), key=os.path.getmtime)
+def size_of(path):
+    """A PNG's width and height (its IHDR)."""
+    try:
+        return struct.unpack(">II", open(path, "rb").read()[16:24])
+    except Exception:
+        return None
 def near(a, b):
     """Two positions alike but for the last bit (the MCP server reads the
     viewer's answers with serde_json, whose floats can come back an ulp off)."""
@@ -227,6 +246,8 @@ c46 = (data(46) or {}).get("camera") or {}
 s1, ahead = still(shots[0]) if shots else ({}, False)
 scene1 = json.loads(s1.get("ray-scene", "{}"))
 p1 = (scene1.get("camera") or {}).get("position")
+f45 = (data(45) or {}).get("file") or ""
+check(45, f"run_command screenshot renders whole and answers with the file ({os.path.basename(f45)}, {size_of(f45)})", bool(shots) and os.path.exists(f45) and os.path.samefile(f45, shots[0]) and size_of(f45) == (640, 360))
 check(45, "a screenshot carries the scene, the camera exactly, ahead of the pixels", ahead and near(p1, c46.get("position")) and near(p1, [0.123456789012, 1.5, 3.25]))
 st = data(51) or {}
 c52 = (data(52) or {}).get("camera") or {}
@@ -235,6 +256,17 @@ s2, _ = still(shots[1]) if len(shots) > 1 else ({}, False)
 g = (json.loads(s2.get("ray-still", "{}")) or {}).get("game") or {}
 g53 = (data(53) or {}).get("game") or {}
 check(53, f"a game-mode screenshot opens with the walker as it stood ({g.get('height')} m tall)", g.get("height") and g53.get("height_m") == g.get("height") and near(g53.get("feet"), g.get("feet")))
+g55, s56 = (data(55) or {}).get("game") or {}, data(56) or {}
+g56 = s56.get("game") or {}
+moved = math.dist(g56.get("feet") or [0, 0, 0], g55.get("feet") or [0, 0, 0]) if g55 and g56 else 0
+check(55, f"into game mode inside the check bulb: stuck, {g55.get('height_m')} m tall", g55.get("height_m") == 1e-8 and math.dist(g55.get("feet") or [9, 9, 9], [0, 40, 0]) < 1e-6)
+check(56, f"get_out: the walker out of the bulb, {moved:.3f} m, as tall ({s56.get('said')})", 0.1 < moved < 2 and g56.get("height_m") == 1e-8 and s56.get("said", "").startswith("got out: the walker moved"))
+check(57, "get_out again: room already", "room around it already" in (data(57) or {}).get("said", ""))
+r60, s61 = data(60) or {}, data(61) or {}
+p62 = ((data(62) or {}).get("camera") or {}).get("position") or [0, 40, 0]
+check(60, "the camera inside the bulb (a ray from it hits at once)", (data(58) or {}).get("game") is None and r60.get("hit") and r60.get("distance", 1) < 1e-3)
+check(61, f"get_out: the camera out of the bulb, {math.dist(p62, [0, 40, 0]):.3f} m ({s61.get('said')})", s61.get("said", "").startswith("got out: the camera moved") and 0.3 < math.dist(p62, [0, 40, 0]) < 3)
+check(63, "get_out again: room already", "room around it already" in (data(63) or {}).get("said", ""))
 if fails:
     print(f"mcp-check: {len(fails)} failed (the viewer's log: {t}/viewer.log)")
     sys.exit(1)

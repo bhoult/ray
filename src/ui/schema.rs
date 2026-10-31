@@ -190,7 +190,10 @@ pub const ENVIRONMENT: &[(&str, &str)] = &[
     ("sun_elevation", "Height of the sun above the horizon, degrees."),
     ("sun_level", "Strength of the sunlight (1: the preset's)."),
     ("ambient_level", "Strength of the sky light filling shadows (1: the preset's)."),
-    ("fog_density", "Haze per metre: 0 is clear air."),
+    ("fog_density", "Distance fog per metre: 0 is clear air."),
+    ("haze_density", "Haze per metre (0, the default: none): lit only where the sun, the sky and lamps reach, so light comes through gaps in shafts. Thick for small scenes."),
+    ("haze_top", "The height the haze reaches up to, metres (none: everywhere)."),
+    ("haze_color", "[r, g, b]: the share of each colour the haze scatters (white)."),
     ("clouds", "The sky's cloud cover, 0 to 1 (cloud objects are separate)."),
     ("sun_color", "[r, g, b] of the sunlight."),
     ("sky_zenith", "[r, g, b] of the sky straight up."),
@@ -226,8 +229,48 @@ pub const MATERIAL: &[(&str, &str)] = &[
     ("space", "Pattern coordinates: object (moves with the object) or world (fixed in space, e.g. for floors)."),
 ];
 
+/// A formula family's name in a menu under Fractals ("box folds").
+pub fn family_label(cat: &'static str) -> &'static str {
+    cat.strip_prefix("Fractals: ").unwrap_or(cat)
+}
+
+/// Every shape type: the built-in ones, then the formula catalog's
+/// fractals (formulas/mod.rs), each in its family's category.
+pub fn shapes() -> &'static [ShapeInfo] {
+    static ALL: std::sync::OnceLock<Vec<ShapeInfo>> = std::sync::OnceLock::new();
+    ALL.get_or_init(|| {
+        let mut v: Vec<ShapeInfo> = SHAPES.iter().map(|s| ShapeInfo { ..*s }).collect();
+        for f in crate::formulas::all() {
+            let mut fields: Vec<(&'static str, &'static str)> = f.params.iter().map(|p| (p.name, p.doc)).collect();
+            fields.push(("iterations", f.iterations.2));
+            v.push(ShapeInfo { ty: f.name, category: f.category, desc: f.desc, new: f.example, fields: Vec::leak(fields) });
+        }
+        v
+    })
+}
+
 pub fn shape(ty: &str) -> Option<&'static ShapeInfo> {
-    SHAPES.iter().find(|s| s.ty == ty)
+    shapes().iter().find(|s| s.ty == ty)
+}
+
+/// Parameter `key` of a formula shape of type `ty`.
+pub fn formula_param(ty: &str, key: &str) -> Option<&'static crate::formulas::Param> {
+    let f = crate::formulas::get(crate::formulas::find(ty)?);
+    f.params.iter().find(|p| p.name == key)
+}
+
+/// The range of field `key` of a node of type `ty`: a formula's own, else
+/// field_range's.
+pub fn field_range_for(ty: &str, key: &str) -> (f64, f64) {
+    if let Some(p) = formula_param(ty, key) {
+        return (p.min as f64, p.max as f64);
+    }
+    if key == "iterations"
+        && let Some(i) = crate::formulas::find(ty)
+    {
+        return (1.0, crate::formulas::get(i).iterations.1 as f64);
+    }
+    field_range(key)
 }
 
 /// The description of field `key` of a node of type `ty`.
@@ -317,7 +360,7 @@ mod tests {
     /// What Add puts in the scene compiles, each kind on its own.
     #[test]
     fn every_new_shape_compiles() {
-        for s in SHAPES {
+        for s in shapes() {
             let node: Value = serde_json::from_str(s.new).unwrap();
             let doc = serde_json::json!({ "objects": [node] });
             let scene = crate::scene::Scene::from_value(&doc, &mut crate::scene::TerrainCache::default()).unwrap();
@@ -330,7 +373,7 @@ mod tests {
     #[test]
     fn every_field_is_described() {
         let mut missing = Vec::new();
-        for s in SHAPES {
+        for s in shapes() {
             let node: Value = serde_json::from_str(s.new).unwrap();
             let full = with_defaults(&node).unwrap_or(node);
             let ty = full.get("type").and_then(Value::as_str).unwrap_or(s.ty).to_string();

@@ -229,6 +229,24 @@ impl Game {
         [self.feet[0], self.feet[1] + EYE * self.height, self.feet[2]]
     }
 
+    /// Out of what it is stuck in (where `resolve` finds no way out: inside
+    /// a fractal): to the nearest place its body fits, at rest, as tall as
+    /// it was. How far that was (nothing when it fits where it is), or None
+    /// when nowhere within a kilometre (or ten thousand heights). (One that
+    /// came into game mode inside a fractal is 10 nm tall, its way out
+    /// perhaps a metre off.)
+    pub fn get_out(&mut self, probe: &mut Probe) -> Option<f64> {
+        let h = self.height;
+        let feet = open_space(probe, self.feet, &centres([0.0; 3], h), 0.98 * RADIUS * h, (1e4 * h).max(1e3))?;
+        let moved = len(sub(feet, self.feet));
+        if moved > 0.0 {
+            let since = self.since;
+            *self = Game::stand(probe, feet, h);
+            self.since = since;
+        }
+        Some(moved)
+    }
+
     /// `dt` seconds of the walker looking along `yaw` and `pitch` (radians,
     /// up positive), doing what `input` says, under `gravity` (m/s², down:
     /// the scene's; a body of another size feels it scaled with it), with
@@ -579,6 +597,73 @@ fn ground(probe: &mut Probe, f: D3, h: f64) -> bool {
     let r = RADIUS * h;
     let c = centres(f, h)[0];
     probe.dist(&[[c[0], c[1] - 0.5 * r, c[2]]], 4.0 * r)[0] < 0.73 * r
+}
+
+/// The nearest place to `at` where a body has room: each of its points
+/// (`body`, offsets from it) at least `room` from anything solid. `at`
+/// itself when it has; None when nowhere within `reach` has. Looked for on
+/// spheres round `at`, growing outward; on the first with an open
+/// direction, each open one is halved back toward the sphere before, and
+/// the nearest kept. Only whether a point has room counts: inside a
+/// fractal the distance is nothing or noise, no guide to the way out.
+pub fn open_space(probe: &mut Probe, at: D3, body: &[D3], room: f64, reach: f64) -> Option<D3> {
+    if fits(probe, &[at], body, room)[0] {
+        return Some(at);
+    }
+    let dirs = all_round();
+    let (mut inner, mut r) = (0.0, room);
+    while r <= reach {
+        let sphere: Vec<D3> = dirs.iter().map(|&u| add(at, scale(u, r))).collect();
+        let open = fits(probe, &sphere, body, room);
+        if open.contains(&true) {
+            let mut best = (f64::INFINITY, at);
+            for (&u, _) in dirs.iter().zip(&open).filter(|(_, o)| **o) {
+                let (mut lo, mut hi) = (inner, r);
+                for _ in 0..10 {
+                    let mid = 0.5 * (lo + hi);
+                    if fits(probe, &[add(at, scale(u, mid))], body, room)[0] {
+                        hi = mid;
+                    } else {
+                        lo = mid;
+                    }
+                }
+                if hi < best.0 {
+                    best = (hi, add(at, scale(u, hi)));
+                }
+            }
+            return Some(best.1);
+        }
+        inner = r;
+        r *= 1.15;
+    }
+    None
+}
+
+/// Whether a body (its points `body`, offsets) at each of `at` has `room`
+/// round every point.
+fn fits(probe: &mut Probe, at: &[D3], body: &[D3], room: f64) -> Vec<bool> {
+    let pts: Vec<D3> = at.iter().flat_map(|&a| body.iter().map(move |&b| add(a, b))).collect();
+    let mut ok = vec![true; at.len()];
+    for (k, chunk) in pts.chunks(8).enumerate() {
+        let d = probe.dist(chunk, 2.0 * room);
+        for (j, &d) in d[..chunk.len()].iter().enumerate() {
+            if d.is_nan() || d < room {
+                ok[(8 * k + j) / body.len()] = false;
+            }
+        }
+    }
+    ok
+}
+
+/// 128 directions spread evenly over the sphere (a Fibonacci spiral).
+fn all_round() -> [D3; 128] {
+    let turn = std::f64::consts::PI * (3.0 - 5f64.sqrt());
+    std::array::from_fn(|i| {
+        let y = 1.0 - (i as f64 + 0.5) / 64.0;
+        let s = (1.0 - y * y).sqrt();
+        let a = turn * i as f64;
+        [s * a.cos(), y, s * a.sin()]
+    })
 }
 
 fn add(a: D3, b: D3) -> D3 {
@@ -940,6 +1025,62 @@ mod tests {
         let cam = camera(g.eye(), 0.0);
         let d = crate::render::view_query(&sc, &cam, &s, |ctx, regs| Probe::new(ctx, regs).dist(&centres(g.feet, g.height), 1.0));
         assert!(d[..3].iter().all(|&d| d > 0.9 * r), "overlaps: {:?} (radius {r:e})", &d[..3]);
+    }
+
+    /// Get out, for the camera: a metre deep in a block, out through the
+    /// nearest face; in the Mandelbulb where a camera was stuck (flown in
+    /// through the surface), out of it nearby; with room already, it stays.
+    #[test]
+    fn camera_gets_out() {
+        let s = Settings::default();
+        let out = |sc: &Scene, eye: D3, room: f64| crate::render::view_query(sc, &camera(eye, 0.0), &s, |ctx, regs| open_space(&mut Probe::new(ctx, regs), eye, &[[0.0; 3]], room, 1e4 * room));
+        let dist = |sc: &Scene, p: D3| crate::render::view_query(sc, &camera(p, 0.0), &s, |ctx, regs| Probe::new(ctx, regs).dist(&[p], 1.0)[0]);
+        let block = scene(serde_json::json!([{ "type": "box", "size": [4, 4, 4] }]));
+        let p = out(&block, [1.0, 0.0, 0.0], 0.1).expect("no way out of the block");
+        assert!(p[0] > 2.099 && len(sub(p, [1.0, 0.0, 0.0])) < 1.15, "out of the block at {p:?}");
+        assert_eq!(out(&block, [3.0, 0.5, 0.0], 0.1), Some([3.0, 0.5, 0.0]));
+        let bulb = scene(serde_json::json!([
+            { "type": "mandelbulb", "power": 8, "iterations": 10, "scale": 1.25, "rotation": [28.7, 20.0, -5.9], "position": [0.213, 2.762, -6.448] }
+        ]));
+        let stuck = [-0.28012135890030176, 3.468377677295294, -6.244910577893236];
+        assert!(dist(&bulb, stuck) < 0.3, "not stuck: {}", dist(&bulb, stuck));
+        let p = out(&bulb, stuck, 0.3).expect("no way out of the bulb");
+        let moved = len(sub(p, stuck));
+        assert!(dist(&bulb, p) >= 0.3 && moved < 1.5, "out of the bulb at {p:?}, {moved} m away, {} from it", dist(&bulb, p));
+    }
+
+    /// Get out, for the walker: stuck in the Mandelbulb (no way out for
+    /// resolve), out to where its body fits (on top of the bulb), as tall;
+    /// there it comes to rest overlapping nothing, with room already.
+    #[test]
+    fn walker_gets_out() {
+        let sc = scene(serde_json::json!([
+            { "type": "plane" },
+            { "type": "mandelbulb", "power": 8, "iterations": 10, "scale": 1.25, "rotation": [28.7, 20.0, -5.9], "position": [0.213, 2.762, -6.448] }
+        ]));
+        let s = Settings::default();
+        let h = 0.3;
+        let feet = [-0.28, 3.47 - EYE * h, -6.24];
+        let r = RADIUS * h;
+        let body = |g: &Game| crate::render::view_query(&sc, &camera(g.eye(), 0.0), &s, |ctx, regs| Probe::new(ctx, regs).dist(&centres(g.feet, g.height), 1.0));
+        let mut g = crate::render::view_query(&sc, &camera(feet, 0.0), &s, |ctx, regs| Game::stand(&mut Probe::new(ctx, regs), feet, h));
+        assert!(body(&g)[..3].iter().any(|&d| d < 0.9 * r), "not stuck: {:?}", &body(&g)[..3]);
+        let moved = crate::render::view_query(&sc, &camera(g.eye(), 0.0), &s, |ctx, regs| g.get_out(&mut Probe::new(ctx, regs))).expect("no way out");
+        assert!(moved > 0.0 && moved < 2.0, "moved {moved} m");
+        assert_eq!(g.height, h);
+        assert!(body(&g)[..3].iter().all(|&d| d >= 0.98 * r * (1.0 - 1e-6)), "still stuck: {:?} (radius {r})", &body(&g)[..3]);
+        run(&sc, &mut g, 0.0, IDLE, 3.0);
+        assert!(len(g.vel) < 1e-3 && body(&g)[..3].iter().all(|&d| d > 0.9 * r), "after 3 s: {:?}, moving at {:?}", &body(&g)[..3], g.vel);
+        let again = crate::render::view_query(&sc, &camera(g.eye(), 0.0), &s, |ctx, regs| g.get_out(&mut Probe::new(ctx, regs)));
+        assert_eq!(again, Some(0.0));
+        // into game mode inside the bulb: no room, so it is the least height,
+        // stuck; out, still that tall, to the bulb's surface
+        let mut g = spawn(&sc, [-0.28, 3.47, -6.24]);
+        assert_eq!(g.height, MIN_HEIGHT);
+        let moved = crate::render::view_query(&sc, &camera(g.eye(), 0.0), &s, |ctx, regs| g.get_out(&mut Probe::new(ctx, regs))).expect("no way out");
+        let r = RADIUS * g.height;
+        assert!(moved > 1e-3 && moved < 2.0 && g.height == MIN_HEIGHT, "moved {moved} m, {} tall", g.height);
+        assert!(body(&g)[..3].iter().all(|&d| d >= 0.98 * r * (1.0 - 1e-3)), "still stuck: {:?} (radius {r:e})", &body(&g)[..3]);
     }
 }
 

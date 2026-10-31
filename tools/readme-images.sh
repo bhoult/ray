@@ -31,6 +31,8 @@ shot fractal-gallery 64 saves/fractals.json --camera -5.2,1.6,0.6,-35,-5
 shot sponge-window 64 saves/fractals3.json
 shot sponge-corridors 64 saves/fractals.json --camera -6.4375,2.2410,-1.4767,-49.09,-13.54 --set '{"headlight": 1.0}'
 shot kleinian 64 saves/fractals.json --camera 4.9766,1.7750,-4.2966,-117.78,56.44 --set '{"headlight": 1.0}'
+# every fractal type, a family to a row (docs/images/fractals/ are each one's own, from docs/FRACTALS.md's entries)
+shot fractal-catalog 64 saves/fractal-catalog.json --camera -6,6.5,6,-25,-24
 for s in bonsai night-city clouds island nurbs nurbs-booleans water materials; do
   shot "$s" 64 "saves/$s.json"
 done

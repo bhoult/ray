@@ -92,6 +92,15 @@ pub struct Settings {
     pub lights: bool,
     pub light_shadows: bool,
     pub fog: bool,
+    /// the environment's haze, as a multiple of its density (0: none), and
+    /// the points along each ray its light shafts are found at a sample
+    /// (more: smoother sooner, slower)
+    pub haze_strength: f32,
+    pub haze_detail: u32,
+    /// the haze's light bent along a curve: 1 as the light makes it; more,
+    /// the haze where the sun reaches holds and brighter grows stronger,
+    /// dimmer (in shadow) weaker: more defined beams
+    pub haze_contrast: f32,
     pub clouds: bool,
     /// sphere-tracing iterations per object
     pub max_steps: u32,
@@ -144,6 +153,9 @@ impl Default for Settings {
             lights: true,
             light_shadows: true,
             fog: true,
+            haze_strength: 1.0,
+            haze_detail: 2,
+            haze_contrast: 1.0,
             clouds: true,
             max_steps: 160,
             detail: 1.0,

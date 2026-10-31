@@ -21,6 +21,7 @@ pub enum Act {
     Reset,
     Frame,
     StartView,
+    GetOut,
     Panels,
     Heat,
     Device,
@@ -72,7 +73,7 @@ pub const ACTIONS: &[Action] = &[
         tip: "Back to the quick save (F5): its scene, camera and render settings. Saving then writes the quick save, not the file it came from. With unsaved edits it asks a second time.",
     },
     Action { act: Act::Revert, name: "Revert", keys: &[cmd(Key::R)], tip: "Load the file again from disk. With unsaved edits it asks a second time, since they would be lost." },
-    Action { act: Act::Screenshot, name: "Screenshot", keys: &[key(Key::P), key(Key::F12)], tip: "Save a PNG in the screenshots folder (Preferences; ray in your Pictures folder by default): the 3D view alone, or the whole window with File > Screenshots include the interface. The picture carries the moment: the scene with your unsaved edits, the camera exactly, every setting and the walker. Open it (File > Open) to come back to it." },
+    Action { act: Act::Screenshot, name: "Screenshot", keys: &[key(Key::P), key(Key::F12)], tip: "Save a PNG in the screenshots folder (Preferences; ray in your Pictures folder by default): the 3D view, rendered whole first at full quality (the scene holds still a moment while every pixel gathers the samples set in Preferences; 256 by default), or the whole window as it is with File > Screenshots include the interface. The picture carries the moment: the scene with your unsaved edits, the camera exactly, every setting and the walker. Open it (File > Open) to come back to it." },
     Action {
         act: Act::Record,
         name: "Record video",
@@ -97,6 +98,12 @@ pub const ACTIONS: &[Action] = &[
     },
     Action { act: Act::Frame, name: "Frame selection", keys: &[key(Key::Period)], tip: "Point the camera at the selected object, from a distance that fits it." },
     Action { act: Act::StartView, name: "Start view", keys: &[key(Key::Home)], tip: "Back to the view the scene was opened or last saved with." },
+    Action {
+        act: Act::GetOut,
+        name: "Get out",
+        keys: &[key(Key::O)],
+        tip: "Out of whatever the camera is inside (the view goes black) or the walker is stuck in: to the nearest place with room around it. For the camera that is a tenth of a second's flying at the fly speed ([ ] change it), for the walker its body.",
+    },
     Action {
         act: Act::Game,
         name: "Game mode",

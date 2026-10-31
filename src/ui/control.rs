@@ -37,8 +37,35 @@ impl App {
                 self.shots.push(PendingShot { reply: q.reply, width, samples, deadline: Instant::now() + Duration::from_secs_f64(secs), serial: None });
                 continue;
             }
+            let rendering = self.still.is_some();
             let r = self.command(&q.cmd, &q.args);
+            // (run_command screenshot: answered once the picture, rendered
+            // whole first, is written)
+            if r.is_ok() && !rendering && self.still.is_some() {
+                self.still_waiters.push(q.reply);
+                continue;
+            }
             let _ = q.reply.send(r);
+        }
+    }
+
+    /// Answers the run_command screenshots waiting for the one rendering,
+    /// once it is written (or failed): the status, what it said, its file.
+    pub(super) fn finish_stills(&mut self) {
+        if self.still_waiters.is_empty() || self.still.is_some() {
+            return;
+        }
+        let mut status = self.status();
+        match &self.last_still {
+            Some(Ok(p)) => {
+                status["said"] = json!(format!("saved {}", p.display()));
+                status["file"] = json!(p);
+            }
+            Some(Err(e)) => status["said"] = json!(format!("screenshot failed: {e}")),
+            None => {}
+        }
+        for w in self.still_waiters.drain(..) {
+            let _ = w.send(Ok(status.clone()));
         }
     }
 
@@ -201,8 +228,16 @@ impl App {
                     let why = why_not(act.act);
                     return Err(format!("{} cannot run now{}", actions::command_name(act), if why.is_empty() { String::new() } else { format!(": {why}") }));
                 }
+                let before = Instant::now();
                 self.run_act(act.act);
-                Ok(self.status())
+                let mut status = self.status();
+                // (and what it said on screen, if anything)
+                if let Some((m, at)) = &self.message
+                    && *at >= before
+                {
+                    status["said"] = json!(m);
+                }
+                Ok(status)
             }
             "quick_save" => {
                 self.quick_save()?;
@@ -581,7 +616,7 @@ fn merge(v: &mut Value, set: &Value) -> Result<(), String> {
 /// The scene format, for building objects: every shape type with its fields
 /// and an example, the fields every object has, and the material fields.
 fn describe() -> Value {
-    let shapes: Vec<Value> = schema::SHAPES
+    let shapes: Vec<Value> = schema::shapes()
         .iter()
         .map(|s| {
             json!({

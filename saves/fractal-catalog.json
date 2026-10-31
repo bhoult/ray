@@ -1,0 +1,1968 @@
+{
+ "description": "The fractal catalog: every kind of fractal ray draws, a family to a row (the classics first), each on a plinth. Its shader takes about 45 s to build the first time (the CPU draws meanwhile); after that ray's shader cache has it.",
+ "camera": {
+  "position": [
+   0,
+   4.5,
+   9
+  ],
+  "pitch": -18,
+  "fov": 60,
+  "speed": 4
+ },
+ "environment": {
+  "preset": "golden",
+  "time_of_day": 16.5
+ },
+ "materials": {
+  "plinth": {
+   "color": [
+    0.22,
+    0.21,
+    0.2
+   ],
+   "roughness": 0.5
+  },
+  "floor": {
+   "color": [
+    0.3,
+    0.29,
+    0.27
+   ],
+   "color2": [
+    0.2,
+    0.19,
+    0.18
+   ],
+   "texture": "checker",
+   "space": "world",
+   "scale": 0.5
+  },
+  "row 1": {
+   "color": [
+    0.85,
+    0.55,
+    0.25
+   ],
+   "color2": [
+    0.15,
+    0.35,
+    0.7
+   ],
+   "texture": "orbit",
+   "roughness": 0.35
+  },
+  "row 2": {
+   "color": [
+    0.9,
+    0.75,
+    0.45
+   ],
+   "color2": [
+    0.55,
+    0.2,
+    0.15
+   ],
+   "texture": "orbit",
+   "roughness": 0.35
+  },
+  "row 3": {
+   "color": [
+    0.3,
+    0.75,
+    0.7
+   ],
+   "color2": [
+    0.75,
+    0.45,
+    0.2
+   ],
+   "texture": "orbit",
+   "roughness": 0.35
+  },
+  "row 4": {
+   "color": [
+    0.8,
+    0.35,
+    0.45
+   ],
+   "color2": [
+    0.2,
+    0.25,
+    0.6
+   ],
+   "texture": "orbit",
+   "roughness": 0.35
+  },
+  "row 5": {
+   "color": [
+    0.85,
+    0.85,
+    0.8
+   ],
+   "color2": [
+    0.25,
+    0.45,
+    0.35
+   ],
+   "texture": "orbit",
+   "roughness": 0.35
+  },
+  "row 6": {
+   "color": [
+    0.55,
+    0.65,
+    0.9
+   ],
+   "color2": [
+    0.8,
+    0.5,
+    0.2
+   ],
+   "texture": "orbit",
+   "roughness": 0.35
+  },
+  "row 7": {
+   "color": [
+    0.9,
+    0.6,
+    0.3
+   ],
+   "color2": [
+    0.3,
+    0.6,
+    0.3
+   ],
+   "texture": "orbit",
+   "roughness": 0.35
+  },
+  "row 8": {
+   "color": [
+    0.7,
+    0.55,
+    0.85
+   ],
+   "color2": [
+    0.9,
+    0.8,
+    0.4
+   ],
+   "texture": "orbit",
+   "roughness": 0.35
+  },
+  "row 9": {
+   "color": [
+    0.95,
+    0.8,
+    0.3
+   ],
+   "color2": [
+    0.15,
+    0.2,
+    0.45
+   ],
+   "texture": "orbit",
+   "roughness": 0.35
+  }
+ },
+ "objects": [
+  {
+   "type": "plane",
+   "material": "floor",
+   "locked": true,
+   "name": "floor"
+  },
+  {
+   "type": "menger",
+   "iterations": 4,
+   "scale": 0.6,
+   "position": [
+    -11.2,
+    1.52,
+    0.0
+   ],
+   "material": "row 1",
+   "name": "menger",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -11.2,
+    0.45,
+    0.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "menger plinth"
+  },
+  {
+   "type": "mandelbulb",
+   "scale": 0.6,
+   "position": [
+    -8.0,
+    1.582,
+    0.0
+   ],
+   "material": "row 1",
+   "name": "mandelbulb",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -8.0,
+    0.45,
+    0.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "mandelbulb plinth"
+  },
+  {
+   "type": "mandelbox",
+   "fold_scale": -1.5,
+   "iterations": 12,
+   "scale": 0.25,
+   "position": [
+    -4.8,
+    1.42,
+    0.0
+   ],
+   "material": "row 1",
+   "name": "mandelbox",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -4.8,
+    0.45,
+    0.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "mandelbox plinth"
+  },
+  {
+   "type": "julia",
+   "scale": 0.6,
+   "position": [
+    -1.6,
+    1.498,
+    0.0
+   ],
+   "material": "row 1",
+   "name": "julia",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -1.6,
+    0.45,
+    0.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "julia plinth"
+  },
+  {
+   "type": "sierpinski",
+   "iterations": 8,
+   "scale": 0.6,
+   "position": [
+    1.6,
+    1.52,
+    0.0
+   ],
+   "material": "row 1",
+   "name": "sierpinski",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    1.6,
+    0.45,
+    0.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "sierpinski plinth"
+  },
+  {
+   "type": "intersection",
+   "scale": 0.5,
+   "children": [
+    {
+     "type": "box",
+     "size": [
+      4,
+      4,
+      4
+     ]
+    },
+    {
+     "type": "apollonian",
+     "fold": 1.1,
+     "iterations": 8
+    }
+   ],
+   "position": [
+    4.8,
+    1.92,
+    0.0
+   ],
+   "material": "row 1",
+   "name": "apollonian",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    4.8,
+    0.45,
+    0.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "apollonian plinth"
+  },
+  {
+   "type": "kifs",
+   "fold_scale": 3,
+   "offset": [
+    1,
+    1,
+    1
+   ],
+   "angles": [
+    12,
+    8,
+    0
+   ],
+   "iterations": 6,
+   "scale": 0.6,
+   "position": [
+    8.0,
+    1.5,
+    0.0
+   ],
+   "material": "row 1",
+   "name": "kifs",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    8.0,
+    0.45,
+    0.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "kifs plinth"
+  },
+  {
+   "type": "intersection",
+   "scale": 0.5,
+   "children": [
+    {
+     "type": "box",
+     "size": [
+      4,
+      4,
+      4
+     ]
+    },
+    {
+     "type": "kleinian",
+     "iterations": 8
+    }
+   ],
+   "position": [
+    11.2,
+    1.919,
+    0.0
+   ],
+   "material": "row 1",
+   "name": "kleinian",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    11.2,
+    0.45,
+    0.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "kleinian plinth"
+  },
+  {
+   "type": "amazing_surf",
+   "scale": 0.24,
+   "position": [
+    -6.4,
+    1.844,
+    -5.0
+   ],
+   "material": "row 2",
+   "name": "amazing_surf",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -6.4,
+    0.45,
+    -5.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "amazing_surf plinth"
+  },
+  {
+   "type": "kalibox",
+   "scale": 0.6,
+   "position": [
+    -3.2,
+    2.048,
+    -5.0
+   ],
+   "material": "row 2",
+   "name": "kalibox",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -3.2,
+    0.45,
+    -5.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "kalibox plinth"
+  },
+  {
+   "type": "mandalay",
+   "scale": 1.1,
+   "position": [
+    0.0,
+    2.02,
+    -5.0
+   ],
+   "material": "row 2",
+   "name": "mandalay",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    0.0,
+    0.45,
+    -5.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "mandalay plinth"
+  },
+  {
+   "type": "intersection",
+   "scale": 0.6,
+   "children": [
+    {
+     "type": "box",
+     "size": [
+      4,
+      4,
+      4
+     ]
+    },
+    {
+     "type": "kaliset"
+    }
+   ],
+   "position": [
+    3.2,
+    1.874,
+    -5.0
+   ],
+   "material": "row 2",
+   "name": "kaliset",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    3.2,
+    0.45,
+    -5.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "kaliset plinth"
+  },
+  {
+   "type": "bulbbox",
+   "scale": 0.22,
+   "position": [
+    6.4,
+    1.91,
+    -5.0
+   ],
+   "material": "row 2",
+   "name": "bulbbox",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    6.4,
+    0.45,
+    -5.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "bulbbox plinth"
+  },
+  {
+   "type": "juliabulb",
+   "scale": 0.6,
+   "position": [
+    -16.0,
+    1.544,
+    -10.0
+   ],
+   "material": "row 3",
+   "name": "juliabulb",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -16.0,
+    0.45,
+    -10.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "juliabulb plinth"
+  },
+  {
+   "type": "mandelbar",
+   "scale": 0.6,
+   "position": [
+    -12.8,
+    1.122,
+    -10.0
+   ],
+   "material": "row 3",
+   "name": "mandelbar",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -12.8,
+    0.45,
+    -10.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "mandelbar plinth"
+  },
+  {
+   "type": "burning_ship",
+   "scale": 0.6,
+   "position": [
+    -9.6,
+    1.674,
+    -10.0
+   ],
+   "material": "row 3",
+   "name": "burning_ship",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -9.6,
+    0.45,
+    -10.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "burning_ship plinth"
+  },
+  {
+   "type": "power2_bulb",
+   "scale": 0.6,
+   "position": [
+    -6.4,
+    1.519,
+    -10.0
+   ],
+   "material": "row 3",
+   "name": "power2_bulb",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -6.4,
+    0.45,
+    -10.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "power2_bulb plinth"
+  },
+  {
+   "type": "benesi",
+   "scale": 0.6,
+   "position": [
+    -3.2,
+    1.884,
+    -10.0
+   ],
+   "material": "row 3",
+   "name": "benesi",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -3.2,
+    0.45,
+    -10.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "benesi plinth"
+  },
+  {
+   "type": "kosalos",
+   "scale": 0.6,
+   "position": [
+    0.0,
+    1.369,
+    -10.0
+   ],
+   "material": "row 3",
+   "name": "kosalos",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    0.0,
+    0.45,
+    -10.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "kosalos plinth"
+  },
+  {
+   "type": "lambda_bulb",
+   "scale": 0.6,
+   "rotation": [
+    -50,
+    0,
+    0
+   ],
+   "position": [
+    3.2,
+    1.515,
+    -10.0
+   ],
+   "material": "row 3",
+   "name": "lambda_bulb",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    3.2,
+    0.45,
+    -10.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "lambda_bulb plinth"
+  },
+  {
+   "type": "sincos_bulb",
+   "scale": 0.6,
+   "position": [
+    6.4,
+    1.47,
+    -10.0
+   ],
+   "material": "row 3",
+   "name": "sincos_bulb",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    6.4,
+    0.45,
+    -10.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "sincos_bulb plinth"
+  },
+  {
+   "type": "riemann_sphere",
+   "scale": 0.9,
+   "position": [
+    9.6,
+    2.45,
+    -10.0
+   ],
+   "material": "row 3",
+   "name": "riemann_sphere",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    9.6,
+    0.45,
+    -10.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "riemann_sphere plinth"
+  },
+  {
+   "type": "riemann_hobold",
+   "scale": 0.9,
+   "rotation": [
+    -60,
+    40,
+    0
+   ],
+   "position": [
+    12.8,
+    1.789,
+    -10.0
+   ],
+   "material": "row 3",
+   "name": "riemann_hobold",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    12.8,
+    0.45,
+    -10.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "riemann_hobold plinth"
+  },
+  {
+   "type": "hopfbrot",
+   "scale": 0.75,
+   "position": [
+    16.0,
+    1.848,
+    -10.0
+   ],
+   "material": "row 3",
+   "name": "hopfbrot",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    16.0,
+    0.45,
+    -10.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "hopfbrot plinth"
+  },
+  {
+   "type": "quaternion",
+   "scale": 0.9,
+   "position": [
+    -16.0,
+    1.532,
+    -15.0
+   ],
+   "material": "row 4",
+   "name": "quaternion",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -16.0,
+    0.45,
+    -15.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "quaternion plinth"
+  },
+  {
+   "type": "tetrabrot",
+   "scale": 0.9,
+   "position": [
+    -12.8,
+    1.53,
+    -15.0
+   ],
+   "material": "row 4",
+   "name": "tetrabrot",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -12.8,
+    0.45,
+    -15.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "tetrabrot plinth"
+  },
+  {
+   "type": "hypercomplex",
+   "scale": 0.9,
+   "position": [
+    -9.6,
+    1.53,
+    -15.0
+   ],
+   "material": "row 4",
+   "name": "hypercomplex",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -9.6,
+    0.45,
+    -15.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "hypercomplex plinth"
+  },
+  {
+   "type": "aexion",
+   "scale": 0.6,
+   "position": [
+    -6.4,
+    1.805,
+    -15.0
+   ],
+   "material": "row 4",
+   "name": "aexion",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -6.4,
+    0.45,
+    -15.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "aexion plinth"
+  },
+  {
+   "type": "bristorbrot",
+   "scale": 0.6,
+   "position": [
+    -3.2,
+    1.523,
+    -15.0
+   ],
+   "material": "row 4",
+   "name": "bristorbrot",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -3.2,
+    0.45,
+    -15.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "bristorbrot plinth"
+  },
+  {
+   "type": "buffalo",
+   "scale": 0.6,
+   "position": [
+    0.0,
+    1.766,
+    -15.0
+   ],
+   "material": "row 4",
+   "name": "buffalo",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    0.0,
+    0.45,
+    -15.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "buffalo plinth"
+  },
+  {
+   "type": "mandelcup",
+   "scale": 0.6,
+   "position": [
+    3.2,
+    1.904,
+    -15.0
+   ],
+   "material": "row 4",
+   "name": "mandelcup",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    3.2,
+    0.45,
+    -15.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "mandelcup plinth"
+  },
+  {
+   "type": "quick_dudley",
+   "scale": 0.6,
+   "position": [
+    6.4,
+    1.442,
+    -15.0
+   ],
+   "material": "row 4",
+   "name": "quick_dudley",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    6.4,
+    0.45,
+    -15.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "quick_dudley plinth"
+  },
+  {
+   "type": "collatz",
+   "scale": 0.6,
+   "position": [
+    9.6,
+    1.667,
+    -15.0
+   ],
+   "material": "row 4",
+   "name": "collatz",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    9.6,
+    0.45,
+    -15.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "collatz plinth"
+  },
+  {
+   "type": "collatz_mod",
+   "scale": 0.6,
+   "position": [
+    12.8,
+    1.456,
+    -15.0
+   ],
+   "material": "row 4",
+   "name": "collatz_mod",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    12.8,
+    0.45,
+    -15.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "collatz_mod plinth"
+  },
+  {
+   "type": "newton",
+   "scale": 0.6,
+   "position": [
+    16.0,
+    1.567,
+    -15.0
+   ],
+   "material": "row 4",
+   "name": "newton",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    16.0,
+    0.45,
+    -15.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "newton plinth"
+  },
+  {
+   "type": "intersection",
+   "scale": 0.4,
+   "children": [
+    {
+     "type": "box",
+     "size": [
+      6,
+      1.5,
+      6
+     ]
+    },
+    {
+     "type": "jos_kleinian",
+     "position": [
+      0,
+      -0.55,
+      0
+     ]
+    }
+   ],
+   "position": [
+    -9.6,
+    1.22,
+    -20.0
+   ],
+   "material": "row 5",
+   "name": "jos_kleinian",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -9.6,
+    0.45,
+    -20.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "jos_kleinian plinth"
+  },
+  {
+   "type": "schottky",
+   "scale": 1.2,
+   "position": [
+    -6.4,
+    1.948,
+    -20.0
+   ],
+   "material": "row 5",
+   "name": "schottky",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -6.4,
+    0.45,
+    -20.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "schottky plinth"
+  },
+  {
+   "type": "intersection",
+   "scale": 0.5,
+   "children": [
+    {
+     "type": "box",
+     "size": [
+      4,
+      4,
+      4
+     ]
+    },
+    {
+     "type": "kleinian_mod"
+    }
+   ],
+   "position": [
+    -3.2,
+    1.92,
+    -20.0
+   ],
+   "material": "row 5",
+   "name": "kleinian_mod",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -3.2,
+    0.45,
+    -20.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "kleinian_mod plinth"
+  },
+  {
+   "type": "msltoe_donut",
+   "scale": 0.75,
+   "rotation": [
+    30,
+    0,
+    0
+   ],
+   "position": [
+    0.0,
+    1.45,
+    -20.0
+   ],
+   "material": "row 5",
+   "name": "msltoe_donut",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    0.0,
+    0.45,
+    -20.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "msltoe_donut plinth"
+  },
+  {
+   "type": "mandeltorus",
+   "scale": 0.45,
+   "rotation": [
+    25,
+    0,
+    0
+   ],
+   "position": [
+    3.2,
+    1.546,
+    -20.0
+   ],
+   "material": "row 5",
+   "name": "mandeltorus",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    3.2,
+    0.45,
+    -20.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "mandeltorus plinth"
+  },
+  {
+   "type": "spheretree",
+   "scale": 1.8,
+   "position": [
+    6.4,
+    2.0,
+    -20.0
+   ],
+   "material": "row 5",
+   "name": "spheretree",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    6.4,
+    0.45,
+    -20.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "spheretree plinth"
+  },
+  {
+   "type": "sphere_cluster",
+   "scale": 1.4,
+   "position": [
+    9.6,
+    1.586,
+    -20.0
+   ],
+   "material": "row 5",
+   "name": "sphere_cluster",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    9.6,
+    0.45,
+    -20.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "sphere_cluster plinth"
+  },
+  {
+   "type": "mosely",
+   "iterations": 4,
+   "rotation": [
+    45,
+    35.26,
+    30
+   ],
+   "scale": 0.6,
+   "position": [
+    -9.6,
+    1.655,
+    -25.0
+   ],
+   "material": "row 6",
+   "name": "mosely",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -9.6,
+    0.45,
+    -25.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "mosely plinth"
+  },
+  {
+   "type": "vicsek",
+   "iterations": 4,
+   "scale": 0.8,
+   "position": [
+    -6.4,
+    1.72,
+    -25.0
+   ],
+   "material": "row 6",
+   "name": "vicsek",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -6.4,
+    0.45,
+    -25.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "vicsek plinth"
+  },
+  {
+   "type": "cantor_dust",
+   "iterations": 4,
+   "rotation": [
+    30,
+    31,
+    16
+   ],
+   "scale": 0.6,
+   "position": [
+    -3.2,
+    1.652,
+    -25.0
+   ],
+   "material": "row 6",
+   "name": "cantor_dust",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -3.2,
+    0.45,
+    -25.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "cantor_dust plinth"
+  },
+  {
+   "type": "jerusalem",
+   "iterations": 5,
+   "rotation": [
+    30,
+    31,
+    16
+   ],
+   "scale": 0.6,
+   "position": [
+    0.0,
+    1.728,
+    -25.0
+   ],
+   "material": "row 6",
+   "name": "jerusalem",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    0.0,
+    0.45,
+    -25.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "jerusalem plinth"
+  },
+  {
+   "type": "polyhedral",
+   "rotation": [
+    20,
+    30,
+    0
+   ],
+   "scale": 1.0,
+   "position": [
+    3.2,
+    1.772,
+    -25.0
+   ],
+   "material": "row 6",
+   "name": "polyhedral",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    3.2,
+    0.45,
+    -25.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "polyhedral plinth"
+  },
+  {
+   "type": "koch",
+   "rotation": [
+    -35,
+    0,
+    90
+   ],
+   "scale": 1.2,
+   "position": [
+    6.4,
+    1.321,
+    -25.0
+   ],
+   "material": "row 6",
+   "name": "koch",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    6.4,
+    0.45,
+    -25.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "koch plinth"
+  },
+  {
+   "type": "knot",
+   "rotation": [
+    -30,
+    20,
+    0
+   ],
+   "scale": 0.6,
+   "position": [
+    9.6,
+    1.792,
+    -25.0
+   ],
+   "material": "row 6",
+   "name": "knot",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    9.6,
+    0.45,
+    -25.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "knot plinth"
+  },
+  {
+   "type": "menger4d",
+   "w": 0.2,
+   "scale": 0.6,
+   "position": [
+    -4.8,
+    1.52,
+    -30.0
+   ],
+   "material": "row 7",
+   "name": "menger4d",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -4.8,
+    0.45,
+    -30.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "menger4d plinth"
+  },
+  {
+   "type": "sierpinski4d",
+   "scale": 0.8,
+   "position": [
+    -1.6,
+    1.27,
+    -30.0
+   ],
+   "material": "row 7",
+   "name": "sierpinski4d",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -1.6,
+    0.45,
+    -30.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "sierpinski4d plinth"
+  },
+  {
+   "type": "mandelbox4d",
+   "w": 1.5,
+   "scale": 0.4,
+   "position": [
+    1.6,
+    1.72,
+    -30.0
+   ],
+   "material": "row 7",
+   "name": "mandelbox4d",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    1.6,
+    0.45,
+    -30.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "mandelbox4d plinth"
+  },
+  {
+   "type": "intersection",
+   "scale": 0.5,
+   "children": [
+    {
+     "type": "box",
+     "size": [
+      4,
+      3,
+      4
+     ]
+    },
+    {
+     "type": "kleinian4d",
+     "w": 0.3,
+     "iterations": 10
+    }
+   ],
+   "position": [
+    4.8,
+    1.67,
+    -30.0
+   ],
+   "material": "row 7",
+   "name": "kleinian4d",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    4.8,
+    0.45,
+    -30.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "kleinian4d plinth"
+  },
+  {
+   "type": "xenodreambuie",
+   "scale": 0.9,
+   "position": [
+    -11.2,
+    1.901,
+    -35.0
+   ],
+   "material": "row 8",
+   "name": "xenodreambuie",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -11.2,
+    0.45,
+    -35.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "xenodreambuie plinth"
+  },
+  {
+   "type": "pine_tree",
+   "scale": 0.6,
+   "position": [
+    -8.0,
+    1.82,
+    -35.0
+   ],
+   "material": "row 8",
+   "name": "pine_tree",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -8.0,
+    0.45,
+    -35.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "pine_tree plinth"
+  },
+  {
+   "type": "makin",
+   "scale": 0.6,
+   "position": [
+    -4.8,
+    1.563,
+    -35.0
+   ],
+   "material": "row 8",
+   "name": "makin",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -4.8,
+    0.45,
+    -35.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "makin plinth"
+  },
+  {
+   "type": "ides",
+   "scale": 0.4,
+   "position": [
+    -1.6,
+    1.506,
+    -35.0
+   ],
+   "material": "row 8",
+   "name": "ides",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -1.6,
+    0.45,
+    -35.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "ides plinth"
+  },
+  {
+   "type": "difs",
+   "scale": 0.5,
+   "position": [
+    1.6,
+    1.216,
+    -35.0
+   ],
+   "material": "row 8",
+   "name": "difs",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    1.6,
+    0.45,
+    -35.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "difs plinth"
+  },
+  {
+   "type": "msltoe_sym",
+   "scale": 0.6,
+   "position": [
+    4.8,
+    1.891,
+    -35.0
+   ],
+   "material": "row 8",
+   "name": "msltoe_sym",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    4.8,
+    0.45,
+    -35.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "msltoe_sym plinth"
+  },
+  {
+   "type": "eiffie",
+   "scale": 0.6,
+   "position": [
+    8.0,
+    2.12,
+    -35.0
+   ],
+   "material": "row 8",
+   "name": "eiffie",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    8.0,
+    0.45,
+    -35.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "eiffie plinth"
+  },
+  {
+   "type": "mandelnest",
+   "scale": 0.8,
+   "position": [
+    11.2,
+    1.708,
+    -35.0
+   ],
+   "material": "row 8",
+   "name": "mandelnest",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    11.2,
+    0.45,
+    -35.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "mandelnest plinth"
+  },
+  {
+   "type": "seifert_gasket",
+   "scale": 0.5,
+   "rotation": [
+    -60,
+    0,
+    0
+   ],
+   "position": [
+    -3.2,
+    1.542,
+    -40.0
+   ],
+   "material": "row 9",
+   "name": "seifert_gasket",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -3.2,
+    0.45,
+    -40.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "seifert_gasket plinth"
+  },
+  {
+   "type": "intersection",
+   "scale": 1.0,
+   "children": [
+    {
+     "type": "sphere",
+     "radius": 1.0
+    },
+    {
+     "type": "indra_cells"
+    }
+   ],
+   "position": [
+    0.0,
+    1.92,
+    -40.0
+   ],
+   "material": "row 9",
+   "name": "indra_cells",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    0.0,
+    0.45,
+    -40.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "indra_cells plinth"
+  },
+  {
+   "type": "intersection",
+   "scale": 0.4,
+   "position": [
+    3.2,
+    1.08,
+    -40.0
+   ],
+   "children": [
+    {
+     "type": "box",
+     "size": [
+      6,
+      4.4,
+      6
+     ],
+     "position": [
+      0,
+      1.8,
+      0
+     ]
+    },
+    {
+     "type": "zorich_pagodas"
+    }
+   ],
+   "material": "row 9",
+   "name": "zorich_pagodas",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    3.2,
+    0.45,
+    -40.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "zorich_pagodas plinth"
+  }
+ ]
+}

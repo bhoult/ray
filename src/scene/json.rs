@@ -65,6 +65,14 @@ pub struct EnvDef {
     pub fog_color: Option<[f32; 3]>,
     /// fog per metre (0 = none)
     pub fog_density: Option<f32>,
+    /// haze per metre (0 = none, the default): air the light shows in, lit
+    /// only where the sun (and the lamps) reach, so shadows fall through it
+    /// as shafts of light
+    pub haze_density: Option<f32>,
+    /// the height the haze reaches up to (none: everywhere)
+    pub haze_top: Option<f32>,
+    /// the haze's colour: what share of each colour it scatters (white)
+    pub haze_color: Option<[f32; 3]>,
     /// cloud cover 0..1 (0 = clear)
     pub clouds: Option<f32>,
     /// multiplies the sun's brightness (default 1)
@@ -219,7 +227,7 @@ impl Default for LightDef {
 /// One node of a shape tree: a shape plus the fields every node may carry.
 #[derive(Deserialize, Serialize, Debug, Clone)]
 pub struct NodeDef {
-    #[serde(flatten)]
+    #[serde(flatten, deserialize_with = "shape_or_formula", serialize_with = "shape_out")]
     pub shape: ShapeDef,
     pub position: Option<[f32; 3]>,
     /// Euler angles in degrees, applied x, then y, then z
@@ -247,6 +255,32 @@ pub struct NodeDef {
     /// skip this node
     #[serde(default)]
     pub disabled: bool,
+}
+
+/// A node's shape: one of the formula catalog's by its `type`, else a
+/// built-in one (whose errors then name the unknown type or the bad field,
+/// as serde words them).
+fn shape_or_formula<'de, D: serde::Deserializer<'de>>(d: D) -> Result<ShapeDef, D::Error> {
+    use serde::de::Error;
+    let map = serde_json::Map::<String, serde_json::Value>::deserialize(d)?;
+    let formula = map.get("type").and_then(serde_json::Value::as_str).and_then(crate::formulas::find).is_some();
+    let v = serde_json::Value::Object(map);
+    if formula {
+        serde_json::from_value(v).map(ShapeDef::Formula).map_err(D::Error::custom)
+    } else {
+        serde_json::from_value(v).map_err(|e| {
+            let e = e.to_string();
+            // (serde lists the built-in types only)
+            if e.starts_with("unknown variant") { D::Error::custom(format!("{e}, or one of the fractal catalog's (docs/FRACTALS.md)")) } else { D::Error::custom(e) }
+        })
+    }
+}
+
+fn shape_out<S: serde::Serializer>(shape: &ShapeDef, s: S) -> Result<S::Ok, S::Error> {
+    match shape {
+        ShapeDef::Formula(f) => f.serialize(s),
+        other => other.serialize(s),
+    }
 }
 
 /// Radius of the sphere an old point light becomes.
@@ -623,6 +657,11 @@ pub enum ShapeDef {
         #[serde(default = "ones")]
         stretch: [f32; 3],
     },
+    /// one of the formula catalog's fractals (formulas/mod.rs): its
+    /// `type` names it (read by shape_or_formula and written by shape_out,
+    /// its fields beside the node's like any shape's)
+    #[serde(skip)]
+    Formula(crate::formulas::FormulaNode),
 }
 
 /// A whole number, also when written with a fraction (4.0 or 3.6 gives 4):

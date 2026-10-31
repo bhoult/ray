@@ -118,24 +118,18 @@ fn fit_knots(n: &mut Value) -> Option<String> {
     (!out.is_empty()).then(|| format!("{} no longer fitted: back to even spacing", out.join(" and ")))
 }
 
-/// Whether a field has a range of its own (a slider edits it), rather than
-/// an open-ended size or position (dragging its box does).
-fn bounded(key: &str) -> bool {
-    let (lo, hi) = schema::field_range(key);
-    lo > -1e8 && hi < 1e5
-}
-
 /// Edits one field value of a node of type `ty`; returns whether it changed.
 fn edit_value(ui: &mut egui::Ui, ty: &str, key: &str, v: &mut Value) -> bool {
     let tip = schema::field_desc(ty, key);
-    let (lo, hi) = schema::field_range(key);
+    let (lo, hi) = schema::field_range_for(ty, key);
+    let ranged = lo > -1e8 && hi < 1e5;
     let optional = OPTIONAL.contains(&key);
     let mut clear = false;
-    let integer = INTEGER.contains(&key);
+    let integer = INTEGER.contains(&key) || schema::formula_param(ty, key).is_some_and(|p| p.whole);
     let changed = match v {
         Value::Number(n) if integer => {
             let mut x = n.as_f64().unwrap_or(0.0).round() as i64;
-            let c = if bounded(key) {
+            let c = if ranged {
                 ui.add(egui::Slider::new(&mut x, lo as i64..=hi as i64).logarithmic(LOG.contains(&key))).on_hover_text(tip).changed()
             } else {
                 // (every integer field is a count or a seed: never negative)
@@ -146,7 +140,7 @@ fn edit_value(ui: &mut egui::Ui, ty: &str, key: &str, v: &mut Value) -> bool {
             }
             c
         }
-        Value::Number(n) if bounded(key) => {
+        Value::Number(n) if ranged => {
             let mut x = n.as_f64().unwrap_or(0.0);
             let c = ui.add(egui::Slider::new(&mut x, lo..=hi).logarithmic(LOG.contains(&key))).on_hover_text(tip).changed();
             if c {
@@ -366,11 +360,16 @@ fn profile(ui: &mut egui::Ui, a: &mut Vec<Value>, tip: &str) -> bool {
 
 /// A row of the object list: the node at `path` in top-level object `top`
 /// (an empty path: the object), how deep, its name and type (the type alone
-/// as the name when it has none), whether it is hidden, has parts and shows
-/// them, and can be hidden by itself.
+/// as the name when it has none), whether it is hidden, has rows under it
+/// and shows them, and can be hidden by itself.
 struct OutlineRow {
     top: usize,
     path: Vec<usize>,
+    /// the whole shape it stands for, whose tick shows or hides it and whose
+    /// cost its bar is: its own node, or for the shape at the core of
+    /// modifiers the outermost of them; none for those modifiers (they go
+    /// with the shape they modify)
+    whole: Option<Vec<usize>>,
     depth: usize,
     name: String,
     ty: String,
@@ -380,35 +379,112 @@ struct OutlineRow {
     can_hide: bool,
 }
 
+/// What modifier `n` changes (its one child); none when it is not a modifier.
+fn modified(n: &Value) -> Option<&Value> {
+    let ty = n.get("type").and_then(Value::as_str).unwrap_or("");
+    n.get("child").filter(|_| schema::shape(ty).is_some_and(|s| s.category == "Modify"))
+}
+
+/// A node's name and type for its row: the type alone as the name when it
+/// has none.
+fn row_label(name: Option<&str>, ty: &str) -> (String, String) {
+    match name {
+        Some(name) => (name.to_string(), ty.to_string()),
+        None => (ty.to_string(), String::new()),
+    }
+}
+
 /// The rows of the object list: each object, and under the open ones their
-/// parts and members, depth first.
+/// parts and members, depth first. A modifier shows under what it modifies,
+/// the other way round from the document (twist(bend(box)) is box ▸ bend ▸
+/// twist), so an object that is modified heads its rows with the shape at
+/// the core of its modifiers.
 fn outline_rows(objects: &[Value], is_open: &dyn Fn(usize, &[usize]) -> bool) -> Vec<OutlineRow> {
-    fn walk(n: &Value, top: usize, path: Vec<usize>, can_hide: bool, is_open: &dyn Fn(usize, &[usize]) -> bool, out: &mut Vec<OutlineRow>) {
-        let ty = n.get("type").and_then(Value::as_str).unwrap_or("?").to_string();
-        let (name, ty) = match n.get("name").and_then(Value::as_str) {
-            Some(name) => (name.to_string(), ty),
-            None => (ty, String::new()),
-        };
-        let kids = doc::children(n);
-        let open = !kids.is_empty() && is_open(top, &path);
-        let depth = path.len();
+    /// The rows of node `n` at `path`, `depth` deep: the shape at the core of
+    /// its modifiers (itself, when it is not one), its parts or members, then
+    /// the modifiers from the innermost out, each under the one before.
+    fn walk(n: &Value, top: usize, path: Vec<usize>, depth: usize, can_hide: bool, is_open: &dyn Fn(usize, &[usize]) -> bool, out: &mut Vec<OutlineRow>) {
+        // down the modifiers (outermost first) to the shape they change
+        let mut mods = Vec::new();
+        let (mut base, mut at) = (n, path.clone());
+        while let Some(c) = modified(base) {
+            mods.push((base, at.clone()));
+            at.push(0);
+            base = c;
+        }
+        let ty = base.get("type").and_then(Value::as_str).unwrap_or("?");
+        // (the object's name is on its outermost node)
+        let (name, ty) = row_label(n.get("name").and_then(Value::as_str).or_else(|| base.get("name").and_then(Value::as_str)), ty);
+        let parts = doc::children(base);
+        let kids = !parts.is_empty() || !mods.is_empty();
+        let open = kids && is_open(top, &at);
+        // (the whole is hidden: the outermost node)
         let hidden = n.get("disabled").and_then(Value::as_bool).unwrap_or(false);
-        // (a list of them: a group's or a boolean's; a modifier has one child)
-        let many = n.get("children").is_some();
-        out.push(OutlineRow { top, path: path.clone(), depth, name, ty, hidden, kids: !kids.is_empty(), open, can_hide });
-        if open {
-            for (k, c) in kids.into_iter().enumerate() {
-                let mut p = path.clone();
-                p.push(k);
-                walk(c, top, p, many, is_open, out);
+        // (a list of them: a group's or a boolean's; an emitter has one object)
+        let many = base.get("children").is_some();
+        out.push(OutlineRow { top, path: at.clone(), whole: Some(path), depth, name, ty, hidden, kids, open, can_hide });
+        if !open {
+            return;
+        }
+        for (k, c) in parts.into_iter().enumerate() {
+            let mut p = at.clone();
+            p.push(k);
+            walk(c, top, p, depth + 1, many, is_open, out);
+        }
+        // (a modifier cannot be hidden on its own, as the one child of the
+        // one outside it could not: the shape at their core, ticked, shows or
+        // hides them all)
+        for (k, (m, p)) in mods.iter().enumerate().rev() {
+            let ty = m.get("type").and_then(Value::as_str).unwrap_or("?");
+            // (the outermost's name heads the rows)
+            let (name, ty) = row_label(m.get("name").and_then(Value::as_str).filter(|_| k > 0), ty);
+            let open = k > 0 && is_open(top, p);
+            out.push(OutlineRow { top, path: p.clone(), whole: None, depth: depth + mods.len() - k, name, ty, hidden, kids: k > 0, open, can_hide: false });
+            if !open {
+                break;
             }
         }
     }
     let mut out = Vec::new();
     for (i, n) in objects.iter().enumerate() {
-        walk(n, i, Vec::new(), true, is_open, &mut out);
+        walk(n, i, Vec::new(), 0, true, is_open, &mut out);
     }
     out
+}
+
+/// The node whose row the node at `path` of `objects[top]` shows under in
+/// the object list (its doc path; none for a row at the top): a modifier's
+/// is what it modifies, its child; anything else's is the node above the
+/// modifiers it is at the core of (its doc parent, when it has none).
+fn outline_parent(objects: &[Value], top: usize, path: &[usize]) -> Option<Vec<usize>> {
+    let mut n = objects.get(top)?;
+    let mut nodes = vec![n];
+    for &k in path {
+        n = doc::child(n, k)?;
+        nodes.push(n);
+    }
+    if modified(n).is_some() {
+        return Some([path, &[0]].concat());
+    }
+    // (up past the modifiers it is the core of)
+    let mut up = path.len();
+    while up > 0 && modified(nodes[up - 1]).is_some() {
+        up -= 1;
+    }
+    (up > 0).then(|| path[..up - 1].to_vec())
+}
+
+/// The rows to open for the node at `path` to show in the object list: its
+/// row's ancestors there (doc paths), the outermost first.
+fn outline_ancestors(objects: &[Value], top: usize, path: &[usize]) -> Vec<Vec<usize>> {
+    let mut up = Vec::new();
+    let mut at = path.to_vec();
+    while let Some(p) = outline_parent(objects, top, &at) {
+        up.push(p.clone());
+        at = p;
+    }
+    up.reverse();
+    up
 }
 
 /// How many nodes in `n`'s tree use the scene material `name`.
@@ -435,10 +511,24 @@ impl App {
     pub(super) fn add_menu(&mut self, ui: &mut egui::Ui) {
         for cat in schema::CATEGORIES {
             ui.menu_button(cat, |ui| {
-                for s in schema::SHAPES.iter().filter(|s| s.category == cat) {
+                for s in schema::shapes().iter().filter(|s| s.category == cat) {
                     if ui.button(s.ty).on_hover_text(s.desc).clicked() {
                         self.add_object(s.ty);
                         ui.close();
+                    }
+                }
+                // (the formula catalog's families, a menu each)
+                if cat == "Fractals" {
+                    ui.separator();
+                    for fam in crate::formulas::CATEGORIES {
+                        ui.menu_button(schema::family_label(fam), |ui| {
+                            for s in schema::shapes().iter().filter(|s| s.category == fam) {
+                                if ui.button(s.ty).on_hover_text(s.desc).clicked() {
+                                    self.add_object(s.ty);
+                                    ui.close();
+                                }
+                            }
+                        });
                     }
                 }
                 if cat == "Landscape"
@@ -501,9 +591,10 @@ impl App {
             }
         }
         // the rows that show: every top-level object, and the nodes of the
-        // open ones (groups' members, booleans' and modifiers' children),
-        // indented as a tree. A selection (a click in the view too) opens its
-        // ancestors once, so that it shows; they can be closed again
+        // open ones (groups' members, booleans' parts, a shape's modifiers
+        // under it), indented as a tree. A selection (a click in the view
+        // too) opens the rows above it once, so that it shows; they can be
+        // closed again
         let ctx = ui.ctx().clone();
         let open_id = |top: usize, path: &[usize]| egui::Id::new(("outline", top, path.to_vec()));
         let revealed = egui::Id::new("outline revealed");
@@ -511,8 +602,8 @@ impl App {
         if let Selection::Node { top, sub } = &self.sel
             && ctx.data(|d| d.get_temp::<Selection>(revealed)).as_ref() != Some(&self.sel)
         {
-            for k in 0..sub.len() {
-                ctx.data_mut(|d| d.insert_temp(open_id(*top, &sub[..k]), true));
+            for p in outline_ancestors(self.doc.objects(), *top, sub) {
+                ctx.data_mut(|d| d.insert_temp(open_id(*top, &p), true));
             }
             ctx.data_mut(|d| d.insert_temp(revealed, self.sel.clone()));
             reveal = true;
@@ -524,7 +615,7 @@ impl App {
         ui.add_space(4.0);
         ui.horizontal(|ui| {
             ui.label(egui::RichText::new(format!("Objects ({})", self.doc.objects().len())).strong())
-                .on_hover_text("Top-level objects, and inside them (▶ opens one) the members of groups and the parts of booleans and modifiers: click one to edit it, tick to show or hide it.");
+                .on_hover_text("Top-level objects, and inside them (▶ opens one) the members of groups, the parts of booleans and the modifiers of a shape, each modifier under what it modifies: click one to edit it, tick to show or hide it (a modifier goes with its shape).");
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 ui.add_space(4.0);
                 style::note(ui, "CPU cost").on_hover_text("Each object's share of the last frame's CPU time (intersections, shadows, AO, normals); a group's members each have their own.");
@@ -551,16 +642,20 @@ impl App {
                     if r.kids {
                         let col = if resp.hovered() { ui.visuals().strong_text_color() } else { ui.visuals().weak_text_color() };
                         ui.painter().text(rect.center(), egui::Align2::CENTER_CENTER, if r.open { "▼" } else { "▶" }, egui::FontId::proportional(10.0), col);
-                        if resp.on_hover_text(if r.open { "Close: hide its parts" } else { "Open: show its parts" }).clicked() {
+                        if resp.on_hover_text(if r.open { "Close: hide its parts and modifiers" } else { "Open: show its parts and modifiers" }).clicked() {
                             flip = Some((r.top, r.path.clone(), !r.open));
                         }
                     }
-                    // (a modifier's one child cannot be hidden on its own: the
-                    // modifier would have nothing to change)
+                    // (a shape's tick shows or hides it with its modifiers:
+                    // they have none of their own)
                     let mut on = !r.hidden;
-                    let tip = if r.path.is_empty() { "Show or hide this object (hidden objects are not compiled)." } else { "Show or hide this part (left out when hidden)." };
-                    if ui.add_enabled(r.can_hide, egui::Checkbox::without_text(&mut on)).on_hover_text(tip).changed() {
-                        toggle = Some((r.top, r.path.clone()));
+                    let object = r.whole.as_ref().is_some_and(Vec::is_empty);
+                    let tip = if object { "Show or hide this object (hidden objects are not compiled)." } else { "Show or hide this part (left out when hidden)." };
+                    let why = if r.whole.is_none() { "A modifier shows and hides with the shape it modifies: tick that one." } else { "What an emitter sends out shows and hides with the emitter." };
+                    if ui.add_enabled(r.can_hide, egui::Checkbox::without_text(&mut on)).on_hover_text(tip).on_disabled_hover_text(why).changed()
+                        && let Some(w) = &r.whole
+                    {
+                        toggle = Some((r.top, w.clone()));
                     }
                     let gap = ui.spacing().item_spacing.x;
                     let name_w = ui.available_width() - bar_w - pct_w - gap * 2.0;
@@ -568,8 +663,13 @@ impl App {
                     let here = Selection::Node { top: r.top, sub: r.path.clone() };
                     let resp = style::list_row(ui, self.sel == here, &r.name, &r.ty, name_w, r.hidden);
                     // the cost: an object's (its members' summed), a member's own,
-                    // or, for a part of a shape, its share of the shape's
-                    let share = if r.path.is_empty() { cost.get(r.top).copied().flatten().map(|c| c.0) } else { member_cost.get(&(r.top, r.path.clone())).copied() };
+                    // or, for a part of a shape (a modifier too), its share of
+                    // the shape's
+                    let share = match &r.whole {
+                        Some(w) if w.is_empty() => cost.get(r.top).copied().flatten().map(|c| c.0),
+                        Some(w) => member_cost.get(&(r.top, w.clone())).copied(),
+                        None => None,
+                    };
                     let (bar, _) = ui.allocate_exact_size(egui::vec2(bar_w, 8.0), egui::Sense::hover());
                     let mut hover = desc.to_string();
                     if let Some(share) = share {
@@ -584,7 +684,7 @@ impl App {
                             ui.label(egui::RichText::new(format!("{:.1}%", share * 100.0)).small());
                         });
                         hover.push_str(&format!("\n\n{:.1}% of the last frame's CPU time", share * 100.0));
-                        if r.path.is_empty()
+                        if object
                             && let Some((_, evals, est)) = cost.get(r.top).copied().flatten()
                         {
                             hover.push_str(&format!("\n{evals} evaluations of 8 points\n≈{est:.0} cycles per evaluation (estimate)"));
@@ -712,7 +812,8 @@ impl App {
                     let cats: &[&str] = if group { &["Primitives", "Surfaces", "Fractals", "Blobs", "Combine", "Modify", "Landscape"] } else { &["Primitives", "Fractals", "Blobs", "Combine", "Modify"] };
                     for &cat in cats {
                         ui.menu_button(cat, |ui| {
-                            for s in schema::SHAPES.iter().filter(|s| s.category == cat && (group || s.ty != "group")) {
+                            let fams = if cat == "Fractals" { &crate::formulas::CATEGORIES[..] } else { &[] };
+                            for s in schema::shapes().iter().filter(|s| (s.category == cat || fams.contains(&s.category)) && (group || s.ty != "group")) {
                                 if ui.button(s.ty).on_hover_text(s.desc).clicked() {
                                     if let Ok(v) = serde_json::from_str(s.new)
                                         && let Some(sel) = self.doc.add_child(top, &sub, v)
@@ -1264,6 +1365,30 @@ impl App {
                 }
             });
         });
+        style::section(ui, "env haze", "Haze", true, |ui| {
+            style::props(ui, "env haze", |ui| {
+                let mut haze = env.haze;
+                let tip = "Air the light shows in (per metre: by 1, half the light is left after a metre): lit only where the sun, the sky and lamps reach, so shadows fall through it and light comes through gaps in shafts. 0 = none. Thick haze suits small things (a walker centimetres tall wants tens); the render settings' haze strength, detail and contrast act on it.";
+                if style::slider(ui, "haze density", tip, &mut haze, 0.0..=100.0, true) {
+                    set(&mut self.doc, "haze_density", (haze > 0.0).then(|| json!(round(haze as f64))), false);
+                }
+                let top = e.get("haze_top").and_then(Value::as_f64);
+                let tip = "The height (metres) the haze reaches up to: below it the air is hazy, above it clear, so the sky shows through gaps above. Unticked: everywhere.";
+                style::row(ui, "haze top", tip, |ui| {
+                    ui.horizontal(|ui| {
+                        let mut on = top.is_some();
+                        if ui.checkbox(&mut on, "").on_hover_text(tip).changed() {
+                            let at = (self.cam.exact()[1] + 1.0).max(0.0);
+                            set(&mut self.doc, "haze_top", on.then(|| json!(round(at))), true);
+                        }
+                        let mut y = top.unwrap_or(10.0);
+                        if ui.add_enabled(on, egui::DragValue::new(&mut y).speed(0.01).suffix(" m")).on_hover_text(tip).changed() {
+                            set(&mut self.doc, "haze_top", Some(json!(round(y))), false);
+                        }
+                    });
+                });
+            });
+        });
         style::section(ui, "env world", "World", true, |ui| {
             style::props(ui, "env world", |ui| {
                 let tip = "How hard things fall, m/s²: dropped objects, emitted copies, floating in water, and game mode's walker (its jump and rocket are a person's on Earth, so they carry further where gravity is weaker). Earth 9.81, Mars 3.71, the Moon 1.62; 0: nothing falls.";
@@ -1289,8 +1414,9 @@ impl App {
                 for (key, name, tip, col) in [
                     ("sky_zenith", "sky overhead", "Sky colour straight up (at noon, with a time of day).", base[0]),
                     ("sky_horizon", "sky at horizon", "Sky colour at the horizon (at noon, with a time of day).", base[1]),
-                    ("fog_color", "fog", "Colour of the haze (by day: the night and a starry or no sky darken it).", base[2]),
+                    ("fog_color", "fog", "Colour of the distance fog (by day: the night and a starry or no sky darken it).", base[2]),
                     ("ambient", "ambient light", "Colour of the sky light filling shadows (direct mode; at noon, with a time of day).", base[3]),
+                    ("haze_color", "haze", "The share of each colour the haze scatters: white is the light's own colour; warm for dust, blue for mist.", env.haze_col),
                 ] {
                     let mut c = col.to_array();
                     if style::colour(ui, name, tip, &mut c) {
@@ -1328,10 +1454,16 @@ impl App {
 mod tests {
     use super::*;
 
+    /// The rows' (top, path, depth).
+    fn layout(rows: &[OutlineRow]) -> Vec<(usize, Vec<usize>, usize)> {
+        rows.iter().map(|r| (r.top, r.path.clone(), r.depth)).collect()
+    }
+
     /// The object list's tree: every object; under an open one its parts
-    /// (a boolean's children, a modifier's child) and members, a level
-    /// deeper; a closed one's stay hidden. A boolean's or group's parts can
-    /// be hidden one by one, a modifier's one child cannot.
+    /// (a boolean's children) and members, a level deeper, and a shape's
+    /// modifier under the shape; a closed one's stay hidden. A boolean's or
+    /// group's parts can be hidden one by one, a modifier cannot: its shape's
+    /// tick hides the two.
     #[test]
     fn the_object_list_is_a_tree() {
         let objects = vec![
@@ -1342,16 +1474,99 @@ mod tests {
             ]}),
             json!({ "type": "group", "name": "pair", "children": [{ "type": "box" }, { "type": "box" }] }),
         ];
-        let open = |top: usize, path: &[usize]| top == 1 && (path.is_empty() || path == [1]);
+        let open = |top: usize, path: &[usize]| top == 1 && (path.is_empty() || path == [1, 0]);
         let rows = outline_rows(&objects, &open);
-        let seen: Vec<(usize, Vec<usize>, usize)> = rows.iter().map(|r| (r.top, r.path.clone(), r.depth)).collect();
-        assert_eq!(seen, vec![(0, vec![], 0), (1, vec![], 0), (1, vec![0], 1), (1, vec![1], 1), (1, vec![1, 0], 2), (2, vec![], 0)]);
+        assert_eq!(layout(&rows), vec![(0, vec![], 0), (1, vec![], 0), (1, vec![0], 1), (1, vec![1, 0], 1), (1, vec![1], 2), (2, vec![], 0)]);
         assert_eq!((rows[0].name.as_str(), rows[0].ty.as_str(), rows[0].kids), ("ball", "sphere", false));
         assert_eq!((rows[1].name.as_str(), rows[1].kids, rows[1].open), ("union", true, true));
         assert!(rows[2].hidden && rows[2].can_hide, "a boolean's part: hidden, and can be shown again");
+        // the twisted sphere: the sphere, standing for the twist (the union's part)
+        assert_eq!((rows[3].name.as_str(), rows[3].whole.clone()), ("sphere", Some(vec![1])));
         assert!(rows[3].kids && rows[3].open && rows[3].can_hide);
-        assert!(!rows[4].can_hide, "a modifier's only child cannot be hidden by itself");
+        assert_eq!((rows[4].name.as_str(), rows[4].kids), ("twist", false));
+        assert!(!rows[4].can_hide && rows[4].whole.is_none(), "a modifier cannot be hidden by itself");
         assert!(rows[5].kids && !rows[5].open, "a closed group keeps its members out of the list");
+    }
+
+    /// Two modifiers, twist(bend(box)): the box heads the object (with its
+    /// name, from the twist), the bend under it, the twist under that; each
+    /// row is its own node. The box's tick is the object's.
+    #[test]
+    fn modifiers_go_under_what_they_modify() {
+        let objects = vec![json!({ "type": "twist", "name": "spiral", "disabled": true, "child": { "type": "bend", "child": { "type": "box" } } })];
+        let rows = outline_rows(&objects, &|_, _| true);
+        assert_eq!(layout(&rows), vec![(0, vec![0, 0], 0), (0, vec![0], 1), (0, vec![], 2)]);
+        assert_eq!((rows[0].name.as_str(), rows[0].ty.as_str()), ("spiral", "box"));
+        assert_eq!((rows[1].name.as_str(), rows[2].name.as_str(), rows[2].ty.as_str()), ("bend", "twist", ""));
+        assert!(rows[0].can_hide && rows[0].whole == Some(vec![]) && rows.iter().all(|r| r.hidden), "the box stands for the object, hidden");
+        assert!(rows[1].kids && !rows[2].kids && rows[1..].iter().all(|r| !r.can_hide && r.whole.is_none()));
+        // closed: the box alone; the bend closed: not the twist
+        assert_eq!(layout(&outline_rows(&objects, &|_, _| false)), vec![(0, vec![0, 0], 0)]);
+        assert_eq!(layout(&outline_rows(&objects, &|_, p: &[usize]| p != [0])).len(), 2);
+        // a selection opens the rows above it: the twist's are the box and the bend
+        assert_eq!(outline_ancestors(&objects, 0, &[]), vec![vec![0, 0], vec![0]]);
+        assert_eq!(outline_ancestors(&objects, 0, &[0]), vec![vec![0, 0]]);
+        assert!(outline_ancestors(&objects, 0, &[0, 0]).is_empty());
+    }
+
+    /// A modifier over a union: the union heads it, with its parts and then
+    /// the modifier under it; and the same in a group, a level down.
+    #[test]
+    fn a_modified_union_lists_its_parts_then_its_modifier() {
+        let shelled = json!({ "type": "shell", "child": { "type": "union", "children": [{ "type": "sphere" }, { "type": "box" }] } });
+        let objects = vec![shelled.clone(), json!({ "type": "group", "children": [{ "type": "box" }, shelled] })];
+        let rows = outline_rows(&objects, &|_, _| true);
+        #[rustfmt::skip]
+        assert_eq!(layout(&rows), vec![
+            (0, vec![0], 0), (0, vec![0, 0], 1), (0, vec![0, 1], 1), (0, vec![], 1),
+            (1, vec![], 0), (1, vec![0], 1), (1, vec![1, 0], 1), (1, vec![1, 0, 0], 2), (1, vec![1, 0, 1], 2), (1, vec![1], 2),
+        ]);
+        assert_eq!((rows[0].name.as_str(), rows[0].ty.as_str(), rows[3].name.as_str()), ("union", "", "shell"));
+        assert!(rows[1].can_hide && rows[2].can_hide && !rows[3].can_hide, "the union's parts can be hidden, the shell not by itself");
+        assert!(rows[6].can_hide && rows[6].whole == Some(vec![1]), "the group member's tick: the shell's");
+        assert_eq!(outline_ancestors(&objects, 0, &[0, 1]), vec![vec![0]]);
+        assert_eq!(outline_ancestors(&objects, 0, &[]), vec![vec![0]]);
+        assert_eq!(outline_ancestors(&objects, 1, &[1]), vec![vec![], vec![1, 0]]);
+        assert_eq!(outline_ancestors(&objects, 1, &[1, 0, 1]), vec![vec![], vec![1, 0]]);
+        assert_eq!(outline_ancestors(&objects, 1, &[0]), vec![Vec::<usize>::new()]);
+    }
+
+    /// Every node of every scene shows in the object list once, opened all
+    /// the way, and a selection of any opens the rows above it (each of which
+    /// is a row too).
+    #[test]
+    fn every_node_has_one_row() {
+        let mut chains = 0;
+        for entry in std::fs::read_dir("saves").unwrap().flatten() {
+            let Ok(v) = serde_json::from_str::<Value>(&std::fs::read_to_string(entry.path()).unwrap_or_default()) else { continue };
+            let Some(objects) = v.get("objects").and_then(Value::as_array) else { continue };
+            let rows = outline_rows(objects, &|_, _| true);
+            chains += rows.iter().filter(|r| r.whole.is_none()).count();
+            let mut doc_paths = Vec::new();
+            fn all(n: &Value, top: usize, path: Vec<usize>, out: &mut Vec<(usize, Vec<usize>)>) {
+                for (k, c) in doc::children(n).into_iter().enumerate() {
+                    all(c, top, [&path[..], &[k]].concat(), out);
+                }
+                out.push((top, path));
+            }
+            for (i, o) in objects.iter().enumerate() {
+                all(o, i, Vec::new(), &mut doc_paths);
+            }
+            let mut seen: Vec<(usize, Vec<usize>)> = rows.iter().map(|r| (r.top, r.path.clone())).collect();
+            seen.sort();
+            doc_paths.sort();
+            assert_eq!(seen, doc_paths, "{}", entry.path().display());
+            for (k, r) in rows.iter().enumerate() {
+                let up = outline_ancestors(objects, r.top, &r.path);
+                assert_eq!(up.len(), r.depth, "{}: {:?}", entry.path().display(), r.path);
+                // (the nearest is the row above it at one level up)
+                if let Some(p) = up.last() {
+                    let parent = rows[..k].iter().rev().find(|q| q.depth + 1 == r.depth).unwrap();
+                    assert_eq!((parent.top, &parent.path), (r.top, p));
+                }
+            }
+        }
+        assert!(chains > 3, "the scenes have modifiers");
     }
 
     /// The inspector's caches hold while a node only moves.

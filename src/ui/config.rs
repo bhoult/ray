@@ -33,6 +33,11 @@ pub struct Config {
     /// screenshots are the whole window as drawn (panels, menus), not the
     /// 3D view alone
     pub screenshot_interface: bool,
+    /// screenshots of the view are rendered whole first, as a steady
+    /// recording's frames are: this many samples a pixel (0: until the image
+    /// converges), at this size ([0, 0]: the view's, at full resolution)
+    pub screenshot_samples: u32,
+    pub screenshot_size: [u32; 2],
     /// the quick save slot (F5, F9)
     pub quick_save: String,
     /// mouse look, times the usual speed; and up and down the other way
@@ -58,6 +63,8 @@ impl Default for Config {
             video_size: [1920, 1080],
             screenshots: format!("{}/ray", desktop_dir("PICTURES", "Pictures")),
             screenshot_interface: false,
+            screenshot_samples: 256,
+            screenshot_size: [0, 0],
             quick_save: "saves/quicksave.json".into(),
             look_speed: 1.0,
             invert_look: false,
@@ -198,6 +205,18 @@ impl App {
             style::props(ui, "prefs files", |ui| {
                 folder(ui, "screenshots folder", "Where screenshots (P, F12) go: a ray folder in your Pictures folder unless set otherwise (~ is your home folder; a relative folder is from where ray was started: ray's own folder from the desktop launcher).", &mut c.screenshots);
                 style::check(ui, "screenshots include the interface", "Screenshots are the whole window as you see it (panels, menus, the game-mode gauge), not the 3D view alone. Also in the File menu.", &mut c.screenshot_interface);
+                if !c.screenshot_interface {
+                    let sizes: [(&str, [u32; 2]); 5] = [("the view's", [0, 0]), ("1280 x 720", [1280, 720]), ("1920 x 1080", [1920, 1080]), ("2560 x 1440", [2560, 1440]), ("3840 x 2160", [3840, 2160])];
+                    let shown = sizes.iter().find(|(_, v)| *v == c.screenshot_size).map_or_else(|| format!("{} x {}", c.screenshot_size[0], c.screenshot_size[1]), |(n, _)| n.to_string());
+                    style::row(ui, "screenshot size", "Screenshots are rendered whole at this size, whatever the window's (the view's: as big as the view is, at full resolution).", |ui| {
+                        egui::ComboBox::from_id_salt("screenshot size").selected_text(shown).show_ui(ui, |ui| {
+                            for (name, v) in sizes {
+                                ui.selectable_value(&mut c.screenshot_size, v, name);
+                            }
+                        });
+                    });
+                    style::slider(ui, "screenshot samples", "A screenshot waits for this many samples a pixel before it is saved, the scene held still meanwhile (more is smoother and slower; path tracing wants hundreds; 0: until the image converges at the render settings' max samples).", &mut c.screenshot_samples, 0..=4096, true);
+                }
                 style::row(ui, "quick save file", "The slot F5 saves to and F9 loads: the scene, the camera and every setting (~ is your home folder; a relative path is from where ray was started).", |ui| {
                     ui.horizontal(|ui| {
                         ui.add(egui::TextEdit::singleline(&mut c.quick_save).desired_width(200.0));

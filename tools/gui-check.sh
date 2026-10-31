@@ -33,8 +33,9 @@ run() {
 size() { python3 -c "from PIL import Image; import sys; print('%dx%d' % Image.open(sys.argv[1]).size)" "$1"; }
 
 # screenshots: the view alone, then the whole window
-prefs "$tmp/view"
-run shot-view saves/cornell.json 30 RAY_TEST_CONFIG="$tmp/view" RAY_TEST_SCREENSHOT=20
+# (the view rendered whole first: a few samples, so it is quick)
+prefs "$tmp/view" ', "screenshot_samples": 8'
+run shot-view saves/cornell.json 90 RAY_TEST_CONFIG="$tmp/view" RAY_TEST_SCREENSHOT=20
 f=$(ls "$tmp"/view/shots/*.png 2>/dev/null | head -1)
 if [ -n "$f" ] && [ "$(size "$f" | cut -dx -f1)" -lt 1500 ]; then pass "screenshot of the view ($(size "$f"))"; else fail "screenshot of the view: ${f:-none}"; fi
 prefs "$tmp/window" ', "screenshot_interface": true'

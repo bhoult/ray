@@ -113,7 +113,8 @@ impl Op {
             | Op::Sierpinski { lod, .. }
             | Op::Apollonian { lod, .. }
             | Op::Kifs { lod, .. }
-            | Op::Kleinian { lod, .. } => Some(lod),
+            | Op::Kleinian { lod, .. }
+            | Op::Formula { lod, .. } => Some(lod),
             _ => None,
         }
     }
@@ -156,6 +157,9 @@ pub enum Op {
     /// `rot` row-major
     Kifs { d: u8, p: u8, s: f32, off: [f32; 3], rot: [f32; 9], iters: u32, lod: Lod, mat: u32 },
     Kleinian { d: u8, p: u8, cbox: [f32; 3], size: f32, iters: u32, lod: Lod, mat: u32 },
+    /// one of the formula catalog's (formulas/mod.rs): `f` its id, `k` its
+    /// parameters packed
+    Formula { d: u8, p: u8, f: u16, k: [f32; crate::formulas::K], iters: u32, lod: Lod, mat: u32 },
     // ---- d[a] = op(d[a], d[b])
     Union { a: u8, b: u8 },
     Intersect { a: u8, b: u8 },
@@ -544,6 +548,17 @@ impl<'a, M: MaterialSource> Compiler<'a, M> {
                     Aabb::INFINITE,
                 )
             }
+            S::Formula(ref node) => {
+                let f = node.formula();
+                let lod = match f.lod {
+                    Some((g, cap)) => self.lod(g, cap),
+                    None => Lod::NONE,
+                };
+                self.step = self.step.min(f.step);
+                let bound = if f.bound.is_finite() { Aabb::cube(f.bound) } else { Aabb::INFINITE };
+                let (id, k, iters) = (node.id, node.pack(), node.iters());
+                self.leaf(|d| Op::Formula { d, p, f: id, k, iters, lod, mat: tag }, bound)
+            }
             S::Metaballs { ref balls, blend } => {
                 if balls.is_empty() {
                     return Err("metaballs needs at least one ball".into());
@@ -726,7 +741,8 @@ fn leaf_tag(op: &Op) -> Option<u32> {
         | Op::Sierpinski { mat, .. }
         | Op::Apollonian { mat, .. }
         | Op::Kifs { mat, .. }
-        | Op::Kleinian { mat, .. } => Some(mat),
+        | Op::Kleinian { mat, .. }
+        | Op::Formula { mat, .. } => Some(mat),
         _ => None,
     }
 }

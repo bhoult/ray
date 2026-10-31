@@ -40,6 +40,10 @@ struct Frame {
     lamp: vec3f, lamp_reach: f32,
     /// what f32 cannot hold of the camera's position (camera.rs Camera::fine)
     cam_fine: vec3f, pad_cf: f32,
+    /// the haze (scene/mod.rs Env): its colour, per metre (times the render
+    /// settings' haze_strength), its top, the points lit along a segment
+    haze_col: vec3f, haze: f32,
+    haze_top: f32, haze_n: u32, haze_contrast: f32, pad_h2: f32,
 }
 
 @group(0) @binding(0) var<uniform> F: Frame;
@@ -133,6 +137,13 @@ fn more_iters(iters: u32, k: f32, per: f32, cap: u32) -> u32 {
     return max(iters, u32(clamp(ceil(k - per * LN_THR), 0.0, f32(cap))));
 }
 const AMBIENT: f32 = 2.0;
+/// the sky's light in the haze, and as far as a ray goes through it
+/// (render/shade.rs HAZE_SKY, scene/mod.rs HAZE_FAR)
+const HAZE_SKY: f32 = 0.5;
+const HAZE_SKY_K: f32 = 2.0;
+const HAZE_FAR: f32 = 1.0e30;
+/// luminance (Rec. 709)
+const LUMA: vec3f = vec3f(0.2126, 0.7152, 0.0722);
 const PI: f32 = 3.14159265;
 const TAU: f32 = 6.28318531;
 const WATER_ABSORB: vec3f = vec3f(1.0, 0.40, 0.28);
@@ -2666,6 +2677,108 @@ fn advance(path: ptr<function, Path>, hit: Hit, col: ptr<function, vec3f>, disk:
     return true;
 }
 
+/// The haze along the segment to `hit`, or out of it on a miss
+/// (render/shade.rs through_haze): what lies beyond dimmed, the light it
+/// scatters this way added; the sky's (how open it is overhead), the sun's
+/// and the lamps' share at haze_n points, picked as the haze scatters, by
+/// shadow rays. (One call site of shadow for them all: each is inlined,
+/// the whole scene's distance.)
+fn through_haze(path: ptr<function, Path>, hit: Hit, col: ptr<function, vec3f>) {
+    if (!HAS_HAZE || F.haze <= 0.0) {
+        return;
+    }
+    let u = rnd();
+    if ((*path).medium) {
+        return;
+    }
+    let r = (*path).ray;
+    let end = select(hit.t, HAZE_FAR, hit.obj < 0);
+    // the part of it below the haze's top
+    let above = F.haze_top - r.o.y;
+    let cross = above / r.d.y;
+    let inside = above > 0.0;
+    let a = select(select(HAZE_FAR, cross, r.d.y < 0.0), 0.0, inside);
+    let b = min(select(HAZE_FAR, cross, inside && r.d.y > 0.0), end);
+    let len = b - a;
+    if (!(len > 0.0)) {
+        return;
+    }
+    let trans = exp2(len * -F.haze);
+    let share = 1.0 - trans;
+    let sky = F.amb_col * (AMBIENT * F.ambient * HAZE_SKY);
+    var light = sky;
+    if (!(*path).diffused) {
+        light = vec3f(0.0);
+        let n = F.haze_n;
+        let n_lights = select(0u, F.n_lights, on(F_LIGHTS));
+        // (the curve's reference: the light where the sun and the sky both reach)
+        let c0 = dot(r.d, F.sun_dir);
+        let full = dot(F.sun_col * ((hg(0.6, c0) * 0.7 + hg(-0.3, c0) * 0.3) * 0.25) + sky, LUMA);
+        for (var k = 0u; k < n; k++) {
+            // the point: as far in as the haze lets light through (exponentially)
+            let uk = (u + f32(k)) * (1.0 / f32(n));
+            let at = a - log2(1.0 - uk * share) * (1.0 / F.haze);
+            let p = r.o + r.d * at;
+            let pd = r.od + r.d * at;
+            // the sky overhead (how open it is), the sun, then the lamps
+            var here = vec3f(0.0);
+            for (var li = 0u; li <= n_lights + 1u; li++) {
+                var dir = F.sun_dir;
+                var tmax = BIG;
+                var colour = F.sun_col;
+                var weight = 1.0;
+                var shadowed = on(F_SHADOWS);
+                var soft = on(F_SOFT);
+                var kh = F.shadow_hardness;
+                var c = dot(r.d, dir);
+                var phased = true;
+                if (li == 0u) {
+                    dir = vec3f(0.0, 1.0, 0.0);
+                    colour = sky;
+                    soft = true;
+                    kh = HAZE_SKY_K;
+                    phased = false;
+                } else if (li > 1u) {
+                    let lb = F.off_lights + (li - 2u) * 8u;
+                    let range = S[lb + 3u];
+                    let to = v3(lb) - p;
+                    let d2 = dot(to, to);
+                    if (d2 >= range * range) {
+                        continue;
+                    }
+                    let inv = inverseSqrt(max(d2, 1e-8));
+                    let window = 1.0 - d2 / (range * range);
+                    weight = window * window / (d2 * 0.2 + 1.0);
+                    dir = to * inv;
+                    c = clamp(dot(to, r.d) * inv, -1.0, 1.0);
+                    tmax = sqrt(d2);
+                    colour = v3(lb + 4u);
+                    shadowed = on(F_LIGHT_SHADOWS);
+                    soft = false;
+                    kh = 1.0;
+                }
+                if (phased) {
+                    weight *= (hg(0.6, c) * 0.7 + hg(-0.3, c) * 0.3) * 0.25;
+                }
+                if (shadowed) {
+                    weight *= shadow(p, pd, dir, tmax, soft, kh, -1);
+                }
+                here += colour * weight;
+            }
+            // the contrast: brighter than where the sun reaches stronger,
+            // dimmer (in shadow, half shade) weaker
+            if (F.haze_contrast != 1.0) {
+                let x = max(dot(here, LUMA) / max(full, 1e-12), 1e-6);
+                here = here * exp2(log2(x) * (F.haze_contrast - 1.0));
+            }
+            light += here;
+        }
+        light = light * (1.0 / f32(n));
+    }
+    *col += (*path).thr * (light * F.haze_col * share);
+    (*path).thr *= trans;
+}
+
 fn emits(hit: Hit) -> bool {
     return (obj_flags(u32(hit.obj)) & 2u) != 0u;
 }
@@ -2829,6 +2942,7 @@ fn render_sample(o: vec3f, d: vec3f, cone: f32) -> Sample {
                 out.obj = -2;
             }
         }
+        through_haze(&path, hit, &col);
         if (!advance(&path, hit, &col, disk)) {
             continue;
         }

@@ -7,6 +7,7 @@
 //!   ray scene.json --out shot.png       render headless (see --help)
 
 mod camera;
+mod formulas;
 mod gpu;
 mod math;
 mod mcp;
@@ -58,9 +59,34 @@ fn main() {
         eprintln!("ray needs an x86-64 CPU with AVX2 and FMA (x86-64-v3)");
         std::process::exit(1);
     }
+    shader_cache();
     if let Err(e) = run() {
         eprintln!("ray: {e}");
         std::process::exit(1);
+    }
+}
+
+/// A shader disk cache of ray's own for the GPU driver, roomier than its
+/// default: a scene of many fractals is one big shader (40 s to compile for
+/// the fractal catalog), and once the driver's shared cache was full (its
+/// default 1 GB) it was compiled again on every load. NVIDIA's and Mesa's
+/// settings; set ones are left alone.
+fn shader_cache() {
+    let Some(home) = std::env::var_os("HOME") else { return };
+    let dir = PathBuf::from(home).join(".cache/ray/shaders");
+    if std::fs::create_dir_all(&dir).is_err() {
+        return;
+    }
+    for (key, value) in [
+        ("__GL_SHADER_DISK_CACHE_PATH", dir.as_os_str().to_owned()),
+        ("__GL_SHADER_DISK_CACHE_SIZE", "4000000000".into()),
+        ("MESA_SHADER_CACHE_DIR", dir.as_os_str().to_owned()),
+        ("MESA_SHADER_CACHE_MAX_SIZE", "4G".into()),
+    ] {
+        if std::env::var_os(key).is_none() {
+            // SAFETY: first thing in main, before any thread is started
+            unsafe { std::env::set_var(key, value) };
+        }
     }
 }
 

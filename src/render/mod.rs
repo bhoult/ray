@@ -534,6 +534,9 @@ fn gpu_params(ctx: &Ctx, lay: &gpu::codegen::Layout, tables: &[u32], base: u32, 
     w.extend([lamp.x.to_bits(), lamp.y.to_bits(), lamp.z.to_bits(), ctx.s.headlight_reach.max(1e-4).to_bits()]);
     let fine = c.fine;
     w.extend([fine.x.to_bits(), fine.y.to_bits(), fine.z.to_bits(), 0]);
+    // (the haze as the render settings make it)
+    w.extend([e.haze_col.x.to_bits(), e.haze_col.y.to_bits(), e.haze_col.z.to_bits(), (e.haze * s.haze_strength.max(0.0)).to_bits()]);
+    w.extend([e.haze_top.to_bits(), s.haze_detail.clamp(1, shade::HAZE_DETAIL_MAX), s.haze_contrast.to_bits(), 0]);
     // each fractal object's detail this frame (lib.wgsl obj_lod), and its
     // anchor table: the header (whether it has one now) and the table
     let mut patches = Vec::new();
@@ -1107,8 +1110,16 @@ mod tests {
                 Vec3::new(0.0, 14.0, 40.0), -0.3),
             ("under water", serde_json::json!([{ "type": "water", "waves": 0.3 }, { "type": "box", "size": [2, 2, 2], "position": [0, -3, -6] }]),
                 Vec3::new(0.0, -1.0, 0.0), -0.2),
-            ("fractal", serde_json::json!([floor, { "type": "menger", "iterations": 4, "scale": 1.2, "position": [0, 1.2, 0] }]),
+            ("fractal", serde_json::json!([floor.clone(), { "type": "menger", "iterations": 4, "scale": 1.2, "position": [0, 1.2, 0] }]),
                 Vec3::new(1.5, 2.2, 4.0), -0.3),
+            // (pillars before a low sun, in haze up to 4 m: shafts between
+            // them; a lamp's glow in it)
+            ("haze", serde_json::json!([floor,
+                { "type": "box", "size": [0.4, 4, 0.4], "position": [-1.5, 2, -3] },
+                { "type": "box", "size": [0.4, 4, 0.4], "position": [-0.5, 2, -3.2] },
+                { "type": "box", "size": [0.4, 4, 0.4], "position": [0.5, 2, -3] },
+                { "type": "box", "size": [6, 0.3, 3], "position": [0, 4.2, -3] }
+            ]), Vec3::new(0.3, 1.2, 3.0), 0.1),
         ];
         let mut gpu = Renderer::new();
         gpu.gpu = Some(g);
@@ -1116,7 +1127,13 @@ mod tests {
         let still = Waves::default();
         // (each scene its own id: the GPU keeps what it uploaded by it)
         for (id, (name, objects, eye, pitch)) in cases.into_iter().enumerate() {
-            let sc = scene(serde_json::json!({ "environment": { "preset": "golden" }, "objects": objects }));
+            let env = if name == "haze" {
+                serde_json::json!({ "preset": "golden", "sun_azimuth": -20, "sun_elevation": 20, "haze_density": 0.6, "haze_top": 5, "haze_color": [1, 0.9, 0.8] })
+            } else {
+                serde_json::json!({ "preset": "golden" })
+            };
+            let lights = if name == "haze" { serde_json::json!([{ "position": [1.5, 1.5, -1], "color": [1, 0.6, 0.3], "intensity": 3, "range": 4 }]) } else { serde_json::json!([]) };
+            let sc = scene(serde_json::json!({ "environment": env, "lights": lights, "objects": objects }));
             assert!(sc.problems.is_empty(), "{name}: {:?}", sc.problems);
             let cam = Camera::new(eye, 0.0, pitch, 55.0);
             let image = |r: &mut Renderer, device: Device| {
@@ -1130,6 +1147,56 @@ mod tests {
             let px = a.len() / 4;
             let visible = (0..px).filter(|&i| (0..3).any(|c| (a[i * 4 + c] as i32 - b[i * 4 + c] as i32).abs() > 25)).count();
             assert!(visible * 100 <= px, "{name}: {visible} of {px} pixels differ visibly between CPU and GPU");
+        }
+    }
+
+    /// Every fractal of the formula catalog draws on the GPU as on the CPU
+    /// (its kernels are written twice): four at a time, each as Add makes
+    /// it, in a row, coloured by its orbit trap; compared as above.
+    /// RAY_FORMULAS=name,name tests only those.
+    #[test]
+    fn every_formula_on_the_gpu() {
+        let g = match Gpu::headless() {
+            Ok(g) => g,
+            Err(e) => {
+                eprintln!("no GPU ({e}): the GPU is not compared");
+                return;
+            }
+        };
+        let only: Option<Vec<String>> = std::env::var("RAY_FORMULAS").ok().map(|v| v.split(',').map(|n| n.trim().to_string()).collect());
+        let names: Vec<&str> =
+            crate::formulas::all().iter().map(|f| f.name).filter(|n| only.as_ref().is_none_or(|o| o.iter().any(|x| x == n))).collect();
+        let mut gpu = Renderer::new();
+        gpu.gpu = Some(g);
+        let mut cpu = Renderer::new();
+        let still = Waves::default();
+        let orbit = serde_json::json!({ "color": [0.85, 0.5, 0.25], "color2": [0.2, 0.45, 0.85], "texture": "orbit" });
+        for (id, row) in names.chunks(4).enumerate() {
+            let objects: Vec<serde_json::Value> = row
+                .iter()
+                .enumerate()
+                .map(|(i, name)| {
+                    let f = crate::formulas::get(crate::formulas::find(name).unwrap());
+                    let mut v: serde_json::Value = serde_json::from_str(f.example).unwrap();
+                    v["position"] = serde_json::json!([(i as f32 - 1.5) * 2.4, 1.2, 0.0]);
+                    v["material"] = orbit.clone();
+                    v
+                })
+                .collect();
+            let sc = scene(serde_json::json!({ "environment": { "preset": "golden" }, "objects": objects }));
+            assert!(sc.problems.is_empty(), "{row:?}: {:?}", sc.problems);
+            let cam = Camera::new(Vec3::new(0.0, 1.6, 7.5), 0.0, -0.05, 55.0);
+            let image = |r: &mut Renderer, device: Device| {
+                let s = Settings { device, ..Settings::default() };
+                for _ in 0..4 {
+                    r.render(&sc, &cam, &s, 192, 72, 1000 + id as u64, &View::default(), &still);
+                }
+                r.frame.as_ref().unwrap().rgba()
+            };
+            let (a, b) = (image(&mut cpu, Device::Cpu), image(&mut gpu, Device::Gpu));
+            let px = a.len() / 4;
+            let visible = (0..px).filter(|&i| (0..3).any(|c| (a[i * 4 + c] as i32 - b[i * 4 + c] as i32).abs() > 25)).count();
+            assert!(visible * 100 <= px, "{row:?}: {visible} of {px} pixels differ visibly between CPU and GPU");
         }
     }
 

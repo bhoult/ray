@@ -118,7 +118,7 @@ fn lit_by(env: &crate::scene::Env) -> (Vec3, Vec3) {
 
 /// Henyey-Greenstein phase for cosine `c`, as a multiple of the isotropic one.
 #[inline(always)]
-fn hg(g: f32, c: F8) -> F8 {
+pub fn hg(g: f32, c: F8) -> F8 {
     let x = (c * (-2.0 * g)).mul_add(F8::one(), F8::splat(1.0 + g * g));
     F8::splat(1.0 - g * g) / (x * x.sqrt())
 }

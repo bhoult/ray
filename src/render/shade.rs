@@ -14,10 +14,11 @@ use super::atmos;
 use super::trace::{self, BIG, Hit, Ray, grain8};
 use super::pattern;
 use super::vm::{Regs, eval, ticks};
+use super::volume;
 use crate::math::Vec3;
 use crate::noise::noised8;
 use crate::scene::terrain::Terrain;
-use crate::scene::{Shape, tex};
+use crate::scene::{HAZE_FAR, Shape, tex};
 use crate::settings::Mode;
 use crate::simd::{F8, I8, M8, V8};
 
@@ -28,6 +29,19 @@ const WAVE_SEED: i32 = 0x1656_67b1;
 const WATER_IOR: f32 = 1.33;
 /// Ambient strength (fraktal256's c_ambk).
 pub(crate) const AMBIENT: f32 = 2.0;
+/// Luminance (Rec. 709).
+#[inline(always)]
+fn luma(c: V8) -> F8 {
+    c.dot3(Vec3::new(0.2126, 0.7152, 0.0722))
+}
+
+/// The sky's light in the haze, as a share of what it gives a surface
+/// facing up, and how wide a cone overhead decides how much of the sky a
+/// point in it sees (a soft shadow's hardness: 2 is about 27 degrees).
+const HAZE_SKY: f32 = 0.5;
+const HAZE_SKY_K: f32 = 2.0;
+/// The most points a ray segment's haze is lit at (render settings' haze_detail).
+pub const HAZE_DETAIL_MAX: u32 = 16;
 
 /// What a ray hit: position, outward normal and material, per lane.
 pub struct Surf {
@@ -806,6 +820,95 @@ impl Path {
         through
     }
 
+    /// The haze (Env.haze, up to Env.haze_top, times the render settings'
+    /// haze_strength) along the segment to `hit`, or out of it on a miss:
+    /// what lies beyond is dimmed and the light it scatters this way added.
+    /// The sun's and the lamps' share is found at haze_detail points of the
+    /// segment, picked as the haze would scatter there (more of them near;
+    /// spread evenly over that from one random number), by shadow rays: so
+    /// it is lit only where the light gets to, in shafts, which samples
+    /// accumulate smooth. The sky's share, by how open it is overhead there
+    /// (dark under a canopy). After a diffuse bounce, the sky's share only,
+    /// as if open.
+    fn through_haze(&mut self, ctx: &Ctx, regs: &mut Regs, hit: &Hit, col: &mut V8, rng: &mut Rng8) {
+        let (env, s) = (ctx.env, ctx.s);
+        let haze = env.haze * s.haze_strength;
+        if haze <= 0.0 || self.active.none() {
+            return;
+        }
+        let u = rng.next();
+        let air = self.active.and_not(self.medium);
+        if air.none() {
+            return;
+        }
+        let (o, d) = (self.ray.o, self.ray.d);
+        let far = F8::splat(HAZE_FAR);
+        let end = F8::select(hit.obj.eq(I8::splat(-1)), far, hit.t);
+        // the part of it below the haze's top
+        let above = F8::splat(env.haze_top) - o.y;
+        let cross = above / d.y;
+        let inside = above.gt(F8::zero());
+        let a = F8::select(inside, F8::zero(), F8::select(d.y.lt(F8::zero()), cross, far));
+        let b = F8::select(inside & d.y.gt(F8::zero()), cross, far).min(end);
+        let len = b - a;
+        let lanes = air & len.gt(F8::zero());
+        if lanes.none() {
+            return;
+        }
+        let trans = (len * -haze).exp2();
+        let share = F8::one() - trans;
+        let sky = V8::splat(env.amb_col) * (AMBIENT * env.ambient * HAZE_SKY);
+        let mut light = V8::select(self.diffused, sky, V8::zero());
+        let shafts = lanes.and_not(self.diffused);
+        if shafts.any() {
+            let n = s.haze_detail.clamp(1, HAZE_DETAIL_MAX);
+            let c = d.dot3(env.sun_dir);
+            let phase = (volume::hg(0.6, c) * 0.7 + volume::hg(-0.3, c) * 0.3) * 0.25;
+            // (the curve's reference: the light where the sun and the sky both reach)
+            let full = luma(V8::splat(env.sun_col) * phase + sky);
+            let mut sum = V8::zero();
+            for k in 0..n {
+                // the point: as far in as the haze lets light through (exponentially)
+                let uk = (u + k as f32) * (1.0 / n as f32);
+                let at = a - (uk.neg_mul_add(share, F8::one())).log2() * (1.0 / haze);
+                let (p, pd) = (V8::at(o, d, at), V8::at(self.ray.od, d, at));
+                let open = if s.shadows { trace::shadow(ctx, regs, p, pd, V8::splat(Vec3::new(0.0, 1.0, 0.0)), F8::splat(BIG), shafts, true, HAZE_SKY_K, -1) } else { F8::one() };
+                let vis = if s.shadows { trace::shadow(ctx, regs, p, pd, V8::splat(env.sun_dir), F8::splat(BIG), shafts, s.soft_shadows, s.shadow_hardness, -1) } else { F8::one() };
+                let mut here = sky * open + V8::splat(env.sun_col) * (phase * vis);
+                if s.lights {
+                    for l in &ctx.scene.lights {
+                        let to = V8::splat(l.pos) - p;
+                        let d2 = to.length_sq();
+                        let r2 = F8::splat(l.range * l.range);
+                        let near = d2.lt(r2) & shafts;
+                        if near.none() {
+                            continue;
+                        }
+                        let inv = d2.max(F8::splat(1e-8)).rsqrt();
+                        let c = (to.dot(d) * inv).clamp(-1.0, 1.0);
+                        let window = F8::one() - d2 / r2;
+                        let mut weight = window * window / d2.mul_add(F8::splat(0.2), F8::one()) * (volume::hg(0.6, c) * 0.7 + volume::hg(-0.3, c) * 0.3) * 0.25;
+                        if s.light_shadows {
+                            weight *= trace::shadow(ctx, regs, p, pd, to * inv, d2.sqrt(), near, false, 1.0, -1);
+                        }
+                        here = V8::splat(l.color) * weight.and(near) + here;
+                    }
+                }
+                // the contrast: brighter than where the sun reaches stronger,
+                // dimmer (in shadow, half shade) weaker
+                if s.haze_contrast != 1.0 {
+                    let x = (luma(here) / full.max(F8::splat(1e-12))).max(F8::splat(1e-6));
+                    here = here * (x.log2() * (s.haze_contrast - 1.0)).exp2();
+                }
+                sum += here;
+            }
+            light = V8::select(shafts, sum * (1.0 / n as f32), light);
+        }
+        let add = light.hadamard(V8::splat(env.haze_col)) * share;
+        *col = V8::select(lanes, self.thr.hadamard(add) + *col, *col);
+        self.thr = V8::select(lanes, self.thr * trans, self.thr);
+    }
+
     /// Enters or leaves the medium of a transmissive surface on refraction.
     fn cross(&mut self, lanes: M8, entering: M8, sf: &Surf, obj: I8, inside: &mut I8) {
         let into = lanes & entering;
@@ -845,6 +948,7 @@ pub fn direct(ctx: &Ctx, regs: &mut Regs, rng: &mut Rng8, o: V8, d: V8, cone: f3
         if bounce == 0 {
             out.obj = clouded_sky(&hit, clear, out.obj);
         }
+        path.through_haze(ctx, regs, &hit, &mut col, rng);
         let Some(sf) = path.advance(ctx, regs, &hit, &mut col, M8::all_true(), cone) else { break };
         let act = path.active;
         let v = -path.ray.d;
@@ -1024,6 +1128,7 @@ pub fn path(ctx: &Ctx, regs: &mut Regs, rng: &mut Rng8, o: V8, d: V8, cone: f32)
         if bounce == 0 {
             out.obj = clouded_sky(&hit, clear, out.obj);
         }
+        path.through_haze(ctx, regs, &hit, &mut col, rng);
         let Some(sf) = path.advance(ctx, regs, &hit, &mut col, disk, cone) else { break };
         let act = path.active;
         let entering = path.ray.d.dot(sf.n).lt(F8::zero());

@@ -38,7 +38,7 @@ fn commands_text() -> &'static str {
     TEXT.get_or_init(|| {
         let names: Vec<String> = crate::ui::actions::ACTIONS.iter().map(crate::ui::actions::command_name).collect();
         format!(
-            "Run one of the editor's commands, as its menu entry or key does (toggles toggle): {}. Returns the viewer's status; a command that cannot run now (undo with nothing to undo) says why.",
+            "Run one of the editor's commands, as its menu entry or key does (toggles toggle): {}. Returns the viewer's status, with what the command said on screen (`said`) when it said something (screenshot answers once its picture, rendered whole first, is written: `file`); a command that cannot run now (undo with nothing to undo) says why.",
             names.join(", ")
         )
     })
@@ -94,19 +94,19 @@ fn tools() -> Vec<(&'static str, &'static str, Value, &'static str)> {
         ),
         (
             "set_environment",
-            "Change the scene's environment: preset, time_of_day, sun_azimuth / sun_elevation, sun_level, ambient_level, sky (day, stars, off), clouds, fog_density, gravity (m/s²: 9.81 Earth, 3.71 Mars, 1.62 Moon, 0 none)...",
+            "Change the scene's environment: preset, time_of_day, sun_azimuth / sun_elevation, sun_level, ambient_level, sky (day, stars, off), clouds, fog_density, haze_density / haze_top / haze_color (air the light shows in, in shafts through gaps: per metre, 0 none; thick for small things), gravity (m/s²: 9.81 Earth, 3.71 Mars, 1.62 Moon, 0 none)...",
             json!({"type": "object", "properties": {"set": set("the environment")}, "required": ["set"]}),
             "environment",
         ),
         (
             "set_render_settings",
-            "Change the viewer's render settings (the right panel): mode (direct, path_trace, normals, albedo, depth, steps, cost), bounces, spp, device (both, gpu, cpu), scale (resolution), shadows, ao, bloom, exposure, headlight, animate_water... get_scene shows them all.",
+            "Change the viewer's render settings (the right panel): mode (direct, path_trace, normals, albedo, depth, steps, cost), bounces, spp, device (both, gpu, cpu), scale (resolution), shadows, ao, bloom, exposure, headlight, animate_water, haze_strength (times the environment's haze density, 0 none), haze_detail (points lit along each ray a sample, 1 to 16), haze_contrast (1 as lit; more: sharper beams, darker shadowed haze)... get_scene shows them all.",
             json!({"type": "object", "properties": {"set": set("the settings")}, "required": ["set"]}),
             "settings",
         ),
         (
             "set_preferences",
-            "Change the viewer's preferences (File > Preferences; saved as they change): videos and screenshots folders, microphone, video_fps, video_quality, video_steady (recordings drawn a whole frame at a time, smooth however slow the scene), video_steady_samples and video_size ([w, h]; [0, 0]: the view's), screenshot_interface, look_speed, invert_look, ui_scale... An empty set returns them all.",
+            "Change the viewer's preferences (File > Preferences; saved as they change): videos and screenshots folders, microphone, video_fps, video_quality, video_steady (recordings drawn a whole frame at a time, smooth however slow the scene), video_steady_samples and video_size ([w, h]; [0, 0]: the view's), screenshot_interface, screenshot_samples and screenshot_size (screenshots of the view are rendered whole first: samples a pixel, 0 until converged; [w, h], [0, 0] the view's), look_speed, invert_look, ui_scale... An empty set returns them all.",
             json!({"type": "object", "properties": {"set": set("the preferences")}}),
             "preferences",
         ),

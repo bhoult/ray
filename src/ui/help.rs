@@ -139,10 +139,11 @@ fn shapes(ui: &mut egui::Ui) {
          (union, intersection, difference) and modifiers (repeat, twist, ...) above them. Every node also takes the common fields at the end. \
          Add shapes with Add or + Add; the JSON for each is the type name plus the fields below.",
     );
-    for cat in schema::CATEGORIES {
+    let cats = schema::CATEGORIES.iter().flat_map(|&c| std::iter::once(c).chain(if c == "Fractals" { &crate::formulas::CATEGORIES[..] } else { &[] }.iter().copied()));
+    for cat in cats {
         ui.add_space(6.0);
         ui.heading(cat);
-        for s in schema::SHAPES.iter().filter(|s| s.category == cat) {
+        for s in schema::shapes().iter().filter(|s| s.category == cat) {
             fold(ui, s.ty, s.ty, |ui| {
                 para(ui, s.desc);
                 egui::Grid::new(("fields", s.ty)).num_columns(3).striped(true).show(ui, |ui| {

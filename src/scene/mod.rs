@@ -247,6 +247,10 @@ pub enum Sky {
     Off,
 }
 
+/// The haze's top when it has none, and as far as a ray goes through it
+/// (finite: no infinities in the haze's arithmetic, on either device).
+pub const HAZE_FAR: f32 = 1.0e30;
+
 /// Sun, sky and fog (fraktal256's palette).
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct Env {
@@ -259,6 +263,11 @@ pub struct Env {
     pub fog_col: Vec3,
     /// fog per metre (exp2(-fog * distance) is the transmittance)
     pub fog: f32,
+    /// haze per metre (likewise), lit only where the light reaches (light
+    /// shafts), up to `haze_top` (HAZE_FAR: no top), and its colour
+    pub haze: f32,
+    pub haze_top: f32,
+    pub haze_col: Vec3,
     /// cloud cover 0..1
     pub clouds: f32,
     /// multiplier of the sky's fill light
@@ -975,6 +984,7 @@ fn shape_name(s: &ShapeDef) -> &'static str {
         S::Cloud { .. } => "cloud",
         S::Nurbs { .. } => "nurbs",
         S::Revolve { .. } => "revolve",
+        S::Formula(f) => f.formula().name,
     }
 }
 
@@ -1040,6 +1050,9 @@ fn compile_env(def: &SceneDef) -> Result<Env, String> {
         sky_hor: v(e.sky_horizon, p.sky_hor),
         fog_col: v(e.fog_color, p.fog_col) * sky_light,
         fog: e.fog_density.unwrap_or(p.fog).max(0.0),
+        haze: e.haze_density.unwrap_or(0.0).max(0.0),
+        haze_top: e.haze_top.unwrap_or(HAZE_FAR).min(HAZE_FAR),
+        haze_col: v(e.haze_color, [1.0; 3]).max(Vec3::ZERO),
         clouds: e.clouds.unwrap_or(p.clouds).clamp(0.0, 1.0),
         ambient,
         sky,
