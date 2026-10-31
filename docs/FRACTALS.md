@@ -19,6 +19,7 @@ The fractals by family; each links to its own page.
 - [4D slices](#4d-slices): [Menger 4D](fractals/menger4d.md), [Sierpinski 4D](fractals/sierpinski4d.md), [Mandelbox 4D](fractals/mandelbox4d.md), [Kleinian 4D](fractals/kleinian4d.md)
 - [More](#more): [Xenodreambuie](fractals/xenodreambuie.md), [Pine Tree](fractals/pine_tree.md), [Makin](fractals/makin.md), [Ides](fractals/ides.md), [Distance IFS](fractals/difs.md), [msltoe Sym4](fractals/msltoe_sym.md), [eiffie's bulb](fractals/eiffie.md), [Mandelnest](fractals/mandelnest.md)
 - [Originals](#originals): [Seifert Gasket](fractals/seifert_gasket.md), [Indra's Cells](fractals/indra_cells.md), [Zorich Pagodas](fractals/zorich_pagodas.md), [Labyrinth Sponge](fractals/labyrinth_sponge.md), [Nil Staircase](fractals/nil_stair.md), [Quasicrystal Rooms](fractals/quasicrystal_rooms.md), [Mayer Julia](fractals/mayer_julia.md), [Screw Sponge](fractals/screw_sponge.md), [Möbius Cathedral](fractals/cathedral.md), [Dirac Frost](fractals/dirac_frost.md), [Cusp Vaults](fractals/cusp_vaults.md), [Alexander's Horned Sphere](fractals/horned_sphere.md), [Octet Truss of Trusses](fractals/octet_truss.md)
+- [Fractal flames](#fractal-flames): [Fractal Flame](fractals/flame.md)
 
 ## The classics
 
@@ -156,3 +157,11 @@ Fractals invented for ray by Claude (Anthropic's Claude Opus 5.5), October 2026:
 | [<img src="images/fractals/cusp_vaults.jpg" width="800" alt="Cusp Vaults">](fractals/cusp_vaults.md) | **[Cusp Vaults](fractals/cusp_vaults.md)** (`cusp_vaults`)<br>Gothic vaults from a hyperbolic honeycomb with ideal vertices ({3,4,4} by default), in the upper half-space model turned over so that infinity is the ceiling: ribs fan out into ever finer tracery, and at every cusp, where the ribs meet, hangs a cage of the cusp's own lattice. |
 | [<img src="images/fractals/horned_sphere.jpg" width="800" alt="Alexander's Horned Sphere">](fractals/horned_sphere.md) | **[Alexander's Horned Sphere](fractals/horned_sphere.md)** (`horned_sphere`)<br>Alexander's horned sphere (J. W. |
 | [<img src="images/fractals/octet_truss.jpg" width="800" alt="Octet Truss of Trusses">](fractals/octet_truss.md) | **[Octet Truss of Trusses](fractals/octet_truss.md)** (`octet_truss`)<br>A space frame of space frames: Buckminster Fuller's octet truss, every strut of which is stiffened by a cage of the same truss several times finer, every strut of that cage by a finer cage, and so on down. |
+
+## Fractal flames
+
+Not a surface with a distance estimate, as the rest are: a flame is drawn by the chaos game into a grid of voxels and rendered as a volume, like a cloud (`{"type": "flame", "preset": "jellyfish"}`, Add > Fractals > flame).
+
+| | Fractal |
+| --- | --- |
+| [<img src="images/fractals/flame.jpg" width="800" alt="Fractal Flame">](fractals/flame.md) | **[Fractal Flame](fractals/flame.md)** (`flame`)<br>Scott Draves's fractal flames in 3D: a few affine maps bent by nonlinear variations, applied in random order; the points they visit pile up on the attractor, counted into voxels and rendered as a volume that glows, scatters the sun and casts a soft shadow. Ten presets, and a random flame for every seed. |

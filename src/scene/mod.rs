@@ -9,7 +9,10 @@
 //! - a signed-distance program (sdf.rs), sphere-traced inside its bounds;
 //! - a heightfield (terrain.rs), marched like fraktal256's terrain;
 //! - a NURBS surface (nurbs.rs), hit exactly by Newton's method on its patches.
+//!
+//! Clouds and flames are volumes (volume.rs, flame.rs): marched through, not hit.
 
+pub mod flame;
 pub mod json;
 pub mod nurbs;
 pub mod sdf;
@@ -619,6 +622,10 @@ pub struct TerrainCache {
     /// 57 ms, every compile, so every frame something moved
     surfaces: HashMap<String, Arc<nurbs::Nurbs>>,
     used_surfaces: Vec<String>,
+    /// fractal flames' grids by what decides them (drawing one takes a
+    /// second or so: not again when the flame is only moved or relit)
+    flames: HashMap<String, Arc<flame::FlameGrid>>,
+    used_flames: Vec<String>,
 }
 
 impl TerrainCache {
@@ -643,8 +650,22 @@ impl TerrainCache {
         Ok(s)
     }
 
-    /// Forgets the maps and surfaces the last compile did not use.
+    /// The flame grid of `spec`, drawn once.
+    fn flame(&mut self, spec: &flame::FlameSpec) -> Result<Arc<flame::FlameGrid>, String> {
+        let key = serde_json::to_string(spec).unwrap_or_default();
+        self.used_flames.push(key.clone());
+        if let Some(g) = self.flames.get(&key) {
+            return Ok(g.clone());
+        }
+        let g = Arc::new(flame::build(spec)?);
+        self.flames.insert(key, g.clone());
+        Ok(g)
+    }
+
+    /// Forgets the maps, surfaces and flames the last compile did not use.
     fn sweep(&mut self) {
+        let used: std::collections::HashSet<String> = std::mem::take(&mut self.used_flames).into_iter().collect();
+        self.flames.retain(|k, _| used.contains(k));
         let used = std::mem::take(&mut self.used);
         self.map.retain(|k, _| used.contains(k));
         let used: std::collections::HashSet<String> = std::mem::take(&mut self.used_surfaces).into_iter().collect();
@@ -766,6 +787,25 @@ impl Scene {
                     *stretch,
                 );
                 match v {
+                    Ok(v) => volumes.push(v),
+                    Err(e) => problems.push(format!("object '{name}': {e}")),
+                }
+                continue;
+            }
+            if let ShapeDef::Flame { preset, seed, transforms, final_xform, symmetry, palette, colors, points, resolution, size, density, glow, gamma } = &node.shape {
+                let spec = flame::FlameSpec {
+                    preset: preset.clone(),
+                    seed: *seed,
+                    transforms: transforms.clone(),
+                    final_xform: final_xform.clone(),
+                    symmetry: *symmetry,
+                    palette: palette.clone(),
+                    colors: colors.clone(),
+                    points: *points,
+                    resolution: *resolution,
+                    gamma: *gamma,
+                };
+                match cache.flame(&spec).and_then(|g| volume::build_flame(&name, i, g, *size, *density, *glow, node.position, node.rotation, node.scale)) {
                     Ok(v) => volumes.push(v),
                     Err(e) => problems.push(format!("object '{name}': {e}")),
                 }
@@ -982,6 +1022,7 @@ fn shape_name(s: &ShapeDef) -> &'static str {
         S::Terrain(_) => "terrain",
         S::Water { .. } => "water",
         S::Cloud { .. } => "cloud",
+        S::Flame { .. } => "flame",
         S::Nurbs { .. } => "nurbs",
         S::Revolve { .. } => "revolve",
         S::Formula(f) => f.formula().name,

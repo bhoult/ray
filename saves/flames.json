@@ -1,0 +1,13 @@
+{
+  "description": "3D fractal flames over a lake at sunset: seahorse and jellyfish on the left, wildfire in the middle, spiral and nautilus on the right. Each is a flame object (Add > Fractals > flame): a few maps bent by variations, drawn by the chaos game into a grid of voxels and rendered as a volume that glows in its palette's colours, scatters the sun and casts a shadow. Select one and change its preset, palette, glow or density; preset random with the seed slider gives a new flame at every number.",
+  "camera": {"position": [0, 2.3, 9.6], "look_at": [0, 2.3, -2], "fov": 48, "speed": 3},
+  "environment": {"preset": "golden", "time_of_day": 18.2, "sun_azimuth": 235, "clouds": 0.25, "fog_density": 0.003},
+  "objects": [
+    {"name": "lake", "type": "water", "level": 0, "waves": 0.04},
+    {"type": "flame", "resolution": 160, "points": 16, "glow": 7, "density": 5, "name": "seahorse", "preset": "seahorse", "palette": "nebula", "position": [-7.6, 2.3, -3.2], "rotation": [0, 25, 0], "size": 3},
+    {"type": "flame", "resolution": 160, "points": 16, "glow": 7, "density": 5, "name": "jellyfish", "preset": "jellyfish", "palette": "ice", "position": [-3.8, 2.5, -0.6], "rotation": [0, 30, 0], "size": 2.8},
+    {"type": "flame", "resolution": 192, "points": 24, "glow": 7, "density": 5, "name": "wildfire", "preset": "wildfire", "palette": "fire", "position": [0, 2.4, 0.4], "size": 3.4},
+    {"type": "flame", "resolution": 160, "points": 16, "glow": 7, "density": 5, "name": "spiral", "preset": "spiral", "palette": "aurora", "position": [3.8, 2.5, -0.6], "rotation": [0, -20, 0], "size": 3},
+    {"type": "flame", "resolution": 160, "points": 16, "glow": 7, "density": 5, "name": "nautilus", "preset": "nautilus", "palette": "gold", "position": [7.6, 2.3, -3.2], "rotation": [0, -35, 0], "size": 3}
+  ]
+}

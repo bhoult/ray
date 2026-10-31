@@ -55,6 +55,9 @@ pub struct Upload {
     /// again every frame)
     pub terrains: Vec<Arc<crate::scene::terrain::Terrain>>,
     pub terrain_same: bool,
+    /// the flame grids `terrain` holds after the maps, in order (uploaded
+    /// again only with the maps)
+    pub grids: Vec<Arc<crate::scene::flame::FlameGrid>>,
 }
 
 impl Upload {
@@ -423,7 +426,7 @@ fn put_surface(s: &mut Vec<u32>, surf: &crate::scene::nurbs::Nurbs) -> (u32, u32
 
 /// The upload for `scene`; `held` are the terrain maps the GPU has already
 /// (Upload::terrain_same).
-pub fn build(scene: &Scene, held: &[Arc<crate::scene::terrain::Terrain>]) -> Upload {
+pub fn build(scene: &Scene, held: &[Arc<crate::scene::terrain::Terrain>], held_grids: &[Arc<crate::scene::flame::FlameGrid>]) -> Upload {
     // ---- programs: one function per distinct structure
     let mut structures: HashMap<String, u32> = HashMap::new();
     let mut functions = String::new();
@@ -550,7 +553,19 @@ pub fn build(scene: &Scene, held: &[Arc<crate::scene::terrain::Terrain>]) -> Upl
     }
     // the terrain maps go to their own buffer: heights, packed normals, cavity
     // AO (not again when the GPU has these maps already)
-    let terrain_same = !terrains.is_empty() && terrains.len() == held.len() && terrains.iter().zip(held).all(|(a, b)| Arc::ptr_eq(a, b));
+    // (and the flames' grids after them)
+    let mut grids: Vec<Arc<crate::scene::flame::FlameGrid>> = Vec::new();
+    for v in &scene.volumes {
+        if let Some(f) = &v.flame
+            && !grids.iter().any(|g| Arc::ptr_eq(g, &f.grid))
+        {
+            grids.push(f.grid.clone());
+        }
+    }
+    fn same<T>(a: &[Arc<T>], b: &[Arc<T>]) -> bool {
+        a.len() == b.len() && a.iter().zip(b).all(|(x, y)| Arc::ptr_eq(x, y))
+    }
+    let terrain_same = !(terrains.is_empty() && grids.is_empty()) && same(&terrains, held) && same(&grids, held_grids);
     let mut t: Vec<u32> = Vec::new();
     let mut len = 0usize;
     let mut put = |t: &mut Vec<u32>, words: &mut dyn Iterator<Item = u32>, n: usize| {
@@ -591,6 +606,10 @@ pub fn build(scene: &Scene, held: &[Arc<crate::scene::terrain::Terrain>]) -> Upl
         put3(&mut s, at + 20, tr.grass, 0);
         put3(&mut s, at + 24, tr.snow, 0);
         put3(&mut s, at + 28, tr.sand, 0);
+    }
+    let mut grid_at = Vec::new();
+    for g in &grids {
+        grid_at.push(put(&mut t, &mut g.data.iter().map(|&w| w as u32), g.data.len()));
     }
     if t.is_empty() {
         t.push(0);
@@ -681,6 +700,20 @@ pub fn build(scene: &Scene, held: &[Arc<crate::scene::terrain::Terrain>]) -> Upl
     s.resize(headers + VOL * scene.volumes.len(), 0);
     for (i, v) in scene.volumes.iter().enumerate() {
         let at = headers + i * VOL;
+        if let Some(fl) = &v.flame {
+            // a flame (lib.wgsl fl_*): its grid in T, and how it glows
+            let g = &fl.grid;
+            let k = grids.iter().position(|x| Arc::ptr_eq(x, g)).unwrap_or(0);
+            put3(&mut s, at, v.aabb.min, f(v.sigma));
+            put3(&mut s, at + 4, v.aabb.max, 0);
+            put3(&mut s, at + 8, v.pos, f(v.scale));
+            put3(&mut s, at + 12, v.to_local.m[0], 0);
+            put3(&mut s, at + 16, v.to_local.m[1], 0);
+            put3(&mut s, at + 20, v.to_local.m[2], 0);
+            put3(&mut s, at + 24, Vec3::from_array(g.lo), f(1.0 / g.cell));
+            s[at + 28..at + 35].copy_from_slice(&[g.n[0], g.n[1], g.n[2], grid_at[k], f(fl.glow), 1, f(fl.size)]);
+            continue;
+        }
         let puffs = s.len() as u32;
         for p in &v.puffs {
             s.extend(p.map(f));
@@ -696,7 +729,7 @@ pub fn build(scene: &Scene, held: &[Arc<crate::scene::terrain::Terrain>]) -> Upl
     }
     // (whole vec4s: lib.wgsl S4 reads the last block's last words)
     s.resize(s.len().max(4).next_multiple_of(4), 0);
-    Upload { generated, scene: s, terrain: t, layout: lay, tables, terrains, terrain_same }
+    Upload { generated, scene: s, terrain: t, layout: lay, tables, terrains, terrain_same, grids }
 }
 
 /// A matrix as three vec4 rows, `w` carrying the translation.
@@ -714,7 +747,7 @@ mod tests {
     fn upload(objects: serde_json::Value) -> Upload {
         let sc = Scene::from_value(&serde_json::json!({ "objects": objects }), &mut TerrainCache::default()).unwrap();
         assert!(sc.problems.is_empty(), "{:?}", sc.problems);
-        build(&sc, &[])
+        build(&sc, &[], &[])
     }
 
     fn functions(u: &Upload) -> usize {

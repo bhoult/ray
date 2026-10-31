@@ -67,6 +67,22 @@ pub const SHAPES: &[ShapeInfo] = &[
         fields: &[("fold_scale", "How much each step scales (3 = the Menger sponge; 2 to 4 is typical)."), ("offset", "The point each step scales away from: it sets where the copies sit."), ("angles", "Degrees turned about x, y and z at every step: 0 is the Menger sponge; a few degrees twist it into something new."), ("iterations", "Steps: more = finer detail, linear cost. Close up more are added by themselves, as many as the pixels can show (up to 24), so zooming in keeps finding detail.")] },
     ShapeInfo { ty: "kleinian", category: "Fractals", desc: "The pseudo-Kleinian (Knighty's): box folds and sphere inversions that build a limit set of rings and tunnels, like a cathedral of coral. It fills all of space, so it is cut to a box here; fly inside it.", new: r#"{"type":"intersection","scale":0.5,"children":[{"type":"box","size":[4,4,4]},{"type":"kleinian","iterations":8}]}"#,
         fields: &[("fold_box", "Half sizes of the box fold along x, y and z: small changes reshape the tunnels."), ("inversion", "The inversion sphere's radius squared: larger opens the structure up."), ("iterations", "Steps: more = finer detail.")] },
+    ShapeInfo { ty: "flame", category: "Fractals", desc: "A fractal flame in 3D (Scott Draves's flame algorithm, as Apophysis and JWildfire draw them): a few affine maps, each bent by nonlinear variations, applied over and over in random order. The points they visit pile up on the system's attractor, drawn here into a grid of voxels as a volume: it glows in its palette's colours, scatters the sun and casts a soft shadow. Drawing it takes a second or so (more points and voxels, longer). Pick a preset, or preset random and drag the seed for a new flame at every number. Top level only.", new: r#"{"type":"flame"}"#,
+        fields: &[
+            ("preset", "A ready-made flame: wildfire (default), jellyfish, seahorse, rosebud, spiral, nautilus, bloom, dandelion, veil, or sierpinski (the Sierpinski tetrahedron, the plainest flame of all); or random: a random system of 2 to 4 maps, a different one for every seed. Ignored when transforms are given."),
+            ("seed", "Which random flame (preset random): every number gives another."),
+            ("transforms", "The flame's own maps, drawn instead of the preset: a list of {weight, color, matrix, offset, variations, power}. weight: how often it is chosen. color: 0 to 1, the palette colour its points are pulled toward. matrix: three rows of three numbers and offset: [x, y, z], the affine part. variations: {name: weight}, summed; the names are linear, sinusoidal, spherical, swirl, horseshoe, eyefish, cylinder, bent, julia3d and blur. power: julia3d's (2 to 5)."),
+            ("final", "A map (as one of transforms) applied to every point drawn but not to the orbit: it bends the whole flame, like a lens."),
+            ("symmetry", "Copies turned about the flame's own y axis (1: none, 2 to 12: as many arms or petals)."),
+            ("palette", "The colours along the maps' colour coordinate: fire, ice, nebula, aurora, sunset, gold, rainbow or white."),
+            ("colors", "Colour stops of the palette, from one end to the other ([[r, g, b], ...]), instead of a named one."),
+            ("points", "Millions of points drawn (0.5 to 400). More: smoother and finer, with the faint parts filled in; the drawing time grows with them."),
+            ("resolution", "Voxels along the grid's longest side (32 to 256). More: sharper filaments, and longer to draw (and more memory: 256 is about 67 MB)."),
+            ("size", "The flame's longest side in metres (before scale)."),
+            ("density", "How much light it stops where it is dense, as the optical depth across its whole size. 0: it only glows (no shadow, no scattering); 3 (default): wisps see-through and the core nearly solid; 10 and more: smoky and solid."),
+            ("glow", "How brightly it shines in its own colours (0: not at all, lit only by the sun and the sky). At night, glow is all there is."),
+            ("gamma", "The density's curve: the log of how often each voxel was hit, raised to 1 / gamma. Higher brings out the faint wisps and fills the flame out; lower leaves only the densest parts."),
+        ] },
     ShapeInfo { ty: "metaballs", category: "Blobs", desc: "Balls that melt into each other where they come close (a smooth union of spheres).", new: r#"{"type":"metaballs","blend":0.4,"balls":[{"center":[0,0.4,0],"radius":0.4},{"center":[0.45,0.7,0],"radius":0.3},{"center":[-0.3,0.9,0.1],"radius":0.25}]}"#,
         fields: &[("balls", "The balls: each a centre (in the node's coordinates) and a radius."), ("blend", "How far apart the balls start to merge, in metres: 0 = separate balls, larger = gooier.")] },
     ShapeInfo { ty: "union", category: "Combine", desc: "All its children together. With smooth > 0 they blend into each other where they meet.", new: r#"{"type":"union","smooth":0.2,"children":[{"type":"sphere","radius":0.5,"position":[0,0.5,0]},{"type":"box","size":[0.8,0.4,0.8],"position":[0,0.2,0]}]}"#,
@@ -262,6 +278,17 @@ pub fn formula_param(ty: &str, key: &str) -> Option<&'static crate::formulas::Pa
 /// The range of field `key` of a node of type `ty`: a formula's own, else
 /// field_range's.
 pub fn field_range_for(ty: &str, key: &str) -> (f64, f64) {
+    if ty == "flame" {
+        match key {
+            "points" => return (0.5, crate::scene::flame::MAX_POINTS as f64),
+            "resolution" => return (32.0, crate::scene::flame::MAX_RESOLUTION as f64),
+            "symmetry" => return (1.0, 12.0),
+            "density" => return (0.0, 30.0),
+            "glow" => return (0.0, 20.0),
+            "gamma" => return (0.5, 6.0),
+            _ => {}
+        }
+    }
     if let Some(p) = formula_param(ty, key) {
         return (p.min as f64, p.max as f64);
     }

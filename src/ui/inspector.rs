@@ -21,10 +21,10 @@ const OPTIONAL: &[&str] = &["cap", "snow_line", "sand_line", "count"];
 
 /// Integer fields (everything else numeric is a float, however the file
 /// happens to write it: `"radius": 1` must still edit as 1.2).
-const INTEGER: &[&str] = &["iterations", "octaves", "seed", "resolution", "count", "detail", "degree", "max"];
+const INTEGER: &[&str] = &["iterations", "octaves", "seed", "resolution", "count", "detail", "degree", "max", "symmetry"];
 
 /// Ranged fields whose slider is logarithmic (spanning orders of magnitude).
-const LOG: &[&str] = &["resolution", "softness"];
+const LOG: &[&str] = &["resolution", "softness", "points"];
 
 
 /// The inspector's node with its defaults filled in, for which object and
@@ -170,6 +170,25 @@ fn edit_value(ui: &mut egui::Ui, ty: &str, key: &str, v: &mut Value) -> bool {
                 .show_ui(ui, |ui| {
                     for opt in ["eroded", "perlin", "ridged", "billow"] {
                         c |= ui.selectable_value(s, opt.to_string(), opt).changed();
+                    }
+                })
+                .response
+                .on_hover_text(tip);
+            c
+        }
+        Value::String(s) if ty == "flame" && (key == "preset" || key == "palette") => {
+            let opts: Vec<(&str, &str)> = if key == "preset" {
+                crate::scene::flame::PRESETS.iter().map(|p| (p.0, p.1)).chain([("random", "A random system of 2 to 4 maps: every seed gives another.")]).collect()
+            } else {
+                crate::scene::flame::PALETTES.iter().map(|p| (p.0, "")).collect()
+            };
+            let mut c = false;
+            egui::ComboBox::from_id_salt(("flame", key))
+                .selected_text(s.as_str())
+                .show_ui(ui, |ui| {
+                    for (name, desc) in opts {
+                        let r = ui.selectable_value(s, name.to_string(), name);
+                        c |= if desc.is_empty() { r } else { r.on_hover_text(desc) }.changed();
                     }
                 })
                 .response
@@ -813,7 +832,7 @@ impl App {
                     for &cat in cats {
                         ui.menu_button(cat, |ui| {
                             let fams = if cat == "Fractals" { &crate::formulas::CATEGORIES[..] } else { &[] };
-                            for s in schema::shapes().iter().filter(|s| (s.category == cat || fams.contains(&s.category)) && (group || s.ty != "group")) {
+                            for s in schema::shapes().iter().filter(|s| (s.category == cat || fams.contains(&s.category)) && (group || (s.ty != "group" && s.ty != "flame"))) {
                                 if ui.button(s.ty).on_hover_text(s.desc).clicked() {
                                     if let Ok(v) = serde_json::from_str(s.new)
                                         && let Some(sel) = self.doc.add_child(top, &sub, v)

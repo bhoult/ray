@@ -358,7 +358,7 @@ impl App {
                 if let Some(m) = apply {
                     match (&self.sel, &target) {
                         (Selection::Node { top, sub }, Some((_, ty))) => {
-                            if ["nurbs", "revolve", "terrain", "water", "cloud", "emitter", "group"].contains(&ty.as_str()) {
+                            if ["nurbs", "revolve", "terrain", "water", "cloud", "flame", "emitter", "group"].contains(&ty.as_str()) {
                                 self.say(format!("a {ty} cannot go inside a modifier (it must stay a top-level object)"));
                             } else {
                                 let (top, sub) = (*top, sub.clone());

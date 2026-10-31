@@ -5,8 +5,10 @@
 //! edges break into wisps and the core stays dense. The renderers march
 //! through it (render/volume.rs, and lib.wgsl's twin).
 
+use super::flame::FlameGrid;
 use super::json::BallDef;
 use crate::math::{Aabb, Mat3, Vec3};
+use std::sync::Arc;
 
 /// Light-to-extinction scale: `density` 1 takes out this much light per metre
 /// at the core.
@@ -42,6 +44,19 @@ pub struct Volume {
     pub seed: u32,
     /// the droplets' colour (single-scattering albedo)
     pub color: Vec3,
+    /// a fractal flame's grid instead of the cloud's puffs and noise (the
+    /// cloud fields are then unused)
+    pub flame: Option<FlameVol>,
+}
+
+/// A flame volume (scene/flame.rs): its grid, in local coordinates (the
+/// flame's own, centred on the attractor), and how it glows.
+pub struct FlameVol {
+    pub grid: Arc<FlameGrid>,
+    /// emitted light per world metre at full density, before the colour
+    pub glow: f32,
+    /// the grid's longest side in world metres
+    pub size: f32,
 }
 
 /// A cumulus: a wide flat-bottomed heap, about 13 m across and 7 m tall.
@@ -130,5 +145,56 @@ pub fn build(
         detail: detail.clamp(1, 8),
         seed,
         color: Vec3::from_array(color),
+        flame: None,
+    })
+}
+
+/// A flame volume: `grid` set `size` metres along its longest side, `density`
+/// its optical depth across that side where it is dense, `glow` its
+/// brightness (both independent of its size).
+#[allow(clippy::too_many_arguments)]
+pub fn build_flame(
+    name: &str,
+    doc_index: usize,
+    grid: Arc<FlameGrid>,
+    size: f32,
+    density: f32,
+    glow: f32,
+    position: Option<[f32; 3]>,
+    rotation: Option<[f32; 3]>,
+    scale: Option<f32>,
+) -> Result<Volume, String> {
+    let s = scale.unwrap_or(1.0) * size;
+    if !(s > 0.0) || !s.is_finite() {
+        return Err("size and scale must be positive".into());
+    }
+    let rot = rotation.map(Mat3::euler_deg).unwrap_or(Mat3::IDENTITY);
+    let pos = Vec3::from_array(position.unwrap_or([0.0; 3]));
+    // world metres per flame unit
+    let k = s / grid.extent;
+    let lo = Vec3::from_array(grid.lo);
+    let hi = lo + Vec3::new(grid.n[0] as f32, grid.n[1] as f32, grid.n[2] as f32) * grid.cell;
+    let inv = rot.transpose();
+    let to_local = Mat3 { m: [inv.m[0] * (1.0 / k), inv.m[1] * (1.0 / k), inv.m[2] * (1.0 / k)] };
+    Ok(Volume {
+        name: name.to_string(),
+        doc_index,
+        aabb: Aabb::new(lo, hi).transform(rot, k, pos),
+        pos,
+        to_local,
+        scale: k,
+        min_scale: k,
+        puffs: Vec::new(),
+        blend: 0.0,
+        softness: 1.0,
+        base: 0.0,
+        sigma: density.max(0.0) / s,
+        turbulence: 0.0,
+        wisps: 0.0,
+        frequency: 1.0,
+        detail: 1,
+        seed: 0,
+        color: Vec3::ONE,
+        flame: Some(FlameVol { grid, glow: glow.max(0.0) / s, size: s }),
     })
 }

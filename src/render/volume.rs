@@ -11,7 +11,8 @@ use super::shade::Rng8;
 use super::trace::{Ray, slab};
 use crate::math::Vec3;
 use crate::noise::perlin3;
-use crate::scene::volume::Volume;
+use crate::scene::flame::FlameGrid;
+use crate::scene::volume::{FlameVol, Volume};
 use crate::simd::{F8, I8, M8, V8};
 
 /// Steps through a cloud along a view ray.
@@ -144,6 +145,10 @@ pub fn march(ctx: &Ctx, ray: &Ray, tmax: F8, active: M8, rng: &mut Rng8) -> (V8,
     let fill = V8::splat(env.amb_col) * (FILL * super::shade::AMBIENT * env.ambient);
     let jitter = rng.next();
     for v in &sc.volumes {
+        if let Some(f) = &v.flame {
+            light += flame_march(ctx, v, f, ray, tmax, active, jitter, &mut trans, (ldir, lcol), phase, fill);
+            continue;
+        }
         let (t0, t1) = slab(ray, v.aabb.min, v.aabb.max);
         let (t0, t1) = (t0.max(F8::zero()), t1.min(tmax));
         let mut lanes = active & t0.lt(t1) & trans.gt(F8::splat(0.01));
@@ -207,6 +212,22 @@ pub fn pick(scene: &crate::scene::Scene, o: Vec3, d: Vec3) -> Option<(f32, usize
         if t0 >= t1 || best.is_some_and(|(t, _)| t0 > t) {
             continue;
         }
+        // a flame: the first point dense enough along the ray, in small steps
+        if let Some(f) = &v.flame {
+            let dt = (t1 - t0) / 200.0;
+            let mut t = t0;
+            while t < t1 {
+                let q = v.to_local.apply(o + d * t - v.pos);
+                if f.grid.density_at([q.x, q.y, q.z]) > PICK_DENSITY {
+                    if best.is_none_or(|(b, _)| t < b) {
+                        best = Some((t, v.doc_index));
+                    }
+                    break;
+                }
+                t += dt;
+            }
+            continue;
+        }
         // sphere tracing through the puffs' smooth union, in local metres
         let mut t = t0;
         while t < t1 {
@@ -236,10 +257,29 @@ pub fn transmittance(ctx: &Ctx, o: V8, d: V8, tmax: F8, active: M8) -> F8 {
     // a fixed offset per point, so the steps do not line up into bands
     let jitter = super::shade::unit(super::shade::lowbias((o.x * 37.0 + o.z * 91.0 + o.y * 13.0).to_i8()));
     for v in &sc.volumes {
+        if v.flame.is_some() && v.sigma <= 0.0 {
+            continue;
+        }
         let (t0, t1) = slab(&ray, v.aabb.min, v.aabb.max);
         let (t0, t1) = (t0.max(F8::zero()), t1.min(tmax));
         let mut lanes = active & t0.lt(t1);
         if lanes.none() {
+            continue;
+        }
+        if let Some(f) = &v.flame {
+            let dt = (t1 - t0) * (1.0 / FLAME_SHADOW_STEPS as f32);
+            let mut t = jitter.mul_add(dt, t0);
+            let mut tau = F8::zero();
+            for _ in 0..FLAME_SHADOW_STEPS {
+                let (dens, _) = flame_sample(&f.grid, local(v, V8::at(o, d, t)), lanes, false);
+                tau = (dens * v.sigma).mul_add(dt, tau);
+                t += dt;
+                lanes &= t.lt(t1);
+                if lanes.none() {
+                    break;
+                }
+            }
+            trans *= (-tau).exp();
             continue;
         }
         let dt = (t1 - t0) * (1.0 / SHADOW_STEPS as f32);
@@ -261,4 +301,104 @@ pub fn transmittance(ctx: &Ctx, o: V8, d: V8, tmax: F8, active: M8) -> F8 {
         trans *= (-tau).exp();
     }
     trans
+}
+
+// ---- fractal flames (scene/flame.rs): a grid of density and colour
+
+/// Steps through a flame along a view ray, and along a shadow ray.
+const FLAME_STEPS: u32 = 64;
+const FLAME_SHADOW_STEPS: u32 = 16;
+/// The march toward the light from each step: where each sample is and the
+/// length it stands for, as fractions of the flame's longest side.
+const FLAME_LIGHT_AT: [f32; 4] = [0.02, 0.06, 0.14, 0.3];
+const FLAME_LIGHT_LEN: [f32; 4] = [0.04, 0.04, 0.12, 0.2];
+/// The density a click must find to pick a flame.
+const PICK_DENSITY: f32 = 0.08;
+
+/// The grid's density 0..1 at local points `q` (lanes `lanes`), and with
+/// `color` the colour times the density (premultiplied, so that the colour
+/// of an empty voxel does not darken its neighbours), both trilinear.
+#[inline(always)]
+fn flame_sample(g: &FlameGrid, q: V8, lanes: M8, color: bool) -> (F8, V8) {
+    let inv = 1.0 / g.cell;
+    let at = |c: F8, a: usize| (c - F8::splat(g.lo[a])) * inv - F8::splat(0.5);
+    let (gx, gy, gz) = (at(q.x, 0), at(q.y, 1), at(q.z, 2));
+    let top = |a: usize| F8::splat((g.n[a] - 1) as f32);
+    let inside = lanes & gx.ge(F8::zero()) & gy.ge(F8::zero()) & gz.ge(F8::zero()) & gx.le(top(0)) & gy.le(top(1)) & gz.le(top(2));
+    if inside.none() {
+        return (F8::zero(), V8::zero());
+    }
+    let low = |c: F8, a: usize| c.floor().clamp(0.0, (g.n[a] - 2) as f32);
+    let (x0, y0, z0) = (low(gx, 0), low(gy, 1), low(gz, 2));
+    let (fx, fy, fz) = (gx - x0, gy - y0, gz - z0);
+    let (nx, nxy) = (g.n[0] as i32, (g.n[0] * g.n[1]) as i32);
+    let base = x0.to_i8() + y0.to_i8().mul_lo(I8::splat(nx)) + z0.to_i8().mul_lo(I8::splat(nxy));
+    let mut d = F8::zero();
+    let mut dc = V8::zero();
+    for k in 0..8 {
+        let (dx, dy, dz) = (k & 1, (k >> 1) & 1, (k >> 2) & 1);
+        let w = if dx == 1 { fx } else { F8::one() - fx } * if dy == 1 { fy } else { F8::one() - fy } * if dz == 1 { fz } else { F8::one() - fz };
+        let word = I8::gather(&g.data, base + (dx + dy * nx + dz * nxy));
+        let dk = (word & 0xffff).to_f8() * (1.0 / 65535.0);
+        let wd = (w * dk).and(inside);
+        d += wd;
+        if color {
+            let r = (word.shr::<27>() & 31).to_f8() * (1.0 / 31.0);
+            let gg = (word.shr::<21>() & 63).to_f8() * (1.0 / 63.0);
+            let b = (word.shr::<16>() & 31).to_f8() * (1.0 / 31.0);
+            dc += V8::new(r, gg, b) * wd;
+        }
+    }
+    (d, dc)
+}
+
+/// A flame between the ray's origin and `tmax`: the light it glows and
+/// scatters this way (dimmed by the haze in front of it); `trans` is dimmed
+/// by what it stops.
+#[allow(clippy::too_many_arguments)]
+fn flame_march(ctx: &Ctx, v: &Volume, f: &FlameVol, ray: &Ray, tmax: F8, active: M8, jitter: F8, trans: &mut F8, (ldir, lcol): (Vec3, Vec3), phase: F8, fill: V8) -> V8 {
+    let (t0, t1) = slab(ray, v.aabb.min, v.aabb.max);
+    let (t0, t1) = (t0.max(F8::zero()), t1.min(tmax));
+    let mut lanes = active & t0.lt(t1) & trans.gt(F8::splat(0.01));
+    if lanes.none() {
+        return V8::zero();
+    }
+    let dt = (t1 - t0) * (1.0 / FLAME_STEPS as f32);
+    let mut t = jitter.mul_add(dt, t0);
+    let sun = V8::splat(ldir);
+    let mut here = V8::zero();
+    for _ in 0..FLAME_STEPS {
+        let p = V8::at(ray.o, ray.d, t);
+        let (d, dc) = flame_sample(&f.grid, local(v, p), lanes, true);
+        if d.gt(F8::zero()).any() {
+            let s = d * v.sigma;
+            let a = F8::one() - (-(s * dt)).exp();
+            // its glow, as much of the step's as gets out of the step
+            let tiny = F8::splat(1e-6);
+            let w = F8::select(s.gt(tiny), a / s.max(tiny), dt);
+            let mut src = dc * (w * f.glow);
+            if v.sigma > 0.0 {
+                // the light's way in, through the flame
+                let mut tau = F8::zero();
+                for k in 0..4 {
+                    let ql = local(v, sun.mul_add(F8::splat(FLAME_LIGHT_AT[k] * f.size), p));
+                    let (dl, _) = flame_sample(&f.grid, ql, lanes, false);
+                    tau = (dl * v.sigma).mul_add(F8::splat(FLAME_LIGHT_LEN[k] * f.size), tau);
+                }
+                let direct = (-tau).exp() * phase;
+                let many = (tau * -0.2).exp() * 0.3;
+                let albedo = dc * (F8::one() / d.max(tiny));
+                src += (V8::splat(lcol) * (direct + many) + fill).hadamard(albedo) * a;
+            }
+            here += src * *trans;
+            *trans *= F8::one() - a;
+        }
+        t += dt;
+        lanes &= t.lt(t1) & trans.gt(F8::splat(0.01));
+        if lanes.none() {
+            break;
+        }
+    }
+    let (fog, _) = super::atmos::fog(ctx, t0, ray.d);
+    here * fog
 }

@@ -68,6 +68,8 @@ pub struct Gpu {
     pub tables: Vec<u32>,
     /// the terrain maps in the terrain buffer (codegen::Upload::terrain_same)
     terrains: Vec<std::sync::Arc<crate::scene::terrain::Terrain>>,
+    /// and the flame grids after them
+    grids: Vec<std::sync::Arc<crate::scene::flame::FlameGrid>>,
     scene_id: u64,
     pub error: Option<String>,
     pub compile_ms: f32,
@@ -140,6 +142,7 @@ impl Gpu {
             layout_info: codegen::Layout::default(),
             tables: Vec::new(),
             terrains: Vec::new(),
+            grids: Vec::new(),
             scene_id: u64::MAX,
             error: None,
             compile_ms: 0.0,
@@ -188,7 +191,7 @@ impl Gpu {
             return self.pipeline.is_some() && self.scene_buf.is_some() && self.error.is_none();
         }
         self.scene_id = scene_id;
-        let up = codegen::build(scene, &self.terrains);
+        let up = codegen::build(scene, &self.terrains, &self.grids);
         let max = self.device.limits().max_storage_buffer_binding_size as usize;
         if up.terrain.len() * 4 > max || up.scene.len() * 4 > max {
             // (the bigger of the two is the one that does not fit)
@@ -215,6 +218,7 @@ impl Gpu {
         if !up.terrain_same || self.terrain_buf.is_none() {
             self.terrain_buf = Some(self.buffer("ray terrain", &up.terrain, storage));
             self.terrains = up.terrains.clone();
+            self.grids = up.grids.clone();
         }
         self.layout_info = up.layout;
         self.tables = up.tables.clone();

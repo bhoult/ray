@@ -657,6 +657,48 @@ pub enum ShapeDef {
         #[serde(default = "ones")]
         stretch: [f32; 3],
     },
+    /// a 3D fractal flame (top level only): an iterated function system of
+    /// affine maps bent by nonlinear variations, drawn by the chaos game into
+    /// a grid that is rendered as a glowing, scattering volume (scene/flame.rs)
+    Flame {
+        /// a ready-made flame, or "random" (a random system from `seed`);
+        /// `transforms`, when given, are drawn instead
+        #[serde(default = "flame_preset")]
+        preset: String,
+        #[serde(default, deserialize_with = "whole")]
+        seed: u32,
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        transforms: Option<Vec<crate::scene::flame::XFormDef>>,
+        /// a map applied to every point drawn (not to the orbit)
+        #[serde(default, rename = "final", skip_serializing_if = "Option::is_none")]
+        final_xform: Option<crate::scene::flame::XFormDef>,
+        /// copies turned about the flame's y axis (1: none)
+        #[serde(default = "one_u", deserialize_with = "whole")]
+        symmetry: u32,
+        #[serde(default = "flame_palette")]
+        palette: String,
+        /// colour stops along the palette, instead of a named one
+        #[serde(default, skip_serializing_if = "Option::is_none")]
+        colors: Option<Vec<[f32; 3]>>,
+        /// millions of points drawn
+        #[serde(default = "flame_points")]
+        points: f32,
+        /// voxels along the grid's longest side
+        #[serde(default = "flame_resolution", deserialize_with = "whole")]
+        resolution: u32,
+        /// the flame's longest side in metres (before `scale`)
+        #[serde(default = "flame_size")]
+        size: f32,
+        /// how much light it stops and scatters (0: glow only, no shadow)
+        #[serde(default = "flame_density")]
+        density: f32,
+        /// how brightly it glows in its own colours
+        #[serde(default = "flame_glow")]
+        glow: f32,
+        /// the density curve: higher brings out the faint parts
+        #[serde(default = "flame_gamma")]
+        gamma: f32,
+    },
     /// one of the formula catalog's fractals (formulas/mod.rs): its
     /// `type` names it (read by shape_or_formula and written by shape_out,
     /// its fields beside the node's like any shape's)
@@ -762,6 +804,33 @@ fn cloud_softness() -> f32 {
 }
 fn cloud_density() -> f32 {
     1.5
+}
+fn flame_preset() -> String {
+    "wildfire".into()
+}
+fn flame_palette() -> String {
+    "fire".into()
+}
+fn flame_points() -> f32 {
+    16.0
+}
+fn flame_resolution() -> u32 {
+    128
+}
+fn flame_size() -> f32 {
+    2.0
+}
+fn flame_density() -> f32 {
+    16.0
+}
+fn flame_glow() -> f32 {
+    3.0
+}
+fn flame_gamma() -> f32 {
+    1.5
+}
+fn one_u() -> u32 {
+    1
 }
 fn white() -> [f32; 3] {
     [1.0; 3]

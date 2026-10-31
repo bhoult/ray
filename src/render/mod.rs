@@ -1112,6 +1112,11 @@ mod tests {
                 Vec3::new(0.0, -1.0, 0.0), -0.2),
             ("fractal", serde_json::json!([floor.clone(), { "type": "menger", "iterations": 4, "scale": 1.2, "position": [0, 1.2, 0] }]),
                 Vec3::new(1.5, 2.2, 4.0), -0.3),
+            // (one that glows and scatters, one that only glows)
+            ("flames", serde_json::json!([floor.clone(),
+                { "type": "flame", "preset": "seahorse", "palette": "nebula", "points": 2, "resolution": 64, "position": [-0.6, 1.1, 0] },
+                { "type": "flame", "preset": "nautilus", "palette": "gold", "points": 1, "resolution": 48, "density": 0, "glow": 6, "size": 1.2, "position": [1.1, 0.8, 0], "rotation": [0, 40, 0] }
+            ]), Vec3::new(0.0, 1.2, 3.6), -0.1),
             // (pillars before a low sun, in haze up to 4 m: shafts between
             // them; a lamp's glow in it)
             ("haze", serde_json::json!([floor,
@@ -1125,8 +1130,13 @@ mod tests {
         gpu.gpu = Some(g);
         let mut cpu = Renderer::new();
         let still = Waves::default();
+        // (RAY_GPU_CASES=name,name compares only those)
+        let only: Option<Vec<String>> = std::env::var("RAY_GPU_CASES").ok().map(|v| v.split(',').map(|n| n.trim().to_string()).collect());
         // (each scene its own id: the GPU keeps what it uploaded by it)
         for (id, (name, objects, eye, pitch)) in cases.into_iter().enumerate() {
+            if only.as_ref().is_some_and(|o| !o.iter().any(|x| x == name)) {
+                continue;
+            }
             let env = if name == "haze" {
                 serde_json::json!({ "preset": "golden", "sun_azimuth": -20, "sun_elevation": 20, "haze_density": 0.6, "haze_top": 5, "haze_color": [1, 0.9, 0.8] })
             } else {

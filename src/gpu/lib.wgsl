@@ -1552,6 +1552,12 @@ fn cloud_march(r: Ray, tmax: f32) -> vec4f {
     let jitter = rnd();
     for (var i = 0u; i < F.n_volumes; i++) {
         let b = F.off_volumes + i * VOL;
+        if (u(b + 33u) == 1u) {
+            let fm = flame_march(r, b, tmax, trans, jitter, ldir, lcol, phase, fill);
+            light += fm.xyz;
+            trans = fm.w;
+            continue;
+        }
         let tt = slab(r, v3(b), v3(b + 4u));
         let t0 = max(tt.x, 0.0);
         let t1 = min(tt.y, tmax);
@@ -1608,6 +1614,10 @@ fn cloud_transmittance(o: vec3f, d: vec3f, tmax: f32) -> f32 {
     var trans = 1.0;
     for (var i = 0u; i < F.n_volumes; i++) {
         let b = F.off_volumes + i * VOL;
+        if (u(b + 33u) == 1u) {
+            trans *= flame_transmittance(r, o, d, b, tmax, jitter);
+            continue;
+        }
         let tt = slab(r, v3(b), v3(b + 4u));
         let t0 = max(tt.x, 0.0);
         let t1 = min(tt.y, tmax);
@@ -1632,6 +1642,122 @@ fn cloud_transmittance(o: vec3f, d: vec3f, tmax: f32) -> f32 {
         trans *= exp(-tau);
     }
     return trans;
+}
+
+// ---- fractal flames (render/volume.rs flame_*): a grid of density and
+// colour in T, a word per voxel (density in the low 16 bits, RGB 5:6:5 in the
+// high 16); the header (VOL words) holds the box, the transform, the grid's
+// low corner and 1 / cell (24..27), its size (28..30), where it is in T (31),
+// the glow (32), 1 for a flame (33) and the flame's size in metres (34)
+
+const FL_STEPS: u32 = 64u;
+const FL_SHADOW_STEPS: u32 = 16u;
+
+struct FlS {
+    d: f32,
+    dc: vec3f,
+}
+
+/// The grid's density at local `q` and, with `color`, its colour times the
+/// density, trilinear.
+fn fl_sample(b: u32, q: vec3f, color: bool) -> FlS {
+    let g = (q - v3(b + 24u)) * S[b + 27u] - vec3f(0.5);
+    let n = vec3u(u(b + 28u), u(b + 29u), u(b + 30u));
+    if (any(g < vec3f(0.0)) || any(g > vec3f(n - vec3u(1u)))) {
+        return FlS(0.0, vec3f(0.0));
+    }
+    let i0 = min(vec3u(floor(g)), n - vec3u(2u));
+    let fr = g - vec3f(i0);
+    let nx = n.x;
+    let nxy = n.x * n.y;
+    let base = u(b + 31u) + i0.x + i0.y * nx + i0.z * nxy;
+    var d = 0.0;
+    var dc = vec3f(0.0);
+    for (var k = 0u; k < 8u; k++) {
+        let dx = k & 1u;
+        let dy = (k >> 1u) & 1u;
+        let dz = (k >> 2u) & 1u;
+        let w = select(1.0 - fr.x, fr.x, dx == 1u) * select(1.0 - fr.y, fr.y, dy == 1u) * select(1.0 - fr.z, fr.z, dz == 1u);
+        let word = bitcast<u32>(T[base + dx + dy * nx + dz * nxy]);
+        let wd = w * f32(word & 0xffffu) * (1.0 / 65535.0);
+        d += wd;
+        if (color) {
+            dc += vec3f(f32((word >> 27u) & 31u) * (1.0 / 31.0), f32((word >> 21u) & 63u) * (1.0 / 63.0), f32((word >> 16u) & 31u) * (1.0 / 31.0)) * wd;
+        }
+    }
+    return FlS(d, dc);
+}
+
+/// A flame along `r` before `tmax`: the light it glows and scatters back
+/// (xyz) and `trans` dimmed by what it stops (w).
+fn flame_march(r: Ray, b: u32, tmax: f32, trans_in: f32, jitter: f32, ldir: vec3f, lcol: vec3f, phase: f32, fill: vec3f) -> vec4f {
+    var trans = trans_in;
+    let tt = slab(r, v3(b), v3(b + 4u));
+    let t0 = max(tt.x, 0.0);
+    let t1 = min(tt.y, tmax);
+    if (t0 >= t1 || trans <= 0.01) {
+        return vec4f(0.0, 0.0, 0.0, trans);
+    }
+    let dt = (t1 - t0) * (1.0 / f32(FL_STEPS));
+    var t = jitter * dt + t0;
+    let sigma = S[b + 3u];
+    let glow = S[b + 32u];
+    let size = S[b + 34u];
+    var here = vec3f(0.0);
+    for (var k = 0u; k < FL_STEPS; k++) {
+        let p = r.o + r.d * t;
+        let sm = fl_sample(b, vol_local(b, p), true);
+        if (sm.d > 0.0) {
+            let s = sm.d * sigma;
+            let a = 1.0 - exp(-(s * dt));
+            let w = select(dt, a / max(s, 1e-6), s > 1e-6);
+            var src = sm.dc * (w * glow);
+            if (sigma > 0.0) {
+                // the light's way in (render/volume.rs FLAME_LIGHT_AT / _LEN)
+                var tau = fl_sample(b, vol_local(b, ldir * (0.02 * size) + p), false).d * (0.04 * size);
+                tau += fl_sample(b, vol_local(b, ldir * (0.06 * size) + p), false).d * (0.04 * size);
+                tau += fl_sample(b, vol_local(b, ldir * (0.14 * size) + p), false).d * (0.12 * size);
+                tau += fl_sample(b, vol_local(b, ldir * (0.3 * size) + p), false).d * (0.2 * size);
+                tau *= sigma;
+                let direct = exp(-tau) * phase;
+                let many = exp(tau * -0.2) * 0.3;
+                let albedo = sm.dc / max(sm.d, 1e-6);
+                src += (lcol * (direct + many) + fill) * albedo * a;
+            }
+            here += src * trans;
+            trans *= 1.0 - a;
+        }
+        t += dt;
+        if (t >= t1 || trans <= 0.01) {
+            break;
+        }
+    }
+    return vec4f(here * fog(t0, r.d).w, trans);
+}
+
+/// The fraction of light a flame lets through from `o` along `d`.
+fn flame_transmittance(r: Ray, o: vec3f, d: vec3f, b: u32, tmax: f32, jitter: f32) -> f32 {
+    let sigma = S[b + 3u];
+    if (sigma <= 0.0) {
+        return 1.0;
+    }
+    let tt = slab(r, v3(b), v3(b + 4u));
+    let t0 = max(tt.x, 0.0);
+    let t1 = min(tt.y, tmax);
+    if (t0 >= t1) {
+        return 1.0;
+    }
+    let dt = (t1 - t0) * (1.0 / f32(FL_SHADOW_STEPS));
+    var t = jitter * dt + t0;
+    var tau = 0.0;
+    for (var k = 0u; k < FL_SHADOW_STEPS; k++) {
+        tau += fl_sample(b, vol_local(b, o + d * t), false).d * sigma * dt;
+        t += dt;
+        if (t >= t1) {
+            break;
+        }
+    }
+    return exp(-tau);
 }
 
 /// One object's distance at `p` (AO).

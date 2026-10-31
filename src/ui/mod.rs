@@ -2932,6 +2932,9 @@ impl App {
         if ty == "cloud" {
             return self.add_cloud();
         }
+        if ty == "flame" {
+            return self.add_flame();
+        }
         let Some(info) = schema::shape(ty) else { return };
         let Ok(mut node) = serde_json::from_str::<serde_json::Value>(info.new) else { return };
         let (c, d) = self.view_ray(self.view_rect.center());
@@ -2998,6 +3001,14 @@ impl App {
         let at = c.pos + flat * 35.0 + Vec3::new(0.0, 10.0, 0.0);
         let p = [at.x, at.y, at.z].map(|v| (v as f64 * 10.0).round() / 10.0);
         self.sel = self.doc.add_object(cloud_node(p));
+    }
+
+    /// A fractal flame 4 m ahead, at eye height (it floats where it is put).
+    pub(super) fn add_flame(&mut self) {
+        let (c, d) = self.view_ray(self.view_rect.center());
+        let at = c.pos + d * 4.0;
+        let p = [at.x, at.y, at.z].map(|v| (v as f64 * 100.0).round() / 100.0);
+        self.sel = self.doc.add_object(serde_json::json!({ "name": "flame", "type": "flame", "position": p }));
     }
 
     fn menu(&mut self, ui: &mut egui::Ui) {

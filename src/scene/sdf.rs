@@ -685,7 +685,7 @@ impl<'a, M: MaterialSource> Compiler<'a, M> {
                 self.step = self.step.min(1.0 / (1.0 + depth.abs() * frequency.abs() * slope).min(14.0));
                 Ok((d, b.grow(depth.abs())))
             }
-            S::Terrain(_) | S::Water { .. } | S::Cloud { .. } => Err("terrain, water and clouds must be top-level objects".into()),
+            S::Terrain(_) | S::Water { .. } | S::Cloud { .. } | S::Flame { .. } => Err("terrain, water, clouds and flames must be top-level objects".into()),
             // in a boolean or under a modifier: a leaf of the program, by its
             // signed distance (alone at the top level a surface is hit exactly)
             S::Nurbs { .. } | S::Revolve { .. } => {
