@@ -39,7 +39,7 @@ The same renderer also runs on the GPU as a generated WGSL compute shader, and b
 
 ## Fractals
 
-**[docs/FRACTALS.md](docs/FRACTALS.md)** is the fractal reference: all 74 kinds of fractal ray draws, each with its formula and distance estimate, where it came from, its parameters and a picture. The families:
+**[docs/FRACTALS.md](docs/FRACTALS.md)** is the fractal reference: an index of all 74 kinds of fractal ray draws, with a thumbnail and a line on each, and a page for each (`docs/fractals/`) with its formula and distance estimate, where it came from, its parameters and pictures. The families:
 
 - the classics: Menger sponge, Mandelbulb, Mandelbox, quaternion Julia, Sierpinski, Apollonian, kaleidoscopic IFS, pseudo-Kleinian;
 - box folds: Amazing Surf, Kalibox, Mandalay box, Kaliset, bulb-box;

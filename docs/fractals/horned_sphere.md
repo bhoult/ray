@@ -1,0 +1,39 @@
+[← Cusp Vaults](cusp_vaults.md) · [All fractals](../FRACTALS.md#originals) · [Octet Truss of Trusses →](octet_truss.md)
+
+# Alexander's Horned Sphere (`horned_sphere`)
+
+*Originals*
+
+![Alexander's Horned Sphere](../images/fractals/horned_sphere.jpg)
+
+A ball grows two horns that curl toward each other. Where they nearly meet, each horn forks into two smaller horns, and the left pair clasps the right pair like two hooks caught through each other. Every smaller horn forks and clasps again, so the tips crowd into knots of hooks within hooks, and a loop around one of the first horns could never be slipped off. This is the wild sphere of topology: its surface is a sphere, but the space outside it is not simply connected. Left: the whole, as Add makes it. Right: a close-up of the clasps, several generations deep.
+
+**Formula.** The construction is Alexander's: cut a slice out of a torus, hang a smaller torus on each cut face so that the two are linked, then cut each of those open and repeat. Here every generation is a copy of one unit ring, a circle of radius 1 in the $`xy`$ plane cut open across the $`+x`$ axis by the half angle $`g`$. Its two cut ends are $`T_\pm = (\cos g, \pm\sin g, 0)`$. On each hangs a child ring $`s`$ times smaller (`shrink`), placed by a similarity: its back sits on the tip, so the horn arriving there forks into the child's two halves; its center is $`T_\pm \mp s\,\hat y`$, so it opens toward the other tip; and its plane contains the line between the two children's centers and is turned by $`\beta`$ (`turn`) from the parent's for one child and by $`\beta + 90°`$ for the other. The gap is set by
+
+```math
+\sin g = c\,s
+```
+
+with $`c`$ = `clasp`. The children's centers are then $`2(\sin g - s)`$ apart along that line, and each child's cut end lies in the other's plane, $`|3s - 2\sin g|`$ from its center, which is inside its hole for every allowed $`c`$ and $`s`$: the children clasp. Each ring's tube is `tube` ($`t`$) thick at its back and narrows toward its cut ends as
+
+```math
+\tau(\varphi) = t\,s^{\,a\,(\pi - \varphi)/(\pi - g)}, \qquad \varphi = |\mathrm{atan2}(y, x)| \in [g, \pi],
+```
+
+where $`a`$ is `taper`. At $`a = 1`$ the tips are exactly as thick as the children's backs, so a horn runs on unbroken through every fork. The ends are capped round. The first ring also carries a ball of radius `ball` centered on its back, $`(-1, 0, 0)`$, so the first two horns grow out of a sphere. In the shape's frame the first ring's cut faces up and the ring faces the viewer.
+
+**Distance estimate.** In its own frame, the distance to a ring is the distance to its circle (or, inside the gap, to the nearest cut end) less $`\tau`$ at the point's own angle: exact for a plain tube, and with the taper within the tube's slope of the true distance. That slope is at most $`t\,|\ln s|\,a/(\pi - g)`$, about 0.09 at the defaults, which the step of 0.9 covers. Each child's frame is a similarity, so its distances are scaled by $`s^n`$. Each ring is smooth-unioned with its parent only (the quadratic smooth minimum with $`k`$ = `blend` $`\cdot\,t\,s^n`$), which fillets the fork and keeps the result independent of the order in which the rings are visited. The rings form a binary tree, searched depth first, the child with the smaller bound first. A subtree is bounded by its ring's whole torus, with its thickest tube, and the ball of radius $`(\sin g - s) + sR`$ about the middle of its cut, $`(\cos g, 0, 0)`$, that holds all its descendants, where
+
+```math
+R = \max\left(1 + t,\ \frac{\sqrt{\cos^2 g + (\sin g - s)^2}}{1 - s}\right)
+```
+
+is the radius about a ring's center that holds it and its whole subtree. A subtree is skipped when its bound is at least the best distance so far plus its fillet's $`k`$, beyond which no ring in it, filleted or not, can lower the result. So the search is exact for the drawn depth, and fast: interlocked children have overlapping bounding balls, which is why the bound is a torus and a small ball rather than one ball around the whole subtree. The estimate passes the steepness test at the defaults and at every corner of the parameter ranges we tried. Orbit trap: the generation of the nearest ring.
+
+**Origin.** This distance-estimated form, drawn to any depth, was made for ray by Claude (Anthropic's Claude Opus 5.5), October 2026. The object is J. W. Alexander's, from "An example of a simply connected surface bounding a region which is not simply connected" (*Proceedings of the National Academy of Sciences*, 1924); the construction from tori follows the usual modern description of it. This construction from tapered torus arcs, the clasp geometry ($`\sin g = c\,s`$, the children square to each other), and the bounded depth-first search that makes the distance exact to any depth are ray's own (2026). The horned sphere has been modeled before, a few levels deep: Lucien Grillet's 3D-printed sculpture, four levels at a scale of 43% (["3D Printed Models of Wild Spheres"](https://archive.bridgesmathart.org/2022/bridges2022-413.html), Bridges 2022); [ICERM](https://icerm.brown.edu/portfolio/alexanders-horned-sphere)'s model rendered in POV-Ray; the Wolfram Demonstrations ["Grow an Alexander Horned Sphere"](https://demonstrations.wolfram.com/GrowAnAlexanderHornedSphere/) and ["The Mating Dance of the Alexander Horned Spheres"](https://demonstrations.wolfram.com/TheMatingDanceOfTheAlexanderHornedSpheres/); and Jos Leys's image [*Alexander's Horn*](https://www.ultrafractal.com/showcase/jos/alexanders-horn.html). So the object is not new; to our knowledge, a distance-estimated version, which a fractal renderer can draw to any depth and fly into, is. We searched the web for Fractal Forums threads and shaders ("Alexander horned sphere shadertoy raymarching distance estimator", "fractalforums horned sphere fractal render", "\"Alexander horned sphere\" shader OR glsl OR raymarch OR \"distance field\""), Mandelbulber 2's formula list (nothing named horn, Alexander or wild) and Fragmentarium's examples, and found only the models above; Shadertoy's own search ("horned sphere") would not load for us. Nearest relatives in this catalog: `msltoe_donut`, tori looped around tori, whose links hang on the ring instead of clasping each other across a gap; `knot`, a rope of ropes; and `seifert_gasket`, whose strands are linked but not nested.
+
+**Parameters.** `shrink` (0.45): how much smaller each generation is, 0.3 to 0.5; small values leave sparse clasps that are easy to follow, large ones pack them into a dense knot. `clasp` (1.35): how deep each pair reaches into the other, 1.2 to 1.6, as $`\sin g`$ over `shrink`; at 1.5 each ring's gap sits at the center of the ring it clasps. `turn` (45): degrees between a ring's plane and its first child's, 0 to 90; the two children are always square to each other, and 45 makes them mirror images. At 0 and 90 one child lies in its parent's plane and overlaps the parent's tip for a stretch; 15 to 75 keeps them clear. `tube` (0.28): the horns' thickness at a ring's back, as a share of its radius, 0.05 to 0.35. At the defaults the horns can be up to 0.45 thick before any two touch; toward the corners of `shrink` and `clasp` the thick ones can meet. `taper` (1): how much the horns narrow toward their tips, 0 (plain tubes, with a step at every fork) to 1 (each horn narrows to the thickness of the two it forks into). `blend` (0.5): the fillet at each fork, as a share of the child's thickness, 0 to 1; 0 leaves a sharp crease. `ball` (0.7): the radius of the ball the first horns grow from, 0 to 0.9; 0 leaves a torus with a slice cut out. `iterations` (8, up to 14): generations of horns; each is `shrink` times smaller, and more are added close up.
+
+---
+
+[← Cusp Vaults](cusp_vaults.md) · [All fractals](../FRACTALS.md#originals) · [Octet Truss of Trusses →](octet_truss.md)
