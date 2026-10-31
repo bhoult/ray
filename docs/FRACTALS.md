@@ -48,9 +48,9 @@ where $\mathrm{mid}$ is the middle of the three values, computed as $\min\bigl(\
 
 The best-known 3D relative of the Mandelbrot set: a round bulb covered in buds, ridges and cauliflower-like growths, made by raising a point to a power in spherical coordinates. ray stands it upright, with the y axis as its pole.
 
-**Formula.** Start from $z = p$ and $dr = 1$, and while $r = |z| < 2$, for at most `iterations` steps, repeat:
+**Formula.** Start from $z = p$ and $dr = 1$, and while $r = |z| \lt  2$, for at most `iterations` steps, repeat:
 
-$$\theta = \operatorname{atan2}\!\bigl(\sqrt{z_x^2 + z_z^2},\ z_y\bigr), \qquad \phi = \operatorname{atan2}(z_z,\ z_x)$$
+$$\theta = \mathrm{atan2}\!\bigl(\sqrt{z_x^2 + z_z^2},\ z_y\bigr), \qquad \phi = \mathrm{atan2}(z_z,\ z_x)$$
 
 $$dr \leftarrow n\,r^{\,n-1}\,dr + 1, \qquad z \leftarrow r^n\bigl(\sin n\theta\,\cos n\phi,\ \cos n\theta,\ \sin n\theta\,\sin n\phi\bigr) + p$$
 
@@ -70,7 +70,7 @@ Box folds and sphere folds repeated with a scale. At the Add example's fold scal
 
 $$z \leftarrow 2\,\mathrm{clamp}(z, -1, 1) - z \quad \text{(box fold, on each component)}$$
 
-$$k = \begin{cases} 1/m^2 & |z|^2 < m^2 \\ 1/|z|^2 & m^2 \le |z|^2 < 1 \\ 1 & \text{otherwise} \end{cases}, \qquad z \leftarrow k\,z \quad \text{(sphere fold)}$$
+$$k = \begin{cases} 1/m^2 & |z|^2 \lt  m^2 \\ 1/|z|^2 & m^2 \le |z|^2 \lt  1 \\ 1 & \text{otherwise} \end{cases}, \qquad z \leftarrow k\,z \quad \text{(sphere fold)}$$
 
 $$z \leftarrow s\,z + p, \qquad dr \leftarrow |s|\,k\,dr + 1$$
 
@@ -86,7 +86,7 @@ with $s$ the `fold_scale`, $m$ the `min_radius`, and the sphere fold's fixed rad
 
 A Julia set of $z \mapsto z^2 + c$ over the quaternions, a 4D object, sliced in 3D where the fourth coordinate is 0. It is smooth and organic, with swirling shells and whorls, and a small change to $c$ reshapes it completely.
 
-**Formula.** Start from the quaternion $z = (p_x, p_y, p_z, 0)$, whose first component is the real part, and $|z'|^2 = 1$. While $|z|^2 < 16$, for at most `iterations` steps, repeat:
+**Formula.** Start from the quaternion $z = (p_x, p_y, p_z, 0)$, whose first component is the real part, and $|z'|^2 = 1$. While $|z|^2 \lt  16$, for at most `iterations` steps, repeat:
 
 $$|z'|^2 \leftarrow 4\,|z|^2\,|z'|^2, \qquad z \leftarrow z^2 + c$$
 
@@ -108,7 +108,7 @@ The 3D analog of Sierpiński's triangle: a tetrahedron made of four half-size co
 
 **Formula.** Start from $q = p$ and repeat `iterations` times: reflect in three of the tetrahedron's mirror planes,
 
-$$\text{if } q_x + q_y < 0:\ (q_x, q_y) \leftarrow (-q_y, -q_x); \quad \text{if } q_x + q_z < 0:\ (q_x, q_z) \leftarrow (-q_z, -q_x); \quad \text{if } q_y + q_z < 0:\ (q_y, q_z) \leftarrow (-q_z, -q_y)$$
+$$\text{if } q_x + q_y \lt  0:\ (q_x, q_y) \leftarrow (-q_y, -q_x); \quad \text{if } q_x + q_z \lt  0:\ (q_x, q_z) \leftarrow (-q_z, -q_x); \quad \text{if } q_y + q_z \lt  0:\ (q_y, q_z) \leftarrow (-q_z, -q_y)$$
 
 which brings points toward the copy at the vertex $(1, 1, 1)$, then scale by 2 about that vertex: $q \leftarrow 2q - (1, 1, 1)$. After $n$ steps, measure the base tetrahedron with vertices $(1,1,1)$, $(-1,-1,1)$, $(-1,1,-1)$, $(1,-1,-1)$ by its four face planes, and scale back:
 
@@ -148,7 +148,7 @@ Knighty's kaleidoscopic IFS in its Menger form: space is folded into one mirror 
 
 1. Fold into the cube's fundamental wedge: $q \leftarrow (|q_x|, |q_y|, |q_z|)$, then sort the components so that $q_x \ge q_y \ge q_z$.
 2. Turn: $q \leftarrow R\,q$, with $R = R_z(\gamma)\,R_y(\beta)\,R_x(\alpha)$ built from `angles` $= (\alpha, \beta, \gamma)$.
-3. Scale about the offset $o$: $q \leftarrow s\,q - (s - 1)\,o$, and then, if $q_z < -\tfrac12 (s - 1)\,o_z$, $q_z \leftarrow q_z + (s - 1)\,o_z$.
+3. Scale about the offset $o$: $q \leftarrow s\,q - (s - 1)\,o$, and then, if $q_z \lt  -\tfrac12 (s - 1)\,o_z$, $q_z \leftarrow q_z + (s - 1)\,o_z$.
 
 The last test keeps a second copy along $z$: with $s = 3$, $o = (1, 1, 1)$ and no turn, the copies centered at $(\tfrac23, \tfrac23, \tfrac23)$ and $(\tfrac23, \tfrac23, 0)$ become, by symmetry, the Menger sponge's 8 corner and 12 edge cubes. After $n$ steps, measure the cube $[-1, 1]^3$ and scale back:
 
@@ -156,7 +156,7 @@ $$d = \mathrm{sdBox}(q, 1)\; s^{-n}$$
 
 Orbit trap: the smallest $|q| / s^k$ along the orbit (the nearest it comes to the center in the shape's own units), times 1.5.
 
-**Origin.** Knighty introduced kaleidoscopic IFS on Fractal Forums on 1 May 2010, in the thread [Kaleidoscopic (escape time) IFS](https://www.fractalforums.com/sierpinski-gasket/kaleidoscopic-(escape-time-ifs)/): fold space by the symmetry planes of a polyhedron, rotate before or after the folds, and stretch about a center. ray's kernel is his `Menger3` from that first post, whose $z$ test above is written there as $z \leftarrow s z$, then $z \leftarrow z - (s-1)\,o_z$ if $z > \tfrac12 (s - 1)\,o_z$ (the same thing). ray keeps one rotation, in Knighty's second slot (after the folds), and measures a box where Knighty used $(|q| - 2)\,s^{-n}$. See also Mikael Hvidtfeldt Christensen's [Folding Space II: Kaleidoscopic Fractals](https://blog.hvidtfeldts.net/index.php/2010/06/folding-space-ii-kaleidoscopic-fractals/) (2010).
+**Origin.** Knighty introduced kaleidoscopic IFS on Fractal Forums on 1 May 2010, in the thread [Kaleidoscopic (escape time) IFS](https://www.fractalforums.com/sierpinski-gasket/kaleidoscopic-(escape-time-ifs)/): fold space by the symmetry planes of a polyhedron, rotate before or after the folds, and stretch about a center. ray's kernel is his `Menger3` from that first post, whose $z$ test above is written there as $z \leftarrow s z$, then $z \leftarrow z - (s-1)\,o_z$ if $z \gt  \tfrac12 (s - 1)\,o_z$ (the same thing). ray keeps one rotation, in Knighty's second slot (after the folds), and measures a box where Knighty used $(|q| - 2)\,s^{-n}$. See also Mikael Hvidtfeldt Christensen's [Folding Space II: Kaleidoscopic Fractals](https://blog.hvidtfeldts.net/index.php/2010/06/folding-space-ii-kaleidoscopic-fractals/) (2010).
 
 **Parameters.** `fold_scale` (3): how much each step scales, 1.2 to 6; 3 is the Menger sponge, and 2 to 4 is typical. `offset` ((1, 1, 1)): the point each step scales away from, which sets where the copies sit. `angles` ((0, 0, 0); the Add example uses (12, 8, 0)): degrees turned about x, then y, then z at every step; 0 is the Menger sponge, and a few degrees twist it into something new. `iterations` (6): steps, 1 to 12, at a linear cost. Close up, ray adds steps as the pixels can resolve them, up to 24.
 
@@ -262,7 +262,7 @@ Distance estimate: the depth into the deepest such hole, $d = \max_i\,(h - |z_i|
 
 A Mandelbox and a Mandelbulb in one step: the box and sphere folds and a scale, then the power 2 bulb's squaring. The result is a craggy floating block of rippled ledges, caves and bulb-like knots, with a pattern of flowers on its top.
 
-**Formula.** Start from $z = p$ and repeat: fold each coordinate at $F$, $x \leftarrow 2F\operatorname{sign}(x) - x$ where $|x| > F$. Then sphere fold with $k = 1/m^2$ if $|z|^2 < m^2$, $1/|z|^2$ if $|z|^2 < 1$, else 1, and scale: $w = 2 s k\, z$. Then square as the power 2 Mandelbulb does, with $\rho = \sqrt{w_x^2 + w_z^2}$:
+**Formula.** Start from $z = p$ and repeat: fold each coordinate at $F$, $x \leftarrow 2F\mathrm{sign}(x) - x$ where $|x| \gt  F$. Then sphere fold with $k = 1/m^2$ if $|z|^2 \lt  m^2$, $1/|z|^2$ if $|z|^2 \lt  1$, else 1, and scale: $w = 2 s k\, z$. Then square as the power 2 Mandelbulb does, with $\rho = \sqrt{w_x^2 + w_z^2}$:
 
 $$z \leftarrow \left(\frac{2w_y(w_x^2 - w_z^2)}{\rho},\ Z\,(w_y^2 - \rho^2),\ \frac{4w_x w_y w_z}{\rho}\right) + p.$$
 
@@ -282,7 +282,7 @@ The Mandelbulb's family: power maps in spherical coordinates, with other constan
 
 The Mandelbulb's Julia sets: the bulb's power-8 map with a fixed constant added at every step in place of the point. Every constant sculpts something different; the default stacks knobbed, ringed tiers studded with small rosettes, like an ornate urn.
 
-**Formula.** Start from $\mathbf z = p$ and repeat, in spherical coordinates about the vertical axis ($r = |\mathbf z|$, $\theta = \operatorname{atan2}(\sqrt{x^2+z^2},\, y)$, $\phi = \operatorname{atan2}(z, x)$):
+**Formula.** Start from $\mathbf z = p$ and repeat, in spherical coordinates about the vertical axis ($r = |\mathbf z|$, $\theta = \mathrm{atan2}(\sqrt{x^2+z^2},\, y)$, $\phi = \mathrm{atan2}(z, x)$):
 
 $$\mathbf z \leftarrow r^n\,(\sin n\theta\,\cos n\phi,\ \cos n\theta,\ \sin n\theta\,\sin n\phi) + c$$
 
@@ -300,7 +300,7 @@ The Tricorn grown into 3D: the slice facing you is the three-cornered Mandelbar 
 
 **Formula.** Take $x$ as the real part and $(y, z)$ as one imaginary direction, conjugate $y$, and raise to the $n$th power as a complex number: with $\rho = \sqrt{y^2+z^2}$ and $w = (x + i\rho)^n$,
 
-$$\mathbf z \leftarrow \Bigl(\operatorname{Re} w,\ -\operatorname{Im} w\,\frac{y}{\rho},\ \operatorname{Im} w\,\frac{z}{\rho}\Bigr) + c,$$
+$$\mathbf z \leftarrow \Bigl(\mathrm{Re} w,\ -\mathrm{Im} w\,\frac{y}{\rho},\ \mathrm{Im} w\,\frac{z}{\rho}\Bigr) + c,$$
 
 starting from $\mathbf z = c = p$. For $n = 2$ this is $(x^2-y^2-z^2,\ -2xy,\ 2xz) + c$: the $xy$ plane iterates $\bar z^2 + c$ (the Tricorn) and the $xz$ plane $z^2 + c$ (the Mandelbrot set). Since $|w| = r^n$, the distance estimate is $d = \tfrac12\,r\ln r/r'$ with $r' \leftarrow n\,r^{n-1}r' + 1$, bailing out at $r = 256$. For $n = 2$ the set is shifted 0.5 along $x$ to center it; the higher powers are centered already.
 
@@ -314,13 +314,13 @@ starting from $\mathbf z = c = p$. For $n = 2$ this is $(x^2-y^2-z^2,\ -2xy,\ 2x
 
 The Burning Ship in 3D: seen from the front, its silhouette is the familiar ship, masts and flames on top and the keel's needle trailing to the left, while in depth the hull rounds out into a swirled, glassy bowl.
 
-**Formula.** Take the absolute value of every component, then apply the Mandelbulb's power map in its latitude form, about a pole running front to back ($r = |\mathbf z|$, latitude $\theta = \operatorname{atan2}(z, \sqrt{x^2+y^2})$, longitude $\phi = \operatorname{atan2}(y, x)$, with $x, y, z$ the absolute values of the components):
+**Formula.** Take the absolute value of every component, then apply the Mandelbulb's power map in its latitude form, about a pole running front to back ($r = |\mathbf z|$, latitude $\theta = \mathrm{atan2}(z, \sqrt{x^2+y^2})$, longitude $\phi = \mathrm{atan2}(y, x)$, with $x, y, z$ the absolute values of the components):
 
 $$\mathbf z \leftarrow r^n\,(\cos n\theta\,\cos n\phi,\ \cos n\theta\,\sin n\phi,\ \sin n\theta) + c$$
 
-from $\mathbf z = c$, where $c$ is the point with $y$ flipped (so the masts point up, as the 2D ship is always shown) and, for $n = 2$, shifted to center the hull. In the plane $z = 0$ this is exactly $(|x| + i|y|)^2 + c$. With `polar` set, the map works in polar angles about the $x$ axis instead ($\theta = \operatorname{atan2}(\sqrt{y^2+z^2}, x)$, $\phi = \operatorname{atan2}(z, y)$, $\mathbf z \leftarrow r^n(\cos n\theta,\ \sin n\theta\cos n\phi,\ \sin n\theta\sin n\phi) + c$), which leaves the same 2D ship in the plane $z = 0$. Distance estimate: $d = \tfrac12\,r\ln r/r'$ with $r' \leftarrow n\,r^{n-1}r' + 1$ (absolute values are reflections, which keep lengths). The latitude map jumps across its pole, so the estimate overshoots near it, and the march takes 0.6 of each step.
+from $\mathbf z = c$, where $c$ is the point with $y$ flipped (so the masts point up, as the 2D ship is always shown) and, for $n = 2$, shifted to center the hull. In the plane $z = 0$ this is exactly $(|x| + i|y|)^2 + c$. With `polar` set, the map works in polar angles about the $x$ axis instead ($\theta = \mathrm{atan2}(\sqrt{y^2+z^2}, x)$, $\phi = \mathrm{atan2}(z, y)$, $\mathbf z \leftarrow r^n(\cos n\theta,\ \sin n\theta\cos n\phi,\ \sin n\theta\sin n\phi) + c$), which leaves the same 2D ship in the plane $z = 0$. Distance estimate: $d = \tfrac12\,r\ln r/r'$ with $r' \leftarrow n\,r^{n-1}r' + 1$ (absolute values are reflections, which keep lengths). The latitude map jumps across its pole, so the estimate overshoots near it, and the march takes 0.6 of each step.
 
-**Origin.** The Burning Ship, $(|\operatorname{Re} z| + i\,|\operatorname{Im} z|)^2 + c$, was introduced by Michael Michelitsch and Otto E. Rössler ("The 'Burning Ship' and its quasi-Julia sets", *Computers & Graphics* 16(4), 1992). Its 3D form, the standard Mandelbulb with absolute values taken on all three axes before the power, was posted with a Fragmentarium script by laser blaster on Fractal Forums in October 2014 (["3D Burning Ship formula and .frag file"](https://www.fractalforums.com/fragmentarium/3d-burning-ship-formula-and-frag-file/)); Mandelbulber 2 offers the same as an option of its Mandelbulb Abs formula (`mandelbulb_abs.cl`). The polar variant is this port's addition: its map is continuous at the pole, so its estimate is close to exact and its hull comes out crisper and more crystalline.
+**Origin.** The Burning Ship, $(|\mathrm{Re} z| + i\,|\mathrm{Im} z|)^2 + c$, was introduced by Michael Michelitsch and Otto E. Rössler ("The 'Burning Ship' and its quasi-Julia sets", *Computers & Graphics* 16(4), 1992). Its 3D form, the standard Mandelbulb with absolute values taken on all three axes before the power, was posted with a Fragmentarium script by laser blaster on Fractal Forums in October 2014 (["3D Burning Ship formula and .frag file"](https://www.fractalforums.com/fragmentarium/3d-burning-ship-formula-and-frag-file/)); Mandelbulber 2 offers the same as an option of its Mandelbulb Abs formula (`mandelbulb_abs.cl`). The polar variant is this port's addition: its map is continuous at the pole, so its estimate is close to exact and its hull comes out crisper and more crystalline.
 
 **Parameters.** `power` (2): the exponent, 2 to 8. 2 is the Burning Ship; 3 and 4 fold it into a rounder hull with more points, and higher powers into a knobbly ball. `polar` (0): 0 is the original latitude form; 1 the polar form, crisper and with a truer estimate. `iterations` (12, up to 32): finer spires and smaller ships along the keel, at a pow, two atan2, a sine and a cosine per point each.
 
@@ -364,7 +364,7 @@ A power-9 bulb whose polar angle is squashed the more, the less the orbit moved 
 
 **Formula.** With $z$ up, start from $z = z_{\text{prev}} = p$ and repeat:
 
-$$t = 1 - \frac{k}{\left|z_{\text{prev}} - z + 0.001\,(1,1,1)\right| + o}, \qquad \theta = \operatorname{atan2}\!\left(t\sqrt{x^2+y^2},\, z\right), \qquad \varphi = \operatorname{atan2}(y, x)$$
+$$t = 1 - \frac{k}{\left|z_{\text{prev}} - z + 0.001\,(1,1,1)\right| + o}, \qquad \theta = \mathrm{atan2}\!\left(t\sqrt{x^2+y^2},\, z\right), \qquad \varphi = \mathrm{atan2}(y, x)$$
 
 $$z_{\text{prev}} \leftarrow z, \qquad z \leftarrow z + r^n\left(\sin n\theta\cos n\varphi,\; \sin n\theta\sin n\varphi,\; \cos n\theta\right) + (0, 0, \ell)$$
 
@@ -398,7 +398,7 @@ A Mandelbulb whose polar angle is measured with acos, asin, or a blend of the tw
 
 **Formula.** With $z$ up, start from $z = p$ and repeat:
 
-$$\theta = n\left((1-m)\arccos\tfrac{z}{r} + m\arcsin\tfrac{z}{r} + \beta\right), \qquad \varphi = n\left(\operatorname{atan2}(y, x) + \alpha\right)$$
+$$\theta = n\left((1-m)\arccos\tfrac{z}{r} + m\arcsin\tfrac{z}{r} + \beta\right), \qquad \varphi = n\left(\mathrm{atan2}(y, x) + \alpha\right)$$
 
 $$z \leftarrow r^n\left(\cos\theta\cos\varphi,\; \cos\theta\sin\varphi,\; \sin\theta\right) + o + p, \qquad z_z \leftarrow s\,z_z$$
 
@@ -458,7 +458,7 @@ The Mandelbulb's power map in four dimensions, written in the Hopf coordinates o
 
 $$w \leftarrow |w|^n\,U(n\theta_1,\ n\theta_2,\ n\varphi) + c,$$
 
-with the Hopf parametrization $U(\theta_1, \theta_2, \varphi) = (\cos\varphi\cos\theta_1,\ \cos\varphi\sin\theta_1,\ \sin\varphi\cos\theta_2,\ \sin\varphi\sin\theta_2)$. Here $\theta_1 = \operatorname{atan2}(w_2, w_1)$, $\theta_2 = \operatorname{atan2}(w_4, w_3)$ and $\varphi = \operatorname{atan2}(|(w_3, w_4)|, |(w_1, w_2)|)$. The first two coordinates are the complex plane where the map is $w^n + c$. Distance estimate: $d = \tfrac12|w|\ln|w|/\partial$ with $\partial \leftarrow n|w|^{n-1}\partial + 1$. For odd $n$ the map stretches no direction more than the radius, so the estimate is sound.
+with the Hopf parametrization $U(\theta_1, \theta_2, \varphi) = (\cos\varphi\cos\theta_1,\ \cos\varphi\sin\theta_1,\ \sin\varphi\cos\theta_2,\ \sin\varphi\sin\theta_2)$. Here $\theta_1 = \mathrm{atan2}(w_2, w_1)$, $\theta_2 = \mathrm{atan2}(w_4, w_3)$ and $\varphi = \mathrm{atan2}(|(w_3, w_4)|, |(w_1, w_2)|)$. The first two coordinates are the complex plane where the map is $w^n + c$. Distance estimate: $d = \tfrac12|w|\ln|w|/\partial$ with $\partial \leftarrow n|w|^{n-1}\partial + 1$. For odd $n$ the map stretches no direction more than the radius, so the estimate is sound.
 
 **Origin.** Paul Nylander coined the name, as Oliver Knill records in [Mandelbulb, Mandelbrot, Mandelring and Hopfbrot](https://arxiv.org/abs/2305.17848) (arXiv, 2023). Knill defines the degree-$d$ Hopfbrot this way and renders its $z = 0$ slice. See also [MathWorld](https://mathworld.wolfram.com/Hopfbrot.html), and [a 2025 post on it](https://uehapetsijque.substack.com/p/the-hopfbrot) that renders slices volumetrically. This implementation, its slicing and its distance estimate are ray's own.
 
@@ -602,7 +602,7 @@ A lopsided, wind-swept lump with a crest of spikes, frilled edges and a long nee
 
 $$z \leftarrow \begin{pmatrix} a_x x^2 - b_x yz \\ a_y z^2 + b_y xy \\ a_z y^2 + b_z xz \end{pmatrix} + c$$
 
-with $a$ = `square`, $b$ = `cross` and $c = p$ (or the Julia constant). With $a = 1$, $b = 2$ this squares $x + ym + zn$ in the algebra whose imaginary units obey $m^2 = n$, $n^2 = m$, $mn = -1$. Bailout $|z| > 10$. The map stretches differently in different directions, so the whole Jacobian is carried along the orbit, $J \leftarrow Q'(z)\,J + I$, and the distance estimate is $d = \tfrac12 r \ln r / \lVert J \rVert_F$; the estimates of the last two iterates are blended by how far past the bailout the orbit escaped, so that neighboring escape bands meet without a step.
+with $a$ = `square`, $b$ = `cross` and $c = p$ (or the Julia constant). With $a = 1$, $b = 2$ this squares $x + ym + zn$ in the algebra whose imaginary units obey $m^2 = n$, $n^2 = m$, $mn = -1$. Bailout $|z| \gt  10$. The map stretches differently in different directions, so the whole Jacobian is carried along the orbit, $J \leftarrow Q'(z)\,J + I$, and the distance estimate is $d = \tfrac12 r \ln r / \lVert J \rVert_F$; the estimates of the last two iterates are blended by how far past the bailout the orbit escaped, so that neighboring escape bands meet without a step.
 
 **Origin.** Fractal Forums user quick-dudley proposed the algebra in the thread [Another shot at the holy grail](http://www.fractalforums.com/3d-fractal-generation/another-shot-at-the-holy-grail/) (November 2012). In 2015 Kerry Mitchell (lkmitch) wrote the square out component by component and DarkBeam built it into Mandelbulb 3D; Mandelbulber 2 took it over as Quick Dudley, and its Quick Dudley Mod added the weights used here. Ported from Mandelbulber 2.
 
@@ -618,7 +618,7 @@ A curved, three-cornered shell with layered ridges and fine fringed edges, symme
 
 $$z \leftarrow \tfrac14\left(1 + 4z - (1 + 2z) \odot R(z)\right), \qquad R(z) = 2\,(n \cdot z)\,n - z, \quad n = (1, 1, 1)$$
 
-where $\odot$ multiplies component by component. In 2D the map is $\tfrac14(1 + 4z - (1 + 2z)\cos \pi z)$, which gives $n/2$ for even integers and $(3n+1)/2$ for odd ones; Mandelbulber replaces $\cos \pi z$ by the half turn of $z$ about $(1, 1, 1)$, written with the axis unnormalized, so $R$ also stretches $z$ five times along the diagonal. Bailout $|z| > 100$. Distance estimate as for Quick Dudley: $d = \tfrac12 r \ln r / \lVert J \rVert_F$ with $J \leftarrow f'(z)\,J$, blended across escape bands.
+where $\odot$ multiplies component by component. In 2D the map is $\tfrac14(1 + 4z - (1 + 2z)\cos \pi z)$, which gives $n/2$ for even integers and $(3n+1)/2$ for odd ones; Mandelbulber replaces $\cos \pi z$ by the half turn of $z$ about $(1, 1, 1)$, written with the axis unnormalized, so $R$ also stretches $z$ five times along the diagonal. Bailout $|z| \gt  100$. Distance estimate as for Quick Dudley: $d = \tfrac12 r \ln r / \lVert J \rVert_F$ with $J \leftarrow f'(z)\,J$, blended across escape bands.
 
 **Origin.** The complex Collatz map is an old extension of the conjecture (see [Wikipedia](https://en.wikipedia.org/wiki/Collatz_conjecture#Iterating_on_real_or_complex_numbers)); Claude Heiland-Allen rendered its fractal with a distance estimate in [The Collatz fractal](https://mathr.co.uk/blog/2016-04-10_collatz_fractal.html) (mathr.co.uk, April 2016). Mandelbulber 2's Collatz (2017) is the 3D lift ported here.
 
@@ -636,7 +636,7 @@ $$z \leftarrow s\left(b + 4z - (n + 2z) \odot R_\theta(z)\right) + m \odot (p_z,
 
 $$R_\theta(z) = z\cos\theta + (n \times z)\sin\theta + n\,(n \cdot z)(1 - \cos\theta)$$
 
-with $\theta = \pi\cdot$`angle`, $n$ = `axis` (not normalized), $b$ = `offset`, $s$ = `step_scale` and $m$ = `c_mult`. With $\theta = \pi$, $n = b = (1, 1, 1)$, $s = \tfrac14$ and $m = 0$ it is the plain Collatz map. Bailout $|z| > 100$; distance estimate as for Collatz, with $J \leftarrow f'(z)\,J + \mathrm{diag}(m)\,P$ ($P$ the x-z swap).
+with $\theta = \pi\cdot$`angle`, $n$ = `axis` (not normalized), $b$ = `offset`, $s$ = `step_scale` and $m$ = `c_mult`. With $\theta = \pi$, $n = b = (1, 1, 1)$, $s = \tfrac14$ and $m = 0$ it is the plain Collatz map. Bailout $|z| \gt  100$; distance estimate as for Collatz, with $J \leftarrow f'(z)\,J + \mathrm{diag}(m)\,P$ ($P$ the x-z swap).
 
 **Origin.** Mandelbulber 2's Collatz Mod (2017), ported here. Its default angle differs from Mandelbulber's (0.8 of a half turn rather than a whole one) so that it is not a copy of `collatz`; set `angle` to 1 for Mandelbulber's default.
 
@@ -652,7 +652,7 @@ A Newton fractal in 3D: a ribbed barrel whose ends are sets of concentric rings.
 
 $$w = \frac{\bar z}{|z|^2} + 1, \qquad w \leftarrow \tfrac23 w + \frac{1}{3w^2}, \qquad z \leftarrow \frac{\overline{w - 1}}{|w - 1|^2} + o$$
 
-where $\bar{\ }$ negates y and z, $w^2$ is the triplex square $\left((x^2 - y^2)(1 - \tfrac{z^2}{x^2 + y^2}),\ 2xy(1 - \tfrac{z^2}{x^2 + y^2}),\ 2z\sqrt{x^2 + y^2}\right)$, $1/w^2 = \overline{w^2}/|w|^4$, and $o$ = `offset`. The inversions turn Newton's convergence to the root 1 into an escape of $z$ to infinity, so the basin of 1 is the outside. Near that root $z$ is squared like a quaternion, $|z| \to |z|^2$, so the usual logarithmic estimate applies: bailout $|z| > 30$, $d = \tfrac12 r \ln r / \lVert J \rVert_F$, with $J$ carried by forward-mode dual numbers and blended across escape bands as above.
+where $\bar{\ }$ negates y and z, $w^2$ is the triplex square $\left((x^2 - y^2)(1 - \tfrac{z^2}{x^2 + y^2}),\ 2xy(1 - \tfrac{z^2}{x^2 + y^2}),\ 2z\sqrt{x^2 + y^2}\right)$, $1/w^2 = \overline{w^2}/|w|^4$, and $o$ = `offset`. The inversions turn Newton's convergence to the root 1 into an escape of $z$ to infinity, so the basin of 1 is the outside. Near that root $z$ is squared like a quaternion, $|z| \to |z|^2$, so the usual logarithmic estimate applies: bailout $|z| \gt  30$, $d = \tfrac12 r \ln r / \lVert J \rVert_F$, with $J$ carried by forward-mode dual numbers and blended across escape bands as above.
 
 **Origin.** The formula and its inversion trick are by gannjondal, from the Fractal Forums thread [Revisiting the 3D Newton](https://fractalforums.org/fractal-mathematics-and-new-theories/28/revisiting-the-3d-newton/1026); mclarekin added it to Mandelbulber 2 as Newton Pow3 (2022). Ported from Mandelbulber 2.
 
@@ -704,8 +704,8 @@ A dome of spheres within spheres. Every ball is lined inside with a hexagonal la
 
 **Formula.** With $z$ up and the base sphere of diameter 1 resting on the origin, start from $z = p$ and repeat:
 
-- Stop inside the solid inner sphere of diameter $\sqrt3/(1+\sqrt3)$ resting on the origin. After the first step, also stop where $z_z > 0.4$ and the point is outside the sphere of radius 0.6 about $(0, 0, 0.6)$; that region is empty.
-- If $z_z < 0.4$ and the point is outside the base sphere, invert: $z \leftarrow z/|z|^2$.
+- Stop inside the solid inner sphere of diameter $\sqrt3/(1+\sqrt3)$ resting on the origin. After the first step, also stop where $z_z \gt  0.4$ and the point is outside the sphere of radius 0.6 about $(0, 0, 0.6)$; that region is empty.
+- If $z_z \lt  0.4$ and the point is outside the base sphere, invert: $z \leftarrow z/|z|^2$.
 - Otherwise, invert, which turns the base sphere into the plane $w_z = 1$, then flip and stretch below it and twist: $z \leftarrow R_{30^\circ}\!\left(\sqrt3\,w_x,\ \sqrt3\,w_y,\ 1 + \sqrt3\,(1 - w_z)\right)$ with $w = z/|z|^2$.
 - Fold $(z_x, z_y)$ into the central hexagon of a unit triangular lattice, then into its kite, so a lattice of unit spheres resting on $z = 0$ stands for the base sphere's children.
 
@@ -749,7 +749,7 @@ The limit set of a true Kleinian group: floors of great domes with necklaces of 
 
 $$z \leftarrow \left(\frac{z_x}{|z|^2} - b,\; a - \frac{z_y}{|z|^2},\; -\frac{z_z}{|z|^2}\right), \qquad \partial \leftarrow \frac{\partial}{|z|^2},$$
 
-an inversion in the unit sphere and a half turn. In the plane $w = z_x + i z_y$ it is Maskit's generator $w \mapsto t + 1/w$ with $t = -b + ai$, and the wrap in $x$ is the other generator, $w \mapsto w + 2$. The loop stops when $|z| > 10$ or the orbit closes a 2-cycle. Distance estimate (Knighty's): $d = \min(h, c_y) / \max(\partial, c_\partial)$, where $h = \min(z_y, a - z_y)$ is the height above the floor or below the ceiling (just $z_y$ with `spheres` at 0), taking the smaller of its values at the last two steps.
+an inversion in the unit sphere and a half turn. In the plane $w = z_x + i z_y$ it is Maskit's generator $w \mapsto t + 1/w$ with $t = -b + ai$, and the wrap in $x$ is the other generator, $w \mapsto w + 2$. The loop stops when $|z| \gt  10$ or the orbit closes a 2-cycle. Distance estimate (Knighty's): $d = \min(h, c_y) / \max(\partial, c_\partial)$, where $h = \min(z_y, a - z_y)$ is the height above the floor or below the ceiling (just $z_y$ with `spheres` at 0), taking the smaller of its values at the last two steps.
 
 **Origin.** Jos Leys's escape-time algorithm for the limit sets of Kleinian groups in Maskit's slice, from his Fractal Forums thread [An escape time algorithm for Kleinian group limit sets](http://www.fractalforums.com/3d-fractal-generation/an-escape-tim-algorithm-for-kleinian-group-limit-sets/) (2016-17) and his paper [A fast algorithm for limit sets of Kleinian groups with the Maskit parametrisation](http://www.josleys.com/articles/Kleinian%20escape-time_3.pdf) (January 2017), with the distance estimate by Knighty; more of his pictures are at [josleys.com](https://www.josleys.com/galleries.php). Ported from Mandelbulber 2's `jos_kleinian.cl` (added as JosLeys-Kleinian in v2.12, November 2017), with two changes. Like Jos Leys's original, it stops once the orbit closes a 2-cycle. It also takes the smaller estimate of the cycle's two phases, so neighboring points that stop in different phases agree. The defaults differ too: $a = 1.9$ rather than 2 (open necklaces rather than cusps), and a step clamp of 0.2 rather than 0.05. At 0.05 the estimate is 5 to 10 times too small near the cusps, and that shows as fuzz. With $b \ne 0$, Mandelbulber's unsheared wrap makes the estimate jump in places; lower `clamp` if that shows.
 
@@ -765,7 +765,7 @@ Indra's Pearls in 3D: kissing spheres at the corners of a regular solid, each ho
 
 $$\frac{d}{R^2/q^2 + d/q} \quad\text{and at least}\quad \frac{d\,q}{M},$$
 
-where $M = |c| + 1 + r$ bounds how far the spheres lie from $c$. The second bound is the one that holds up near the center. Both have the form $1/d_0 \le A/d + B$, so they accumulate step by step as $B \leftarrow B + A\beta$, $A \leftarrow A\alpha$, with $(\alpha, \beta) = (R^2/q^2, 1/q)$, or $(M/q, 0)$ when $q < 2R^2/M$. Distance estimate: the smallest of $d/(A + Bd)$, taken for the nearest remaining sphere at the end and for the second-nearest sphere at every step.
+where $M = |c| + 1 + r$ bounds how far the spheres lie from $c$. The second bound is the one that holds up near the center. Both have the form $1/d_0 \le A/d + B$, so they accumulate step by step as $B \leftarrow B + A\beta$, $A \leftarrow A\alpha$, with $(\alpha, \beta) = (R^2/q^2, 1/q)$, or $(M/q, 0)$ when $q \lt  2R^2/M$. Distance estimate: the smallest of $d/(A + Bd)$, taken for the nearest remaining sphere at the end and for the second-nearest sphere at every step.
 
 **Origin.** After the kissing Schottky groups of *Indra's Pearls: The Vision of Felix Klein* (David Mumford, Caroline Series and David Wright, Cambridge, 2002), whose limit sets are drawn as chains of pearls; Schottky groups go back to Friedrich Schottky (1877). Here the group is generated by inversions in spheres on a regular solid's corners; its even words form a Schottky group, a kissing one when the spheres touch. The layouts, the greedy descent and the distance bound are this project's own, not a port.
 
@@ -797,7 +797,7 @@ Exact self-similar solids: cubes kept and cut by rule, polyhedral kaleidoscopes,
 
 A cube whose corners are notched off at every scale, leaving a crinkled block that looks like a six-pointed snowflake when you view it along a long diagonal. The light variant is hollow and can be seen straight through along its diagonals (pictured: `light` 1, looking down one of them).
 
-**Formula.** Split the cube $[-1,1]^3$ into $3\times3\times3$ cells and drop the 8 corner cells, keeping 19 of 27 (the light variant also drops the center cell, keeping 18), then do the same to every cell that is left. Level $i$ uses cells $2/3^i$ across. One periodic fold covers all of them at once: $u = 1 - \lvert 2\,\mathrm{fract}(c\,3^i/2) - 1\rvert$ on each axis is 0 at a cell's center and 1 at its faces. In those coordinates the corners are the cells with $\min(u) > 1/3$, and their signed distance is
+**Formula.** Split the cube $[-1,1]^3$ into $3\times3\times3$ cells and drop the 8 corner cells, keeping 19 of 27 (the light variant also drops the center cell, keeping 18), then do the same to every cell that is left. Level $i$ uses cells $2/3^i$ across. One periodic fold covers all of them at once: $u = 1 - \lvert 2\,\mathrm{fract}(c\,3^i/2) - 1\rvert$ on each axis is 0 at a cell's center and 1 at its faces. In those coordinates the corners are the cells with $\min(u) \gt  1/3$, and their signed distance is
 
 $$h_i = \bigl\lVert \max(\tfrac13 - u,\, 0) \bigr\rVert - \max(\min(u) - \tfrac13,\, 0)$$
 
@@ -906,11 +906,11 @@ and scale about the corner: $\mathbf{z} \leftarrow s\,(\mathbf{z} - (1, 0, 0)) +
 
 A torus knot whose tube is a rope: strands twisted about its core, each of them a rope of finer strands twisted the other way, and so on down, the way rope is laid. It is a fractal that keeps its shape: close up, every strand turns out to be a rope too.
 
-**Formula.** With $\theta = \operatorname{atan2}(y, x)$ and $\rho = \sqrt{x^2 + y^2}$, the point's place in the meridian plane, $(\rho - 1, z)$, is turned by $(q/p)\,\theta$ and folded to the nearest of the $p$ strands at distance $r_g$ from the core circle: that is DarkBeam's torus knot of $p$ laps and $q$ turns. The strand leans across the plane by $\tan\alpha = r_g\,(q/p)/\rho$, so its round section is the plane's ellipse: the section is taken square to it, $(u, v) = (u, v\cos\alpha)/r_t$ for the tube radius $r_t$, and $\theta$ is moved along the strand to its nearest point, $\varphi$. Each rope level then repeats the knot's step about the strand's own axis:
+**Formula.** With $\theta = \mathrm{atan2}(y, x)$ and $\rho = \sqrt{x^2 + y^2}$, the point's place in the meridian plane, $(\rho - 1, z)$, is turned by $(q/p)\,\theta$ and folded to the nearest of the $p$ strands at distance $r_g$ from the core circle: that is DarkBeam's torus knot of $p$ laps and $q$ turns. The strand leans across the plane by $\tan\alpha = r_g\,(q/p)/\rho$, so its round section is the plane's ellipse: the section is taken square to it, $(u, v) = (u, v\cos\alpha)/r_t$ for the tube radius $r_t$, and $\theta$ is moved along the strand to its nearest point, $\varphi$. Each rope level then repeats the knot's step about the strand's own axis:
 
 $$\arg(u, v) \leftarrow \arg(u, v) + w_l\,\varphi, \quad \text{folded to the nearest of } n \text{ strands at } 1 - f, \quad (u, v) \leftarrow \big((u - (1 - f)),\ v\cos\beta_l\big)/f$$
 
-with $f$ the strands' radius (a little over touching), $\beta_l$ their lean, and $w_l = \pm\operatorname{round}(w f^{1-l})$ the turns per lap, alternating in sign. Distance: at each level $l$, $(|(u, v)| - 1)\,r_t f^l$, no further than the nearest sibling strand at that level or above; the result is the largest of these. Far from a strand, it is divided by $\sqrt{1 + g^2}$, with $g$ bounding how much the twists stretch space. The orbit trap is the strand's index at each level, so every strand has its own color.
+with $f$ the strands' radius (a little over touching), $\beta_l$ their lean, and $w_l = \pm\mathrm{round}(w f^{1-l})$ the turns per lap, alternating in sign. Distance: at each level $l$, $(|(u, v)| - 1)\,r_t f^l$, no further than the nearest sibling strand at that level or above; the result is the largest of these. Far from a strand, it is divided by $\sqrt{1 + g^2}$, with $g$ bounding how much the twists stretch space. The orbit trap is the strand's index at each level, so every strand has its own color.
 
 **Origin.** The knot is DarkBeam's "Not fractal but funny: trefoil knot routine" on Fractal Forums, refined by Knighty in 2012 (the "knot thingy" in [Fragmentarium](https://github.com/Syntopia/Fragmentarium)'s examples); Mandelbulber 2 has both as Knot V1 and V2. As those names say, it was not a fractal: the rope of ropes, with each level laid against the one above it, and the section taken square to the leaning strands are ray's own.
 
@@ -944,7 +944,7 @@ A slice through a four-dimensional Sierpinski solid: eight half-size copies on t
 
 **Formula.** Start from $z = (x, y, z, w)$ and repeat $n$ times: for each pair of axes in turn, $(x,y), (x,z), (y,z), (x,w), (y,w), (z,w)$, reflect if their sum is negative,
 
-$$z_i + z_j < 0:\quad (z_i, z_j) \leftarrow (-z_j, -z_i),$$
+$$z_i + z_j \lt  0:\quad (z_i, z_j) \leftarrow (-z_j, -z_i),$$
 
 then scale about the corner $(1, 1, 1, 1)$: $z \leftarrow s\,z - (s-1)$. The folds bring the point near the one corner of the 16-cell (the corners of the hypercube with an even number of −1s) it is closest to. Distance estimate: the distance to that 16-cell, scaled back,
 
@@ -966,7 +966,7 @@ A slice through the four-dimensional Mandelbox (pictured at `w` = 1.2). At `w` =
 
 $$z \leftarrow s\,k\,\mathrm{boxFold}(z) + c, \qquad \mathrm{d}r \leftarrow |s|\,k\,\mathrm{d}r + 1,$$
 
-with the box fold $f(t) = |t + l| - |t - l| - t$ on each of the four axes (limit $l$), and the sphere fold's factor $k = 1/r_{\min}^2$ if $|z|^2 < r_{\min}^2$, $1/|z|^2$ if $|z|^2 < 1$, else 1, using the 4D radius. Distance estimate: $d = |z| / |\mathrm{d}r|$, stopping once $|z| > 10^5$. Mandelbulber stops at 100, which leaves the estimate jumping between escape bands far from the surface.
+with the box fold $f(t) = |t + l| - |t - l| - t$ on each of the four axes (limit $l$), and the sphere fold's factor $k = 1/r_{\min}^2$ if $|z|^2 \lt  r_{\min}^2$, $1/|z|^2$ if $|z|^2 \lt  1$, else 1, using the 4D radius. Distance estimate: $d = |z| / |\mathrm{d}r|$, stopping once $|z| \gt  10^5$. Mandelbulber stops at 100, which leaves the estimate jumping between escape bands far from the surface.
 
 **Origin.** Tom Lowe's (Tglad's) Mandelbox ([Fractal Forums, 2010](https://www.fractalforums.com/3d-fractal-generation/amazing-fractal/)), carried to four dimensions as Mandelbulber 2's ABox 4D (`abox4d.cl`) by the Mandelbulber team. Its scale-varying, parabolic and rotation extras are left out.
 
@@ -1008,7 +1008,7 @@ $$\theta = n\,(\mathrm{atan2}(z_z, z_x) + \beta), \qquad \varphi = n\,\mathrm{fo
 
 $$z \leftarrow r^n (\sin\varphi\cos\theta,\ \cos\varphi,\ \sin\varphi\sin\theta) + p$$
 
-with $\mathrm{fold}(\varphi) = \mathrm{sign}(\varphi)\,\pi - \varphi$ when $|\varphi| > \pi/2$. With $\alpha = 0$ the fold amounts to replacing $z_y$ by $|z_y|$. Bailout $r \ge 4$. Distance estimate: $d = \tfrac12 r \ln r / \partial r$ with $\partial r \leftarrow n\,r^{n-1}\partial r + 1$, as for the Mandelbulb. The orbit trap is the closest the orbit comes to the equator, the fold's mirror plane.
+with $\mathrm{fold}(\varphi) = \mathrm{sign}(\varphi)\,\pi - \varphi$ when $|\varphi| \gt  \pi/2$. With $\alpha = 0$ the fold amounts to replacing $z_y$ by $|z_y|$. Bailout $r \ge 4$. Distance estimate: $d = \tfrac12 r \ln r / \partial r$ with $\partial r \leftarrow n\,r^{n-1}\partial r + 1$, as for the Mandelbulb. The orbit trap is the closest the orbit comes to the equator, the fold's mirror plane.
 
 **Origin.** Garth Thornton, the author of XenoDream, who posts on Fractal Forums as xenodreambuie. In October 2009, in the "True 3D mandelbrot type fractal" thread that produced the Mandelbulb, he suggested replacing White and Nylander's latitude form ($z = r\sin\varphi$) with standard spherical coordinates ($\varphi = \arccos(z/r)$, $z = r\cos\varphi$), which suit inverse iteration. On October 17, 2009 he posted the forward version with the fold ("ph = acos(zj/magn); if ph>pi/2 then ph = pi-ph"), [msg8281](https://web.archive.org/web/20091124172646/http://www.fractalforums.com:80/3d-fractal-generation/true-3d-mandlebrot-type-fractal/msg8281/), and later called it the "flipped root cosine triplex". Mandelbulber added it in version 0.80 as "xenodreambuie's fractal formula", citing his image post [msg8246](https://web.archive.org/web/20091126041703/http://www.fractalforums.com:80/3d-fractal-generation/true-3d-mandlebrot-type-fractal/msg8246/). Ported from Mandelbulber 2's `xenodreambuie`.
 
@@ -1056,7 +1056,7 @@ A mixed quadratic and cubic map that grows a mirror-symmetric, moth-like body of
 
 $$z \leftarrow \big(m_1 x'^2 - s_1(y^2 + z'^2),\ m_2\,x' y z',\ m_3 z'^2 - s_2(x'^2 + y^2)\big) + p$$
 
-with $(m_1, m_2, m_3) = (1, 2, 1)$ and $s_1 = s_2 = \tfrac12$ for Ide's formula. Bailout $|z| \ge 10$, as in Mandelbulber. Mandelbulber shrinks only inside $|u| < 2.5$, a jump that no distance estimate can follow. Here the shrink eases into slope 1 between 2.5 and 3; the set itself lies within 2.5. The map mixes degrees and is far from conformal, and its potential's gradient varies too sharply to march by. The estimate therefore uses the Jacobian's Frobenius norm, which bounds its largest stretch: $d = \tfrac12 r \ln r / \lVert J \rVert_F$, blended across the bailout as for the pine tree, with a march step of 0.3. The map is symmetric under swapping $x$ and $z$. It is turned 135 degrees about $y$ so that this mirror plane faces the default view, and centered. The orbit trap is the closest the orbit comes to the planes $x = 0$ and $z = 0$.
+with $(m_1, m_2, m_3) = (1, 2, 1)$ and $s_1 = s_2 = \tfrac12$ for Ide's formula. Bailout $|z| \ge 10$, as in Mandelbulber. Mandelbulber shrinks only inside $|u| \lt  2.5$, a jump that no distance estimate can follow. Here the shrink eases into slope 1 between 2.5 and 3; the set itself lies within 2.5. The map mixes degrees and is far from conformal, and its potential's gradient varies too sharply to march by. The estimate therefore uses the Jacobian's Frobenius norm, which bounds its largest stretch: $d = \tfrac12 r \ln r / \lVert J \rVert_F$, blended across the bailout as for the pine tree, with a march step of 0.3. The map is symmetric under swapping $x$ and $z$. It is turned 135 degrees about $y$ so that this mirror plane faces the default view, and centered. The orbit trap is the closest the orbit comes to the planes $x = 0$ and $z = 0$.
 
 **Origin.** Trafassel, the author of the Gestaltlupe renderer, started the Fractal Forums thread [Formula 21 (Julia Set Interpretation)](https://web.archive.org/web/20110316072858/http://www.fractalforums.com:80/videos/formula-21-(julia-set-interpretation)/) on February 16, 2010. In June 2010 he called it "Formula 21 (Ide's Fractal)" and noted that it has some nice properties but is no candidate for a true 3D Mandelbrot set. Who Ide is, the thread does not say. Mandelbulb 3D's IdesFormula ("a formula made by Trafassel") uses the same multipliers (1, 2, 1) and (0.5, 0.5), as does Mandelbulber's `ides`. The 0.9 shrink is not in Trafassel's 2010 loop; it appears in Mandelbulber's version, whose `ides2` leaves it out. Ported from Mandelbulber 2's `ides`.
 
@@ -1074,7 +1074,7 @@ $$d \leftarrow \min\left(d,\ s^{-i}\, D_\text{sponge}(z)\right)$$
 
 $$z_x \leftarrow s\,|z_x| - (s-1)\,o_x, \quad z_z \leftarrow s\,|z_z| - (s-1)\,o_z, \quad z_y \leftarrow s\,z_y - (s-1)\,o_y$$
 
-then turn $z$ by $\theta$ about the vertical. The absolute values fold space into one quadrant and the scaling about $o$ pushes the next ring out to the corners, so ring $i$ holds $4^i$ copies $s^i$ times smaller, sinking toward height $o_y$. With `fold_up` the vertical is folded too ($s\,|z_y|$), and the copies spread to all eight corners. $D_\text{sponge}$ is knighty's Menger sponge of half size $h$: scale $z$ by $1/h$, then repeat `sponge_levels` times: take $|z|$, sort so $z_y$ is the least, fold $z_y \leftarrow \tfrac23 - z_y$ when $z_y < \tfrac13$, and set $z \leftarrow 3z - 2$; the sponge's distance is the distance to the box $[-1, 1]^3$ times $h / 3^\text{levels}$.
+then turn $z$ by $\theta$ about the vertical. The absolute values fold space into one quadrant and the scaling about $o$ pushes the next ring out to the corners, so ring $i$ holds $4^i$ copies $s^i$ times smaller, sinking toward height $o_y$. With `fold_up` the vertical is folded too ($s\,|z_y|$), and the copies spread to all eight corners. $D_\text{sponge}$ is knighty's Menger sponge of half size $h$: scale $z$ by $1/h$, then repeat `sponge_levels` times: take $|z|$, sort so $z_y$ is the least, fold $z_y \leftarrow \tfrac23 - z_y$ when $z_y \lt  \tfrac13$, and set $z \leftarrow 3z - 2$; the sponge's distance is the distance to the box $[-1, 1]^3$ times $h / 3^\text{levels}$.
 
 **Origin.** knighty posted the idea as `mdifs` ("mdifs by knighty (jan 2012)") in [Fragmentarium's Knighty Collection](https://github.com/Syntopia/Fragmentarium/blob/master/Fragmentarium-Source/Examples/Knighty%20Collection/mdifs.frag): a fold-and-scale iteration with a Menger sponge measured at every step. Darkbeam built a whole family of dIFS formulas for Mandelbulb 3D around the same idea, with boxes, cylinders, tori and more shapes in place of the sponge; they circulated in Fractal Forums' [custom formulas and transforms thread](http://www.fractalforums.com/mandelbulb-3d/custom-formulas-and-transforms-release-t17106/). Mandelbulber 2 gathered them as its DIFS formulas; this one follows its [DIFS Menger](https://github.com/buddhi1980/mandelbulber2/blob/master/mandelbulber2/formula/opencl/difs_menger.cl), with knighty's exact $s^{-i}$ scaling instead of Mandelbulber's derivative-plus-one, and a turn per ring.
 
@@ -1102,7 +1102,7 @@ with $c = p$ (Mandelbrot form) or the Julia constant, and the $(y, z)$ part turn
 
 msltoe's squaring with the point first folded into a one-sixteenth wedge around the vertical axis, so the bulb grows eight-fold: in its Mandelbrot form, a fluted stone vase standing on a long spike. Its Julia sets with the constant on the axis are knobbed spindles, eight-pointed in cross-section.
 
-**Formula.** In a frame whose x axis is the vertical, start from $z = p$ and repeat: fold the angle around the axis, $\psi = \operatorname{atan2}(z_z, z_y)$, into $[0, \pi/8]$,
+**Formula.** In a frame whose x axis is the vertical, start from $z = p$ and repeat: fold the angle around the axis, $\psi = \mathrm{atan2}(z_z, z_y)$, into $[0, \pi/8]$,
 
 $$\psi \leftarrow \left|\left(\psi + \tfrac{9\pi}{8}\right) \bmod \tfrac{\pi}{4} - \tfrac{\pi}{8}\right|, \qquad (z_y, z_z) \leftarrow \rho\,(\cos\psi, \sin\psi),\ \rho = \sqrt{z_y^2 + z_z^2}$$
 
@@ -1194,7 +1194,7 @@ $$Z(x) = e^{x_3}\,\frac{v}{|v|}, \qquad v = (x_1,\ x_2,\ 1 - \max(|x_1|, |x_2|))
 
 so the beam's cross-section goes radially onto the upper half of the unit sphere, and height becomes the logarithm of distance. Reflecting across the beam's sides extends $Z$ to all of space, period 4 in $x_1$ and $x_2$, with each reflection mirroring the image in the plane $x_3 = 0$. Space is mapped to $(x_1, x_2, x_3) = (x, z, \text{depth} - y)$. A point belongs to the shape if some iterate of $x \mapsto \lambda Z(x)$, the point itself included, reaches $x_3 \ge \text{depth}$. The floor $y \le 0$ has escaped already; the pagodas are the points that escape at the first, second, third... step.
 
-Distance estimate. The radial projection's derivative is at most $|Dv|/|v| \le \sqrt{2}/|v|$, so $|DZ| \le e^{x_3}\max(1, \sqrt{2}/|v|)$, and $L_n = \prod_{k<n} \lambda |DZ(x_k)|$ bounds how fast the $n$th iterate moves. The estimate is
+Distance estimate. The radial projection's derivative is at most $|Dv|/|v| \le \sqrt{2}/|v|$, so $|DZ| \le e^{x_3}\max(1, \sqrt{2}/|v|)$, and $L_n = \prod_{k\lt n} \lambda |DZ(x_k)|$ bounds how fast the $n$th iterate moves. The estimate is
 
 $$d = \min\Big(\text{depth} - y,\ \min_n \frac{\min(\text{depth} - x_{3,n},\ 2)}{L_n}\Big).$$
 
