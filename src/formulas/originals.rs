@@ -14,7 +14,7 @@ pub const FORMULAS: &[Formula] = &[SEIFERT, INDRA, ZORICH];
 const SEIFERT: Formula = Formula {
     name: "seifert_gasket",
     category: "Fractals: originals",
-    desc: "A ring of knotted strands of every size, packed like the circles of an Apollonian gasket: the gasket on the orbit sphere of the 3-sphere's fibration by torus knots, lifted back along the fibres and projected into space. Every strand is a torus knot (a trefoil by default) and any two are linked. Made for this catalog.",
+    desc: "A ring of knotted strands of every size, packed like the circles of an Apollonian gasket: the gasket on the orbit sphere of the 3-sphere's fibration by torus knots, lifted back along the fibres and projected into space. Every strand is a torus knot (a trefoil by default) and any two are linked. Invented for ray by Claude (Anthropic), 2026.",
     params: &[
         Param::whole("turns", 2.0, 1.0, 5.0, "How many times each strand winds around the ring's axis (1 to 5). With twists it picks the knot: 2 and 3 make trefoils, 1 and 1 plain rings that link like a Hopf link."),
         Param::whole("twists", 3.0, 1.0, 8.0, "How many times each strand winds around the ring's tube (1 to 8): 3 makes trefoils, 5 cinquefoils; more twists, tighter coils."),
@@ -273,7 +273,7 @@ fn seifert_gasket(p: vec3f, a: vec4f, b: vec4f, c: vec4f, iters: u32) -> vec2f {
 const INDRA: Formula = Formula {
     name: "indra_cells",
     category: "Fractals: originals",
-    desc: "Rooms of the 120-cell, the 4D polytope of 120 dodecahedra, seen in our space by stereographic projection: pentagon-framed rooms that grow toward the edge, each holding a pearl, a small inside-out copy of the whole, and each room in it a pearl of its own. A Kleinian group made of the 120-cell's symmetries and one sphere inversion. Made for this catalog.",
+    desc: "Rooms of the 120-cell, the 4D polytope of 120 dodecahedra, seen in our space by stereographic projection: pentagon-framed rooms that grow toward the edge, each holding a pearl, a small inside-out copy of the whole, and each room in it a pearl of its own. A Kleinian group made of the 120-cell's symmetries and one sphere inversion. Invented for ray by Claude (Anthropic), 2026.",
     params: &[
         Param::num("pearl", &[0.5], 0.1, 0.9, "The pearl in each room, as a share of the room's inner radius (0.1 to 0.9): small pearls hold a tiny inside-out world; large ones crowd it against the walls."),
         Param::num("thickness", &[0.04], 0.005, 0.2, "The walls' thickness, as a share of the room's inner radius (0.005 to 0.2)."),
@@ -503,7 +503,7 @@ fn indra_cells(p: vec3f, a: vec4f, b: vec4f, c: vec4f, iters: u32) -> vec2f {
 const ZORICH: Formula = Formula {
     name: "zorich_pagodas",
     category: "Fractals: originals",
-    desc: "A floor of domed pagodas crowned with tiers of spiky pinnacles, each ringed by smaller ones, in a lattice that runs on for ever: the points that escape upward under a scaled Zorich map, the three-dimensional analogue of the exponential function (V. A. Zorich, 1967; the dynamics studied by Bergweiler and others). Made for this catalog.",
+    desc: "A floor of domed pagodas crowned with tiers of spiky pinnacles, each ringed by smaller ones, in a lattice that runs on for ever: the points that escape upward under a scaled Zorich map, the three-dimensional analogue of the exponential function (V. A. Zorich, 1967; the dynamics studied by Bergweiler and others). Invented for ray by Claude (Anthropic), 2026.",
     params: &[
         Param::num("lambda", &[0.42], 0.2, 0.5, "The map's factor (0.2 to 0.5): small values grow low domes with a few spikes; around 0.4 tall tiered pagodas; toward 0.5 they branch into a tangled lace."),
         Param::num("depth", &[3.0], 1.5, 4.0, "How far the escape level lies above the floor, in the map's units (1.5 to 4): low values leave domes with thin spines; high ones grow dense towers."),

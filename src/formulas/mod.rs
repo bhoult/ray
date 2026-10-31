@@ -27,14 +27,24 @@ pub mod assorted;
 pub mod assorted2;
 pub mod bulbs;
 pub mod bulbs2;
+pub mod cathedral;
+pub mod clifford;
 pub mod cubes;
 pub mod folds;
+pub mod horned;
+pub mod hyperbolic;
 pub mod kleinian;
+pub mod nil;
 pub mod originals;
 pub mod polyhedral;
+pub mod quasicrystal;
+pub mod quasiregular;
 pub mod riemann;
+pub mod screw;
 pub mod slices4d;
 pub mod tori;
+pub mod tpms;
+pub mod truss;
 pub mod util;
 
 /// Floats a formula's parameters pack into.
@@ -137,6 +147,16 @@ const GROUPS: &[&[Formula]] = &[
     assorted::FORMULAS,
     assorted2::FORMULAS,
     originals::FORMULAS,
+    nil::FORMULAS,
+    quasicrystal::FORMULAS,
+    screw::FORMULAS,
+    tpms::FORMULAS,
+    quasiregular::FORMULAS,
+    clifford::FORMULAS,
+    cathedral::FORMULAS,
+    truss::FORMULAS,
+    hyperbolic::FORMULAS,
+    horned::FORMULAS,
 ];
 
 /// Every formula.

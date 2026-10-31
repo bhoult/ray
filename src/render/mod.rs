@@ -1144,6 +1144,7 @@ mod tests {
                 r.frame.as_ref().unwrap().rgba()
             };
             let (a, b) = (image(&mut cpu, Device::Cpu), image(&mut gpu, Device::Gpu));
+            assert!(gpu.stats.gpu_share > 0.99, "{name}: the GPU drew {:.0}% of the rows (its shader did not build?)", gpu.stats.gpu_share * 100.0);
             let px = a.len() / 4;
             let visible = (0..px).filter(|&i| (0..3).any(|c| (a[i * 4 + c] as i32 - b[i * 4 + c] as i32).abs() > 25)).count();
             assert!(visible * 100 <= px, "{name}: {visible} of {px} pixels differ visibly between CPU and GPU");
@@ -1194,6 +1195,9 @@ mod tests {
                 r.frame.as_ref().unwrap().rgba()
             };
             let (a, b) = (image(&mut cpu, Device::Cpu), image(&mut gpu, Device::Gpu));
+            // (a kernel whose WGSL does not compile leaves the GPU out: the
+            // CPU draws its rows, and the images would agree)
+            assert!(gpu.stats.gpu_share > 0.99, "{row:?}: the GPU drew {:.0}% of the rows (its shader did not build?)", gpu.stats.gpu_share * 100.0);
             let px = a.len() / 4;
             let visible = (0..px).filter(|&i| (0..3).any(|c| (a[i * 4 + c] as i32 - b[i * 4 + c] as i32).abs() > 25)).count();
             assert!(visible * 100 <= px, "{row:?}: {visible} of {px} pixels differ visibly between CPU and GPU");

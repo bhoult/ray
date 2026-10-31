@@ -1,5 +1,5 @@
 {
- "description": "The fractal catalog: every kind of fractal ray draws, a family to a row (the classics first), each on a plinth. Its shader takes about 45 s to build the first time (the CPU draws meanwhile); after that ray's shader cache has it.",
+ "description": "The fractal catalog: every kind of fractal ray draws, a family to a row (the classics first), each on a plinth. Its shader takes about a minute to build the first time (the CPU draws meanwhile); after that ray's shader cache has it.",
  "camera": {
   "position": [
    0,
@@ -422,7 +422,7 @@
    "scale": 0.24,
    "position": [
     -6.4,
-    1.844,
+    2.088,
     -5.0
    ],
    "material": "row 2",
@@ -585,7 +585,7 @@
    "scale": 0.6,
    "position": [
     -12.8,
-    1.122,
+    1.568,
     -10.0
    ],
    "material": "row 3",
@@ -610,7 +610,7 @@
    "scale": 0.6,
    "position": [
     -9.6,
-    1.674,
+    1.737,
     -10.0
    ],
    "material": "row 3",
@@ -715,7 +715,7 @@
    ],
    "position": [
     3.2,
-    1.515,
+    1.559,
     -10.0
    ],
    "material": "row 3",
@@ -845,7 +845,7 @@
    "scale": 0.9,
    "position": [
     -16.0,
-    1.532,
+    1.803,
     -15.0
    ],
    "material": "row 4",
@@ -870,7 +870,7 @@
    "scale": 0.9,
    "position": [
     -12.8,
-    1.53,
+    1.801,
     -15.0
    ],
    "material": "row 4",
@@ -895,7 +895,7 @@
    "scale": 0.9,
    "position": [
     -9.6,
-    1.53,
+    1.801,
     -15.0
    ],
    "material": "row 4",
@@ -945,7 +945,7 @@
    "scale": 0.6,
    "position": [
     -3.2,
-    1.523,
+    1.561,
     -15.0
    ],
    "material": "row 4",
@@ -1070,7 +1070,7 @@
    "scale": 0.6,
    "position": [
     12.8,
-    1.456,
+    1.47,
     -15.0
    ],
    "material": "row 4",
@@ -1163,7 +1163,7 @@
    "scale": 1.2,
    "position": [
     -6.4,
-    1.948,
+    1.976,
     -20.0
    ],
    "material": "row 5",
@@ -1231,7 +1231,7 @@
    ],
    "position": [
     0.0,
-    1.45,
+    1.561,
     -20.0
    ],
    "material": "row 5",
@@ -1261,7 +1261,7 @@
    ],
    "position": [
     3.2,
-    1.546,
+    1.669,
     -20.0
    ],
    "material": "row 5",
@@ -1399,7 +1399,7 @@
    "scale": 0.6,
    "position": [
     -3.2,
-    1.652,
+    1.696,
     -25.0
    ],
    "material": "row 6",
@@ -1571,7 +1571,7 @@
    "scale": 0.8,
    "position": [
     -1.6,
-    1.27,
+    1.67,
     -30.0
    ],
    "material": "row 7",
@@ -1737,7 +1737,7 @@
    "scale": 0.4,
    "position": [
     -1.6,
-    1.506,
+    1.527,
     -35.0
    ],
    "material": "row 8",
@@ -1762,7 +1762,7 @@
    "scale": 0.5,
    "position": [
     1.6,
-    1.216,
+    1.357,
     -35.0
    ],
    "material": "row 8",
@@ -1856,6 +1856,195 @@
    "material": "plinth",
    "locked": true,
    "name": "mandelnest plinth"
+  },
+  {
+   "type": "intersection",
+   "scale": 0.125,
+   "children": [
+    {
+     "type": "union",
+     "children": [
+      {
+       "type": "box",
+       "size": [
+        19,
+        1.05,
+        7
+       ],
+       "position": [
+        0,
+        0.275,
+        0
+       ]
+      },
+      {
+       "type": "box",
+       "size": [
+        4.6,
+        2.55,
+        7
+       ],
+       "position": [
+        0,
+        1.025,
+        0
+       ]
+      }
+     ]
+    },
+    {
+     "type": "cathedral"
+    }
+   ],
+   "position": [
+    -19.2,
+    0.951,
+    -40.0
+   ],
+   "material": "row 9",
+   "name": "cathedral",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -19.2,
+    0.45,
+    -40.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "cathedral plinth"
+  },
+  {
+   "type": "dirac_frost",
+   "scale": 0.6,
+   "rotation": [
+    20,
+    25,
+    0
+   ],
+   "position": [
+    -16.0,
+    1.693,
+    -40.0
+   ],
+   "material": "row 9",
+   "name": "dirac_frost",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -16.0,
+    0.45,
+    -40.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "dirac_frost plinth"
+  },
+  {
+   "type": "horned_sphere",
+   "scale": 0.6,
+   "rotation": [
+    0,
+    -30,
+    0
+   ],
+   "position": [
+    -12.8,
+    1.94,
+    -40.0
+   ],
+   "material": "row 9",
+   "name": "horned_sphere",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -12.8,
+    0.45,
+    -40.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "horned_sphere plinth"
+  },
+  {
+   "type": "intersection",
+   "scale": 0.5,
+   "children": [
+    {
+     "type": "box",
+     "size": [
+      4.5,
+      2.34,
+      4.5
+     ]
+    },
+    {
+     "type": "cusp_vaults",
+     "position": [
+      0,
+      1.15,
+      0
+     ]
+    }
+   ],
+   "position": [
+    -9.6,
+    1.505,
+    -40.0
+   ],
+   "material": "row 9",
+   "name": "cusp_vaults",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -9.6,
+    0.45,
+    -40.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "cusp_vaults plinth"
+  },
+  {
+   "type": "nil_stair",
+   "scale": 1.0,
+   "position": [
+    -6.4,
+    1.92,
+    -40.0
+   ],
+   "material": "row 9",
+   "name": "nil_stair",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    -6.4,
+    0.45,
+    -40.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "nil_stair plinth"
   },
   {
    "type": "seifert_gasket",
@@ -1963,6 +2152,188 @@
    "material": "plinth",
    "locked": true,
    "name": "zorich_pagodas plinth"
+  },
+  {
+   "type": "intersection",
+   "scale": 1.0,
+   "children": [
+    {
+     "type": "sphere",
+     "radius": 1.1
+    },
+    {
+     "type": "quasicrystal_rooms",
+     "scale": 0.45,
+     "rotation": [
+      31.717,
+      0,
+      0
+     ]
+    }
+   ],
+   "position": [
+    6.4,
+    2.02,
+    -40.0
+   ],
+   "material": "row 9",
+   "name": "quasicrystal_rooms",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    6.4,
+    0.45,
+    -40.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "quasicrystal_rooms plinth"
+  },
+  {
+   "type": "mayer_julia",
+   "scale": 0.55,
+   "rotation": [
+    0,
+    0,
+    90
+   ],
+   "position": [
+    9.6,
+    2.072,
+    -40.0
+   ],
+   "material": "row 9",
+   "name": "mayer_julia",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    9.6,
+    0.45,
+    -40.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "mayer_julia plinth"
+  },
+  {
+   "type": "intersection",
+   "scale": 0.9,
+   "children": [
+    {
+     "type": "box",
+     "size": [
+      2.25,
+      2.25,
+      2.25
+     ]
+    },
+    {
+     "type": "screw_sponge",
+     "open": 1
+    }
+   ],
+   "position": [
+    12.8,
+    1.933,
+    -40.0
+   ],
+   "material": "row 9",
+   "name": "screw_sponge",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    12.8,
+    0.45,
+    -40.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "screw_sponge plinth"
+  },
+  {
+   "type": "intersection",
+   "scale": 0.18,
+   "rotation": [
+    0,
+    20,
+    0
+   ],
+   "children": [
+    {
+     "type": "box",
+     "size": [
+      11,
+      11,
+      11
+     ]
+    },
+    {
+     "type": "labyrinth_sponge"
+    }
+   ],
+   "position": [
+    16.0,
+    1.91,
+    -40.0
+   ],
+   "material": "row 9",
+   "name": "labyrinth_sponge",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    16.0,
+    0.45,
+    -40.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "labyrinth_sponge plinth"
+  },
+  {
+   "type": "octet_truss",
+   "scale": 0.017,
+   "rotation": [
+    -20,
+    30,
+    0
+   ],
+   "position": [
+    19.2,
+    1.891,
+    -40.0
+   ],
+   "material": "row 9",
+   "name": "octet_truss",
+   "locked": true
+  },
+  {
+   "type": "cylinder",
+   "radius": 0.5,
+   "height": 0.9,
+   "position": [
+    19.2,
+    0.45,
+    -40.0
+   ],
+   "material": "plinth",
+   "locked": true,
+   "name": "octet_truss plinth"
   }
  ]
 }
