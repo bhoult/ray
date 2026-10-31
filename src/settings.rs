@@ -167,9 +167,11 @@ impl Default for Settings {
 
 impl Settings {
     /// The settings that change the traced image (a change restarts
-    /// accumulation).
+    /// accumulation; samples per frame do not: the samples go on where they
+    /// were, however many a frame).
     pub fn trace_key(&self) -> Settings {
         Settings {
+            spp: 1,
             exposure: 1.0,
             bloom: true,
             edge_aa: true,

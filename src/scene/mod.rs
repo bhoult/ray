@@ -643,10 +643,45 @@ impl TerrainCache {
     }
 }
 
+/// The text chunks a screenshot carries: the scene as it was, a document
+/// that opens as it is (the view and every setting in it, as a quick save
+/// has them), and the rest of the moment (the file it came from, the
+/// walker...), apart since a scene has no place for them.
+pub const STILL_SCENE: &str = "ray-scene";
+pub const STILL_MOMENT: &str = "ray-still";
+
+/// A scene document from a scene file or from a screenshot (a PNG with the
+/// scene in it), with the screenshot's moment. Not migrated.
+pub fn read_doc(path: &std::path::Path) -> Result<(serde_json::Value, Option<serde_json::Value>), String> {
+    let bytes = std::fs::read(path).map_err(|e| e.to_string())?;
+    if !bytes.starts_with(b"\x89PNG\r\n\x1a\n") {
+        return Ok((serde_json::from_slice(&bytes).map_err(|e| e.to_string())?, None));
+    }
+    let t = crate::render::png_text(std::io::Cursor::new(&bytes), &[STILL_SCENE, STILL_MOMENT])?;
+    let [scene, moment] = [&t[0], &t[1]];
+    let scene = scene.as_deref().ok_or("a picture with no scene in it (ray's screenshots carry theirs)")?;
+    let moment = moment.as_deref().map(serde_json::from_str).transpose().map_err(|e| e.to_string())?;
+    Ok((serde_json::from_str(scene).map_err(|e| e.to_string())?, moment))
+}
+
+/// Two scene documents alike but for the view and the render settings (a
+/// screenshot of a file not since changed shows nothing unsaved).
+pub fn same_scene(a: &serde_json::Value, b: &serde_json::Value) -> bool {
+    let bare = |v: &serde_json::Value| {
+        let mut v = v.clone();
+        if let Some(o) = v.as_object_mut() {
+            o.remove("camera");
+            o.remove("render");
+        }
+        v
+    };
+    bare(a) == bare(b)
+}
+
 impl Scene {
+    /// A scene file, or the scene in a screenshot.
     pub fn load(path: &std::path::Path) -> Result<Scene, String> {
-        let text = std::fs::read_to_string(path).map_err(|e| format!("{}: {e}", path.display()))?;
-        let v: serde_json::Value = serde_json::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))?;
+        let (v, _) = read_doc(path).map_err(|e| format!("{}: {e}", path.display()))?;
         let s = Scene::from_value(&v, &mut TerrainCache::default()).map_err(|e| format!("{}: {e}", path.display()))?;
         for p in &s.problems {
             eprintln!("ray: {}: {p} (left out)", path.display());

@@ -13,7 +13,7 @@
     "lichen": {"color": [0.5, 0.48, 0.42], "color2": [0.3, 0.42, 0.18], "texture": "orbit", "texture_scale": 2, "roughness": 0.85}
   },
   "objects": [
-    {"name": "valley", "type": "terrain", "size": 512, "resolution": 1024, "noise": "eroded", "height": 70, "base": 18, "rim": 205, "cap": 130, "seed": 3},
+    {"name": "valley", "type": "terrain", "size": 512, "resolution": 1024, "noise": "eroded", "height": 70, "base": 18, "rim": 120, "rim_height": 90, "rim_width": 240, "seed": 3},
     {"name": "lake", "type": "water", "level": 8},
     {"name": "citadel", "type": "menger", "iterations": 4, "scale": 14, "position": [30, 40, -40], "rotation": [0, 25, 0], "material": "citadel"},
     {"name": "tower", "type": "menger", "iterations": 4, "scale": 7, "position": [-70, 30, -20], "rotation": [0, 60, 0], "material": "lichen"},

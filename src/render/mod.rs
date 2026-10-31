@@ -362,6 +362,12 @@ impl Frame {
 }
 
 pub fn write_png(path: &std::path::Path, w: usize, h: usize, rgba: &[u8]) -> Result<(), String> {
+    write_png_text(path, w, h, rgba, &[])
+}
+
+/// A PNG with text in it: each (keyword, text, compressed) an iTXt chunk,
+/// ahead of the pixels (a reader finds them without decoding the image).
+pub fn write_png_text(path: &std::path::Path, w: usize, h: usize, rgba: &[u8], text: &[(&str, &str, bool)]) -> Result<(), String> {
     let file = std::fs::File::create(path).map_err(|e| format!("{}: {e}", path.display()))?;
     let mut enc = png::Encoder::new(std::io::BufWriter::new(file), w as u32, h as u32);
     enc.set_color(png::ColorType::Rgba);
@@ -369,7 +375,22 @@ pub fn write_png(path: &std::path::Path, w: usize, h: usize, rgba: &[u8]) -> Res
     // fdeflate: some 20 times faster than the default, files a sixth larger
     enc.set_compression(png::Compression::Fast);
     let mut wr = enc.write_header().map_err(|e| e.to_string())?;
+    for &(key, t, compressed) in text {
+        let mut c = png::text_metadata::ITXtChunk::new(key, t);
+        c.compressed = compressed;
+        wr.write_text_chunk(&c).map_err(|e| e.to_string())?;
+    }
     wr.write_image_data(rgba).map_err(|e| e.to_string())
+}
+
+/// The iTXt texts of a PNG under `keys`, in their order (None: not in it);
+/// only the chunks ahead of the pixels are read.
+pub fn png_text<R: std::io::BufRead + std::io::Seek>(r: R, keys: &[&str]) -> Result<Vec<Option<String>>, String> {
+    let reader = png::Decoder::new(r).read_info().map_err(|e| e.to_string())?;
+    let info = reader.info();
+    keys.iter()
+        .map(|k| info.utf8_text.iter().find(|c| c.keyword == *k).map(|c| c.get_text().map_err(|e| e.to_string())).transpose())
+        .collect()
 }
 
 #[derive(Clone, Copy, Debug, Default)]

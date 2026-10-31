@@ -214,8 +214,15 @@ impl Game {
             h = (h * 0.8).max(MIN_HEIGHT);
         }
         let feet = resolve(probe, feet_below(eye, h), h, &mut Vec::new());
-        let grounded = ground(probe, feet, h);
-        Game { feet, vel: [0.0; 3], height: h, grounded, jetting: false, power: 0.0, lift: 0.0, lean: 0.0, diving: false, wet: 0.0, climbing: false, climb_from: 0.0, climb_spent: false, since: Instant::now() }
+        Game::stand(probe, feet, h)
+    }
+
+    /// A walker of `height` at rest with its feet at `feet` (where one stood
+    /// in a screenshot: put back as it was, not guessed again).
+    pub fn stand(probe: &mut Probe, feet: D3, height: f64) -> Game {
+        let height = height.clamp(MIN_HEIGHT, MAX_HEIGHT);
+        let grounded = ground(probe, feet, height);
+        Game { feet, vel: [0.0; 3], height, grounded, jetting: false, power: 0.0, lift: 0.0, lean: 0.0, diving: false, wet: 0.0, climbing: false, climb_from: 0.0, climb_spent: false, since: Instant::now() }
     }
 
     pub fn eye(&self) -> D3 {

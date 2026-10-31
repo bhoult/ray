@@ -5,7 +5,7 @@
 
 use super::{App, Selection, Tool, actions, doc, physics, remote::Request, schema, why_not};
 use crate::math::Vec3;
-use crate::render::pick_ray;
+use crate::render::{Pick, pick_ray};
 use crate::scene::Scene;
 use crate::settings::Settings;
 use serde_json::{Map, Value, json};
@@ -132,6 +132,18 @@ impl App {
                 self.settings = Settings::from_json(&v)?;
                 serde_json::to_value(self.settings).map_err(|e| e.to_string())
             }
+            // the preferences (config.rs): saved as they change, as in their
+            // window; an unknown field is refused
+            "preferences" => {
+                let mut v = serde_json::to_value(&self.config).map_err(|e| e.to_string())?;
+                let set = a.get("set").unwrap_or(&Value::Null);
+                if let Some(k) = set.as_object().and_then(|o| o.keys().find(|k| v.get(k.as_str()).is_none())) {
+                    return Err(format!("no preference '{k}'"));
+                }
+                merge(&mut v, set)?;
+                self.config = serde_json::from_value(v).map_err(|e| e.to_string())?;
+                serde_json::to_value(&self.config).map_err(|e| e.to_string())
+            }
             "environment" => {
                 let set = a.get("set").cloned().unwrap_or(Value::Null);
                 self.edit(|v| {
@@ -151,6 +163,8 @@ impl App {
                 Ok(json!({"material": name}))
             }
             "camera" => self.cmd_camera(a),
+            "glide" => self.cmd_glide(a),
+            "render_video" => self.cmd_render_video(a),
             "raycast" => self.cmd_raycast(a),
             "hold" => {
                 let keys: Vec<String> = a.get("keys").and_then(Value::as_array).map(|k| k.iter().filter_map(Value::as_str).map(str::to_string).collect()).unwrap_or_default();
@@ -227,6 +241,7 @@ impl App {
                 "still_for": (b.rest * 100.0).round() / 100.0,
             })).collect::<Vec<_>>(),
             "ui_frame_ms": self.frame_ms,
+            "ui_frames": self.frames,
             // the last traced frame: its time (trace and post), and how the
             // GPU and the CPU shared it
             "render_ms": self.stats.trace_ms + self.stats.post_ms,
@@ -234,6 +249,29 @@ impl App {
             "cpu_ms": self.stats.cpu_ms,
             "gpu_share": self.stats.gpu_share,
             "frame_traced": self.stats.traced,
+            // the scene's clock (seconds: a steady recording moves it a frame
+            // at a time), and what moves on it
+            "clock": self.now(),
+            "gliding": !self.glides.is_empty(),
+            "holding": self.held.iter().map(|h| h.0.clone()).collect::<Vec<_>>(),
+            "recording": self.recorder.as_ref().map(|r| json!({
+                "file": r.path.display().to_string(),
+                "steady": self.steady.as_ref().map(|s| json!({
+                    "frames": s.frames,
+                    "seconds": s.frames as f32 / s.fps as f32,
+                    "of_frames": s.until,
+                    "size": s.size,
+                    "fps": s.fps,
+                    "samples": s.wants(self.settings.max_samples),
+                    "max_load": s.load,
+                    // the wall clock's: how long a frame takes, and the rest
+                    "seconds_a_frame": s.secs_a_frame(),
+                    "eta_seconds": s.until.map(|n| n.saturating_sub(s.frames) as f32 * s.secs_a_frame()),
+                })),
+            })),
+            // the last recording finished (its file is whole), or why it failed
+            "last_video": self.last_video.as_ref().map(|v| v.0.display().to_string()),
+            "recording_error": self.record_error,
             // game mode's walker (null: editing)
             "game": self.game.as_ref().map(|g| json!({ "height_m": g.height, "grounded": g.grounded, "feet": g.feet, "in_water": g.wet, "diving": g.diving })),
         })
@@ -404,6 +442,83 @@ impl App {
         Ok(self.camera_json())
     }
 
+    /// The camera eases to a pose over `seconds` of the scene's clock (as
+    /// set_camera takes it; yaw the short way round, or `turn_degrees` by
+    /// that much either way; smoothly, or at an even rate with `even`). In
+    /// game mode only the look: the walker turns where it stands. `queue`:
+    /// after the glides already going, from where they end and exactly when
+    /// (a path of legs, sent at once, with no pause between them).
+    fn cmd_glide(&mut self, a: &Value) -> Result<Value, String> {
+        let num = |k: &str| a.get(k).and_then(Value::as_f64).map(|v| v as f32);
+        let secs = num("seconds").unwrap_or(2.0).clamp(0.0, 600.0);
+        let queue = a.get("queue").and_then(Value::as_bool).unwrap_or(false);
+        if !queue {
+            self.glides.clear();
+        }
+        // where it starts from: the last queued glide's end, or the camera now
+        let (base_pos, [base_yaw, base_pitch, base_fov], t0) = match self.glides.back() {
+            Some(g) => (g.to_pos.unwrap_or(g.from_pos), g.to, g.t0 + g.secs as f64),
+            None => (self.cam.exact(), [self.cam.yaw, self.cam.pitch, self.cam.fov], self.now()),
+        };
+        let to_pos = a.get("position").and_then(doc::as_vec3).filter(|_| self.game.is_none());
+        let (mut yaw, mut pitch) = (base_yaw, base_pitch);
+        if let Some(t) = a.get("look_at").and_then(doc::as_vec3) {
+            let from = to_pos.unwrap_or(base_pos);
+            let d = Vec3::new((t[0] - from[0]) as f32, (t[1] - from[1]) as f32, (t[2] - from[2]) as f32).normalize();
+            if d.is_finite() {
+                pitch = d.y.clamp(-1.0, 1.0).asin();
+                yaw = (-d.x).atan2(-d.z);
+            }
+        }
+        if let Some(y) = num("yaw_degrees") {
+            yaw = y.to_radians();
+        }
+        // (the short way round)
+        let tau = std::f32::consts::TAU;
+        yaw = base_yaw + (yaw - base_yaw + std::f32::consts::PI).rem_euclid(tau) - std::f32::consts::PI;
+        if let Some(t) = num("turn_degrees") {
+            yaw = base_yaw + t.to_radians();
+        }
+        if let Some(p) = num("pitch_degrees") {
+            pitch = p.to_radians();
+        }
+        let fov = num("fov_degrees").unwrap_or(base_fov).clamp(5.0, 150.0);
+        self.glides.push_back(super::Glide {
+            from_pos: base_pos,
+            to_pos,
+            from: [base_yaw, base_pitch, base_fov],
+            to: [yaw, pitch.clamp(-1.55, 1.55), fov],
+            t0,
+            secs,
+            linear: a.get("even").and_then(Value::as_bool).unwrap_or(false),
+        });
+        Ok(json!({"seconds": secs, "starts_in": t0 - self.now(), "position": to_pos.unwrap_or(base_pos), "yaw_degrees": yaw.to_degrees(), "pitch_degrees": pitch.to_degrees(), "fov_degrees": fov}))
+    }
+
+    /// A steady recording at a size, rate and samples of its own (not the
+    /// preferences'), ending by itself after `seconds`; or (stop) the
+    /// recording ended.
+    fn cmd_render_video(&mut self, a: &Value) -> Result<Value, String> {
+        if a.get("stop").and_then(Value::as_bool).unwrap_or(false) {
+            let file = self.recorder.as_ref().map(|r| r.path.display().to_string()).ok_or("not recording")?;
+            self.stop_recording();
+            return Ok(json!({"finishing": file}));
+        }
+        if self.recorder.is_some() {
+            return Err("already recording (stop: true ends it)".into());
+        }
+        let int = |k: &str, d: u64| a.get(k).and_then(Value::as_u64).unwrap_or(d);
+        let size = super::video_size(int("width", 1920) as f32, int("height", 1080) as f32);
+        let fps = int("fps", 30).clamp(5, 120) as u32;
+        let until = a.get("seconds").and_then(Value::as_f64).map(|s| (s * fps as f64).round().max(1.0) as u64);
+        let quality = int("quality", 16).min(51) as u32;
+        let mut steady = super::record::Steady::new(fps, int("samples", 16).min(1 << 16) as u32, size, until, self.now());
+        steady.load = a.get("max_load").and_then(Value::as_f64).unwrap_or(0.9).clamp(0.1, 1.0) as f32;
+        let (samples, load) = (steady.wants(self.settings.max_samples), steady.load);
+        let file = self.start_recording(Some(steady), quality)?;
+        Ok(json!({"file": file, "size": size, "fps": fps, "samples": samples, "quality": quality, "frames": until, "max_load": load}))
+    }
+
     fn cmd_raycast(&mut self, a: &Value) -> Result<Value, String> {
         let v3 = |k: &str| a.get(k).and_then(doc::as_vec3).map(|p| Vec3::new(p[0] as f32, p[1] as f32, p[2] as f32));
         let num = |k: &str| a.get(k).and_then(Value::as_f64).map(|v| v as f32);
@@ -415,7 +530,21 @@ impl App {
         };
         // (as the view sees it: its fractal detail is the frame's)
         let c = self.view_cam();
-        let Some(p) = pick_ray(&self.scene, &c, &self.settings, o, d) else { return Ok(json!({"hit": false})) };
+        let Some(mut p) = pick_ray(&self.scene, &c, &self.settings, o, d) else { return Ok(json!({"hit": false})) };
+        // (a march stops within a pixel's footprint of a surface, as seen from
+        // where the ray began: from 900 m up, 8 cm off on a fractal. Begun
+        // again a little short of the hit, twice, it lands within a micrometre;
+        // a ray that then misses only grazed it, and the first hit stands)
+        let (mut from, mut leg) = (0.0, p.t);
+        for _ in 0..2 {
+            let s = p.t - (2.0 * leg * c.pixel_angle + 1e-4);
+            if s <= from {
+                break;
+            }
+            let Some(q) = pick_ray(&self.scene, &c, &self.settings, o + d * s, d) else { break };
+            (from, leg) = (s, q.t);
+            p = Pick { t: s + q.t, ..q };
+        }
         let ob = self.scene.objects.get(p.object as usize);
         Ok(json!({
             "hit": true,

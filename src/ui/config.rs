@@ -18,7 +18,17 @@ pub struct Config {
     pub video_fps: u32,
     /// the encoder's quality: lower is better and bigger (NVENC's cq, x264's crf)
     pub video_quality: u32,
-    /// where screenshots (P, F12) go: the desktop's Pictures folder by default
+    /// steady recordings: of the view, every frame drawn whole, the scene
+    /// 1/fps on from the one before however long it takes (smooth video of a
+    /// slow scene, recorded slower than it plays; no sound), with this many
+    /// samples a pixel (0: until the frame converges)
+    pub video_steady: bool,
+    pub video_steady_samples: u32,
+    /// steady recordings' frame size, pixels, whatever the window's ([0, 0]:
+    /// the view's, at full resolution)
+    pub video_size: [u32; 2],
+    /// where screenshots (P, F12) go: a ray folder in the desktop's Pictures
+    /// folder by default
     pub screenshots: String,
     /// screenshots are the whole window as drawn (panels, menus), not the
     /// 3D view alone
@@ -43,7 +53,10 @@ impl Default for Config {
             microphone: true,
             video_fps: 30,
             video_quality: 21,
-            screenshots: desktop_dir("PICTURES", "Pictures"),
+            video_steady: false,
+            video_steady_samples: 16,
+            video_size: [1920, 1080],
+            screenshots: format!("{}/ray", desktop_dir("PICTURES", "Pictures")),
             screenshot_interface: false,
             quick_save: "saves/quicksave.json".into(),
             look_speed: 1.0,
@@ -166,11 +179,24 @@ impl App {
                 style::check(ui, "microphone", "Recordings take in the system's default microphone (Settings > Sound > Input), for narrating.", &mut c.microphone);
                 style::slider(ui, "frame rate", "Frames a second in the video. The window's own frame rate is what it is: slower frames are shown for longer.", &mut c.video_fps, 15..=60, false);
                 style::slider(ui, "quality", "The encoder's quality: lower is sharper and the file bigger (21 is very good; 28 is smaller and softer).", &mut c.video_quality, 15..=35, false);
+                style::check(ui, "steady", "A recording of the view (not the window: no panels, crosshair or pointer) in which every frame is drawn whole and shows the scene one frame later than the one before, however long it takes to draw: a slow scene plays smoothly, recorded slower than it plays (the window runs slow meanwhile). No sound.", &mut c.video_steady);
+                if c.video_steady {
+                    let sizes: [(&str, [u32; 2]); 5] = [("the view's", [0, 0]), ("1280 x 720", [1280, 720]), ("1920 x 1080", [1920, 1080]), ("2560 x 1440", [2560, 1440]), ("3840 x 2160", [3840, 2160])];
+                    let shown = sizes.iter().find(|(_, v)| *v == c.video_size).map_or_else(|| format!("{} x {}", c.video_size[0], c.video_size[1]), |(n, _)| n.to_string());
+                    style::row(ui, "size", "Steady recordings: the frames' size, whatever the window's (the view's: as big as the view is, at full resolution).", |ui| {
+                        egui::ComboBox::from_id_salt("video size").selected_text(shown).show_ui(ui, |ui| {
+                            for (name, v) in sizes {
+                                ui.selectable_value(&mut c.video_size, v, name);
+                            }
+                        });
+                    });
+                    style::slider(ui, "samples a frame", "Steady recordings: the samples a pixel each frame waits for (more is smoother and slower to record; 16 smooths the edges; path tracing wants hundreds; 0: until the frame converges at the render settings' max samples).", &mut c.video_steady_samples, 0..=1024, true);
+                }
             });
         });
         style::section(ui, "prefs files", "Files", true, |ui| {
             style::props(ui, "prefs files", |ui| {
-                folder(ui, "screenshots folder", "Where screenshots (P, F12) go: your Pictures folder unless set otherwise (~ is your home folder; a relative folder is from where ray was started: ray's own folder from the desktop launcher).", &mut c.screenshots);
+                folder(ui, "screenshots folder", "Where screenshots (P, F12) go: a ray folder in your Pictures folder unless set otherwise (~ is your home folder; a relative folder is from where ray was started: ray's own folder from the desktop launcher).", &mut c.screenshots);
                 style::check(ui, "screenshots include the interface", "Screenshots are the whole window as you see it (panels, menus, the game-mode gauge), not the 3D view alone. Also in the File menu.", &mut c.screenshot_interface);
                 style::row(ui, "quick save file", "The slot F5 saves to and F9 loads: the scene, the camera and every setting (~ is your home folder; a relative path is from where ray was started).", |ui| {
                     ui.horizontal(|ui| {
@@ -291,9 +317,10 @@ mod tests {
 
     /// The desktop's folders, as user-dirs.dirs names them; ~ for the home
     /// folder; one set to the home folder itself (none) or not named at all
-    /// is the usual one.
+    /// is the usual one. Screenshots go in a ray folder inside Pictures.
     #[test]
     fn the_desktops_folders() {
+        assert!(Config::default().screenshots.ends_with("/ray"));
         let dirs = "# comment\nXDG_PICTURES_DIR=\"$HOME/Bilder\"\nXDG_VIDEOS_DIR=\"$HOME/\"\n";
         assert_eq!(desktop_dir_in(Some(dirs), "PICTURES", "Pictures"), "~/Bilder");
         assert_eq!(desktop_dir_in(Some(dirs), "VIDEOS", "Videos"), "~/Videos");

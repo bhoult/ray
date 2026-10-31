@@ -439,7 +439,12 @@ pub fn shadow(ctx: &Ctx, regs: &mut Regs, o: V8, od: V8, d: V8, tmax: F8, active
                 let end = tf.min(limit);
                 let mut a = act & t.lt(end);
                 let kk = if soft { k * 0.4 } else { 1.0e4 };
-                for _ in 0..48 {
+                // (the penumbra is taken where the steps land: a step of at
+                // least 5% of the way so far stepped over the closest
+                // approach to a ridge, and a slope lit edge on was banded
+                // along its contours, the bands crawling as the view moved;
+                // at 1.5% they are gone, at the same cost)
+                for _ in 0..96 {
                     if a.none() {
                         break;
                     }
@@ -447,7 +452,7 @@ pub fn shadow(ctx: &Ctx, regs: &mut Regs, o: V8, od: V8, d: V8, tmax: F8, active
                     let p = V8::at(ray.o, ray.d, t);
                     let dh = p.y - tr.height8(p.x, p.z);
                     vis = F8::select(a, vis.min(dh * kk / t), vis);
-                    let step = (dh * 0.6).max(F8::splat(0.6 * tr.cell)).min(F8::splat(16.0 * tr.cell)).max(t * 0.05);
+                    let step = (dh * 0.6).max(F8::splat(0.6 * tr.cell)).min(F8::splat(16.0 * tr.cell)).max(t * 0.015);
                     t += step;
                     a &= t.lt(end) & vis.gt(F8::splat(0.02));
                 }

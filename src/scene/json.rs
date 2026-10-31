@@ -757,6 +757,14 @@ pub struct TerrainDef {
     pub seed: u32,
     /// raise a bowl rim outside this radius (metres; 0 = none)
     pub rim: f32,
+    /// with a rim: a ring of mountains this high (metres) instead of the
+    /// bowl, rising from `rim` and falling away again over `rim_width`, its
+    /// crest halfway (0: the bowl, steepening for ever)
+    pub rim_height: f32,
+    pub rim_width: f32,
+    /// an island: the ground sinks under the sea toward this radius
+    /// (metres; 0 = none), the coast following the noise's contours
+    pub island: f32,
     /// no height above this
     pub cap: Option<f32>,
     /// march relaxation: lower for steep terrain
@@ -783,6 +791,9 @@ impl Default for TerrainDef {
             octaves: 8,
             seed: 1,
             rim: 0.0,
+            rim_height: 0.0,
+            rim_width: 200.0,
+            island: 0.0,
             cap: None,
             relax: 0.65,
             rock: [0.30, 0.26, 0.22],

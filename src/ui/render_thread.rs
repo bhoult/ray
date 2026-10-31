@@ -12,6 +12,7 @@ use rayon::prelude::*;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::{Arc, Condvar, Mutex};
 use std::thread::JoinHandle;
+use std::time::Instant;
 
 #[derive(Clone)]
 pub struct Job {
@@ -25,6 +26,9 @@ pub struct Job {
     pub waves: Waves,
     /// counts the jobs posted (outputs carry it back)
     pub serial: u64,
+    /// the share of the time it may keep the GPU and the CPU busy (1: all
+    /// of it): after each pass the thread rests for the rest
+    pub load: f32,
 }
 
 impl Job {
@@ -54,6 +58,8 @@ struct Shared {
     wake: Condvar,
     out: Mutex<Option<Output>>,
     quit: AtomicBool,
+    /// no more samples of an unchanged image for now (a new job still renders)
+    paused: AtomicBool,
 }
 
 pub struct RenderThread {
@@ -68,6 +74,7 @@ impl RenderThread {
             wake: Condvar::new(),
             out: Mutex::new(None),
             quit: AtomicBool::new(false),
+            paused: AtomicBool::new(false),
         });
         let sh = shared.clone();
         let handle = std::thread::Builder::new()
@@ -81,6 +88,16 @@ impl RenderThread {
     pub fn post(&self, job: Job) {
         *self.shared.job.lock().unwrap() = Some(job);
         self.shared.wake.notify_one();
+    }
+
+    /// Stops (or lets go on) accumulating samples of an unchanged image: the
+    /// window waiting for a screenshot of itself gets the GPU (a GPU kept busy
+    /// by another program as well left the window a frame a second, and the
+    /// screenshot was given up on).
+    pub fn pause(&self, on: bool) {
+        if self.shared.paused.swap(on, Ordering::Relaxed) != on && !on {
+            self.shared.wake.notify_one();
+        }
     }
 
     /// The newest finished frame, if there is one the UI has not taken.
@@ -98,6 +115,11 @@ impl Drop for RenderThread {
         }
     }
 }
+
+/// A pass of a job kept to a share of the time (`Job::load`) takes about
+/// this long, so that its rests come several times a second: a monitor then
+/// sees the share, not seconds flat out and a pause.
+const BURST_MS: f32 = 150.0;
 
 fn run(sh: Arc<Shared>, ctx: egui::Context) {
     let mut renderer = Renderer::new();
@@ -118,11 +140,13 @@ fn run(sh: Arc<Shared>, ctx: egui::Context) {
     };
     let mut cur: Option<Job> = None;
     let mut idle = true;
+    // the last traced pass's milliseconds a sample a pixel
+    let mut sample_ms = 0.0f32;
     loop {
         {
             let mut pending = sh.job.lock().unwrap();
             // sleep while there is nothing new and the current image is finished
-            while pending.is_none() && (cur.is_none() || idle) && !sh.quit.load(Ordering::Relaxed) {
+            while pending.is_none() && (cur.is_none() || idle || sh.paused.load(Ordering::Relaxed)) && !sh.quit.load(Ordering::Relaxed) {
                 pending = sh.wake.wait(pending).unwrap();
             }
             if sh.quit.load(Ordering::Relaxed) {
@@ -133,7 +157,13 @@ fn run(sh: Arc<Shared>, ctx: egui::Context) {
             }
         }
         let job = cur.as_ref().unwrap();
-        let frame = renderer.render(&job.scene, &job.cam, &job.s, job.w, job.h, job.scene_id, &job.view, &job.waves);
+        let load = job.load.clamp(0.1, 1.0);
+        let mut s = job.s;
+        if load < 1.0 && sample_ms > 0.0 {
+            s.spp = ((BURST_MS / sample_ms) as u32).clamp(1, s.spp.max(1));
+        }
+        let started = Instant::now();
+        let frame = renderer.render(&job.scene, &job.cam, &s, job.w, job.h, job.scene_id, &job.view, &job.waves);
         // to RGBA on every core (a single thread would leave the others idle between frames)
         let mut pixels = vec![egui::Color32::BLACK; frame.w * frame.h];
         pixels.par_chunks_mut(frame.w).enumerate().for_each(|(row, dst)| {
@@ -153,5 +183,17 @@ fn run(sh: Arc<Shared>, ctx: egui::Context) {
         idle = !renderer.stats.traced;
         *sh.out.lock().unwrap() = Some(out);
         ctx.request_repaint();
+        if renderer.stats.traced {
+            sample_ms = started.elapsed().as_secs_f32() * 1000.0 / s.spp.clamp(1, 64) as f32;
+        }
+        // a share of the time: the GPU and the CPU idle for the rest (a long
+        // recording leaves the computer usable meanwhile)
+        if load < 1.0 && renderer.stats.traced {
+            let until = Instant::now() + started.elapsed().mul_f32((1.0 - load) / load);
+            let mut g = sh.job.lock().unwrap();
+            while !sh.quit.load(Ordering::Relaxed) && Instant::now() < until {
+                g = sh.wake.wait_timeout(g, until - Instant::now()).unwrap().0;
+            }
+        }
     }
 }

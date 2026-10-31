@@ -105,6 +105,12 @@ fn tools() -> Vec<(&'static str, &'static str, Value, &'static str)> {
             "settings",
         ),
         (
+            "set_preferences",
+            "Change the viewer's preferences (File > Preferences; saved as they change): videos and screenshots folders, microphone, video_fps, video_quality, video_steady (recordings drawn a whole frame at a time, smooth however slow the scene), video_steady_samples and video_size ([w, h]; [0, 0]: the view's), screenshot_interface, look_speed, invert_look, ui_scale... An empty set returns them all.",
+            json!({"type": "object", "properties": {"set": set("the preferences")}}),
+            "preferences",
+        ),
+        (
             "set_camera",
             "Move the viewer's camera: position and look_at (points), or yaw / pitch in degrees (yaw 0 looks along -z), and the vertical field of view.",
             json!({"type": "object", "properties": {"position": vec3, "look_at": vec3, "yaw_degrees": {"type": "number"}, "pitch_degrees": {"type": "number"}, "fov_degrees": {"type": "number"}}}),
@@ -125,9 +131,40 @@ fn tools() -> Vec<(&'static str, &'static str, Value, &'static str)> {
         ("drop_all", "Let every movable object fall and settle with the physics (locked objects, terrain and water stay).", json!({"type": "object", "properties": {}}), "drop_all"),
         (
             "hold_keys",
-            "Hold keys or mouse buttons for some seconds, as if pressed: in game mode w a s d walk (or swim), shift runs, space jumps (looking down in water: dives), r / f grow and shrink, lmb is the gravity gun (held to charge, fired on release), rmb the rocket; elsewhere the editor's keys (w a s d fly, q / e turn). Look with set_camera's yaw_degrees and pitch_degrees (in game mode that turns the walker without moving it). Holding a key already held holds it longer.",
+            "Hold keys or mouse buttons for some seconds, as if pressed: in game mode w a s d walk (or swim), shift runs, space jumps (looking down in water: dives), r / f grow and shrink, lmb is the gravity gun (held to charge, fired on release), rmb the rocket; elsewhere the editor's keys (w a s d fly, q / e turn). Look with set_camera's yaw_degrees and pitch_degrees, or glide_camera to turn smoothly (in game mode that turns the walker without moving it). Holding a key already held holds it longer. Seconds are the scene's: during a steady recording they pass a video frame at a time.",
             json!({"type": "object", "properties": {"keys": {"type": "array", "items": {"type": "string"}, "description": "e.g. [\"w\", \"shift\"]"}, "seconds": {"type": "number", "description": "How long (default 1)."}}, "required": ["keys"]}),
             "hold",
+        ),
+        (
+            "glide_camera",
+            "Ease the camera to a pose over some seconds (smoothly, or at an even rate): position, look_at, yaw_degrees (the short way round) or turn_degrees (by that much, either way, any amount), pitch_degrees, fov_degrees. In game mode only the look moves: the walker turns where it stands (walk with hold_keys meanwhile). Seconds are the scene's: during a steady recording they pass a video frame at a time, so the motion is smooth in the video.",
+            json!({"type": "object", "properties": {
+                "position": {"type": "array", "items": {"type": "number"}},
+                "look_at": {"type": "array", "items": {"type": "number"}},
+                "yaw_degrees": {"type": "number"},
+                "turn_degrees": {"type": "number"},
+                "pitch_degrees": {"type": "number"},
+                "fov_degrees": {"type": "number"},
+                "seconds": {"type": "number", "description": "How long (default 2)."},
+                "even": {"type": "boolean", "description": "At an even rate, not easing in and out."},
+                "queue": {"type": "boolean", "description": "After the glides already going: it starts where and exactly when they end (send a path's legs at once)."}
+            }}),
+            "glide",
+        ),
+        (
+            "render_video",
+            "Record a video a frame at a time at full quality, into the videos folder: every frame rendered at width x height whatever the window's size (no panels, crosshair or selection outline), each pixel given `samples` samples, the scene moving 1/fps between frames however long a frame takes (glide_camera, hold_keys, game mode, physics and the water all keep to it, so the video plays smoothly). Encoded by x264 at `quality`; no sound. It keeps the GPU and the CPU busy at most max_load of the time (0.9 by default), so the computer stays usable while it runs. With seconds it ends by itself after that much video (exactly seconds x fps frames); stop: true ends it sooner. viewer_status's recording shows the progress (frames, seconds_a_frame, eta_seconds); the file is whole once last_video names it. A 1080p frame of a fractal at 16 samples takes seconds; the scene's render settings (mode, bounces, max_steps, detail) still apply.",
+            json!({"type": "object", "properties": {
+                "width": {"type": "integer", "description": "Pixels (default 1920)."},
+                "height": {"type": "integer", "description": "Pixels (default 1080)."},
+                "fps": {"type": "integer", "description": "Frames a second (default 30)."},
+                "samples": {"type": "integer", "description": "Samples a pixel in every frame (default 16, which smooths the edges; path-traced scenes want hundreds; 0: until the frame converges at the render settings' max_samples)."},
+                "quality": {"type": "integer", "description": "x264's crf: lower is sharper and bigger (default 16; 0 is lossless)."},
+                "seconds": {"type": "number", "description": "Seconds of video; it then ends by itself (default: until stopped)."},
+                "max_load": {"type": "number", "description": "The share of the time it keeps the GPU and the CPU busy (default 0.9: after each pass it rests a ninth as long, so the computer stays usable; 1: flat out, 0.1 at least)."},
+                "stop": {"type": "boolean", "description": "End the recording now."}
+            }}),
+            "render_video",
         ),
         ("run_command", commands_text(), json!({"type": "object", "properties": {"name": {"type": "string", "description": "The command, e.g. game_mode, record_video, reset_scene, headlight."}}, "required": ["name"]}), "command"),
         ("undo", "Undo the last edit (redo: true redoes).", json!({"type": "object", "properties": {"redo": {"type": "boolean"}}}), "undo"),
@@ -137,7 +174,7 @@ fn tools() -> Vec<(&'static str, &'static str, Value, &'static str)> {
             json!({"type": "object", "properties": {"path": {"type": "string"}}}),
             "save",
         ),
-        ("open_scene", "Open another scene file in the viewer (unsaved edits to the current one are lost).", json!({"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]}), "open"),
+        ("open_scene", "Open another scene file in the viewer (unsaved edits to the current one are lost). A screenshot the viewer saved (P / F12, or run_command screenshot: a PNG in the screenshots folder) opens too, as the moment it was taken: the scene with its edits then, the camera exactly, every render setting, and in game mode the walker at its height; the scene file it was taken of becomes the one edited (saving writes there).", json!({"type": "object", "properties": {"path": {"type": "string"}}, "required": ["path"]}), "open"),
         (
             "quick_save",
             "Keep everything as it is now in the viewer's quick save slot (F5; the quick save file in the viewer's Preferences, saves/quicksave.json by default; the reply's \"saved\" gives the path): the scene with its unsaved edits, the camera exactly where it is, every render setting. `ray <that file> -o shot.png` renders that view headless.",

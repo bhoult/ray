@@ -77,10 +77,12 @@ pub fn run(path: PathBuf) -> Result<(), String> {
 
 /// Opens the window on `backends` (the scene loaded afresh for it).
 fn launch(path: &std::path::Path, backends: wgpu::Backends, config: &config::Config, config_error: Option<String>) -> Result<(), String> {
-    let (path, config) = (path.to_path_buf(), config.clone());
-    let text = std::fs::read_to_string(&path).map_err(|e| format!("ray: {}: {e}", path.display()))?;
-    let mut v: serde_json::Value = serde_json::from_str(&text).map_err(|e| format!("ray: {}: {e}", path.display()))?;
+    let config = config.clone();
+    let (mut v, moment) = crate::scene::read_doc(path).map_err(|e| format!("ray: {}: {e}", path.display()))?;
     crate::scene::json::migrate(&mut v);
+    // (a screenshot: the file it came from is the one edited)
+    let shot = moment.as_ref().map(|m| (path.to_path_buf(), m.clone()));
+    let path = moment.as_ref().map_or_else(|| path.to_path_buf(), |m| still_source(path, m));
     let mut cache = TerrainCache::default();
     let scene = Scene::from_value(&v, &mut cache).map_err(|e| format!("ray: {}: {e}", path.display()))?;
     let settings = crate::initial_settings(&scene, None).map_err(|e| format!("ray: {e}"))?;
@@ -104,6 +106,9 @@ fn launch(path: &std::path::Path, backends: wgpu::Backends, config: &config::Con
         Box::new(move |cc| {
             eprintln!("ray: window up {} ms after start", since_start());
             let mut app = App::new(cc.egui_ctx.clone(), path, v, scene, cache, settings, config);
+            if let Some((png, m)) = &shot {
+                app.take_moment(png, m);
+            }
             if let Some(e) = &config_error {
                 app.say(format!("preferences: {e}"));
             }
@@ -233,8 +238,32 @@ struct TestDrag {
     prev: egui::Pos2,
 }
 
-/// The Open and Save as window: the scene files in a folder, and the name
-/// typed or picked.
+/// The scene file a screenshot `png` was taken of, as its moment says:
+/// saving its scene writes there, never into the picture.
+fn still_source(png: &std::path::Path, moment: &serde_json::Value) -> PathBuf {
+    moment
+        .get("source")
+        .and_then(serde_json::Value::as_str)
+        .map(PathBuf::from)
+        .filter(|p| p.extension().is_some_and(|x| x == "json"))
+        .unwrap_or_else(|| png.with_extension("json"))
+}
+
+/// A screenshot in the Open window: its objects and what it shows (None:
+/// a picture with no scene in it).
+fn still_entry(png: &std::path::Path) -> Option<(usize, String)> {
+    let f = std::io::BufReader::new(std::fs::File::open(png).ok()?);
+    let t = crate::render::png_text(f, &[crate::scene::STILL_MOMENT]).ok()?.pop()??;
+    let m: serde_json::Value = serde_json::from_str(&t).ok()?;
+    let n = m.get("objects").and_then(serde_json::Value::as_u64).unwrap_or(0) as usize;
+    let from = still_source(png, &m).file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default();
+    let mut d = format!("screenshot of {from}");
+    if let Some(h) = m.pointer("/game/height").and_then(serde_json::Value::as_f64) {
+        d += &format!(", the walker {} tall", length_text(h));
+    }
+    Some((n, d))
+}
+
 /// Where a screenshot of scene `stem` goes in `dir`: named by the local
 /// time `stamp`, as recordings are; a second one within the same second
 /// gets -2, -3...
@@ -265,6 +294,22 @@ fn first_sentence(text: &str, max: usize) -> String {
 #[derive(Clone, Copy, Debug)]
 struct WindowShot;
 
+/// The camera easing from one pose to another (the control socket's
+/// `glide`) over `secs` of the scene's clock from `t0`, smoothly or at an
+/// even rate: its position (none: it stays), and yaw, pitch and field of
+/// view (radians, radians, degrees).
+struct Glide {
+    from_pos: [f64; 3],
+    to_pos: Option<[f64; 3]>,
+    from: [f32; 3],
+    to: [f32; 3],
+    t0: f64,
+    secs: f32,
+    linear: bool,
+}
+
+/// The Open and Save as window: the scene files in a folder, and the name
+/// typed or picked.
 struct FileDialog {
     save: bool,
     dir: PathBuf,
@@ -293,12 +338,16 @@ impl FileDialog {
         self.dirs.sort();
         self.files = entries
             .into_iter()
-            .filter(|p| p.extension().is_some_and(|x| x == "json"))
-            .map(|p| {
-                let v: serde_json::Value = std::fs::read_to_string(&p).ok().and_then(|t| serde_json::from_str(&t).ok()).unwrap_or_default();
-                let n = v.get("objects").and_then(serde_json::Value::as_array).map_or(0, Vec::len);
-                let d = v.get("description").and_then(serde_json::Value::as_str).unwrap_or("").to_string();
-                (p, n, d)
+            .filter_map(|p| match p.extension().and_then(|x| x.to_str()) {
+                Some("json") => {
+                    let v: serde_json::Value = std::fs::read_to_string(&p).ok().and_then(|t| serde_json::from_str(&t).ok()).unwrap_or_default();
+                    let n = v.get("objects").and_then(serde_json::Value::as_array).map_or(0, Vec::len);
+                    let d = v.get("description").and_then(serde_json::Value::as_str).unwrap_or("").to_string();
+                    Some((p, n, d))
+                }
+                // (screenshots open as the moment they were taken)
+                Some("png") if !self.save => still_entry(&p).map(|(n, d)| (p, n, d)),
+                _ => None,
             })
             .collect();
         self.files.sort();
@@ -580,6 +629,8 @@ pub struct App {
     frame_ms: f32,
     view_rect: egui::Rect,
     render_size: (usize, usize),
+    /// the view's size in pixels (whatever the render scale)
+    view_px: (f32, f32),
     /// game mode: the walker (None: editing), and the eye it last put the
     /// camera at (a camera moved otherwise, by a quick load or a remote,
     /// starts the walker there anew)
@@ -590,15 +641,20 @@ pub struct App {
     run_on: bool,
     shift_was: bool,
     /// keys and mouse buttons held from outside (the control socket's
-    /// `hold`): each name, until when, and whether it went down yet
-    held: Vec<(String, Instant, bool)>,
+    /// `hold`): each name, until when (the scene's clock), and whether it
+    /// went down yet
+    held: Vec<(String, f64, bool)>,
+    /// the camera easing to a pose (the control socket's `glide`), and the
+    /// glides queued after it
+    glides: std::collections::VecDeque<Glide>,
     /// game mode's gravity gun: charging since (the left button held);
     /// armed once the button has been up (the click that started game mode
     /// does not fire it); when it last fired (its flash); whether something
     /// it can move is under the crosshair, in reach
-    gun: Option<Instant>,
+    /// (the scene's clock)
+    gun: Option<f64>,
     gun_armed: bool,
-    gun_shot: Option<Instant>,
+    gun_shot: Option<f64>,
     gun_target: bool,
     /// game mode holds the pointer (the desktop lets go when the window
     /// loses focus; it is taken again when it comes back)
@@ -620,6 +676,10 @@ pub struct App {
     /// recording the window (F10); a stopped recording finishing its file;
     /// the window's size in pixels; the window's title as last set
     recorder: Option<record::Recorder>,
+    /// a steady recording's clock (the scene moves a frame of the video at
+    /// a time); after one, how far the scene's clock is behind the wall's
+    steady: Option<record::Steady>,
+    clock_behind: f64,
     record_done: Option<std::thread::JoinHandle<Result<String, String>>>,
     window_px: [usize; 2],
     title: String,
@@ -627,6 +687,8 @@ pub struct App {
     /// the menu bar (or game mode's view) says so for a while, with buttons
     /// to play it and open its folder
     last_video: Option<(PathBuf, Instant)>,
+    /// why the last recording failed (until the next starts)
+    record_error: Option<String>,
     /// the cost view: per object, nanoseconds per evaluation of its shape
     prices: Vec<f32>,
     rng: u64,
@@ -649,6 +711,13 @@ fn render_size(w: f32, h: f32) -> (usize, usize) {
     let (w, h) = (w.max(8.0), h.max(8.0));
     let k = (MAX_PIXELS / (w * h)).sqrt().min(MAX_SIDE / w).min(MAX_SIDE / h).min(1.0);
     (((w * k) as usize).max(8), ((h * k) as usize).max(8))
+}
+
+/// A steady recording's frame size for `w` x `h` asked for: within the
+/// render's limits (render_size), and even (the encoder's 4:2:0 wants it).
+fn video_size(w: f32, h: f32) -> [usize; 2] {
+    let (w, h) = render_size(w.max(16.0), h.max(16.0));
+    [w & !1, h & !1]
 }
 
 fn mtime(p: &std::path::Path) -> Option<SystemTime> {
@@ -740,11 +809,13 @@ impl App {
             frame_ms: 0.0,
             view_rect: egui::Rect::NOTHING,
             render_size: (0, 0),
+            view_px: (0.0, 0.0),
             game: None,
             game_eye: [0.0; 3],
             run_on: false,
             shift_was: false,
             held: Vec::new(),
+            glides: Default::default(),
             gun: None,
             gun_armed: false,
             gun_shot: None,
@@ -758,10 +829,13 @@ impl App {
             config_error: None,
             test_mic: None,
             recorder: None,
+            steady: None,
+            clock_behind: 0.0,
             record_done: None,
             window_px: [0, 0],
             title: String::new(),
             last_video: None,
+            record_error: None,
             prices: Vec::new(),
             rng: SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).map(|d| d.as_nanos() as u64).unwrap_or(7),
             #[cfg(feature = "profile")]
@@ -882,10 +956,7 @@ impl App {
     fn reload(&mut self, reset_camera: bool) {
         self.mtime = mtime(&self.path);
         self.changed_on_disk = false;
-        let r = std::fs::read_to_string(&self.path)
-            .map_err(|e| e.to_string())
-            .and_then(|t| serde_json::from_str::<serde_json::Value>(&t).map_err(|e| e.to_string()));
-        match r {
+        match crate::scene::read_doc(&self.path).map(|(v, _)| v) {
             Ok(mut v) => {
                 crate::scene::json::migrate(&mut v);
                 self.original = v.clone();
@@ -949,6 +1020,11 @@ impl App {
 
     /// Saves to `path` and goes on editing that file.
     fn save_as(&mut self, path: PathBuf) -> Result<(), String> {
+        if path.extension().is_some_and(|x| x.eq_ignore_ascii_case("png")) {
+            let e = "save failed: a scene saves as .json (a screenshot stays the picture it is)".to_string();
+            self.say(e.clone());
+            return Err(e);
+        }
         self.store_view();
         match self.doc.save(&path) {
             Ok(()) => {
@@ -1037,9 +1113,9 @@ impl App {
     /// Opens another scene file: its document, start view and render settings
     /// (the device and resolution scale stay unless the file sets them), with
     /// the physics reset. A file that does not load leaves the current scene as it is.
+    /// A screenshot opens as the moment it was taken (take_moment).
     pub(super) fn open(&mut self, path: PathBuf) -> Result<(), String> {
-        let text = std::fs::read_to_string(&path).map_err(|e| format!("{}: {e}", path.display()))?;
-        let mut v: serde_json::Value = serde_json::from_str(&text).map_err(|e| format!("{}: {e}", path.display()))?;
+        let (mut v, moment) = crate::scene::read_doc(&path).map_err(|e| format!("{}: {e}", path.display()))?;
         crate::scene::json::migrate(&mut v);
         let scene = Scene::from_value(&v, &mut self.cache).map_err(|e| format!("{}: {e}", path.display()))?;
         let mut s = crate::initial_settings(&scene, None)?;
@@ -1051,7 +1127,7 @@ impl App {
             s.scale = self.settings.scale;
         }
         self.settings = s;
-        self.path = path;
+        self.path = moment.as_ref().map_or_else(|| path.clone(), |m| still_source(&path, m));
         self.mtime = mtime(&self.path);
         self.changed_on_disk = false;
         self.original = v.clone();
@@ -1072,7 +1148,36 @@ impl App {
         self.cam = crate::start_camera(&self.scene);
         self.speed = self.scene.camera.speed;
         self.say(format!("opened {}", self.path.display()));
+        if let Some(m) = &moment {
+            self.take_moment(&path, m);
+        }
         Ok(())
+    }
+
+    /// A screenshot `png` just opened (its scene, view and settings in):
+    /// the file it was taken of is the one edited, with unsaved edits if its
+    /// scene is not that file's as it is now; the walker back as it stood
+    /// (game mode exactly as it was: entered anew, it would guess its height
+    /// from the ground), or out of game mode.
+    fn take_moment(&mut self, png: &std::path::Path, moment: &serde_json::Value) {
+        let on_disk = crate::scene::read_doc(&self.path).ok().map(|(mut v, _)| {
+            crate::scene::json::migrate(&mut v);
+            v
+        });
+        let unsaved = !on_disk.is_some_and(|v| crate::scene::same_scene(&v, &self.doc.v));
+        self.original_on_disk = !unsaved;
+        self.doc.dirty = unsaved;
+        self.game = None;
+        let walker = moment.get("game").and_then(|g| Some((serde_json::from_value::<[f64; 3]>(g.get("feet")?.clone()).ok()?, g.get("height")?.as_f64()?)));
+        if let Some((feet, height)) = walker {
+            let cam = self.view_cam();
+            let g = crate::render::view_query(&self.scene, &cam, &self.settings, |c, regs| game::Game::stand(&mut game::Probe::new(c, regs), feet, height));
+            self.gun = None;
+            self.gun_armed = false;
+            self.game_eye = self.cam.exact();
+            self.game = Some(g);
+        }
+        self.say(format!("opened {}: a screenshot of {} (saving writes there)", png.display(), self.path.display()));
     }
 
     /// The Open / Save as window.
@@ -1200,13 +1305,47 @@ impl App {
         self.save_shot(size, &rgba);
     }
 
-    /// A screenshot's pixels into the screenshots folder, named after the scene.
+    /// A screenshot's pixels into the screenshots folder, named after the
+    /// scene, with the moment in the picture: the scene as a quick save keeps
+    /// it (unsaved edits, the camera exactly, every setting), the file it is
+    /// of and the walker. Opened (File > Open, `ray` with the picture), it
+    /// all comes back.
     fn save_shot(&mut self, size: [usize; 2], rgba: &[u8]) {
         let stem = self.path.file_stem().map(|s| s.to_string_lossy().into_owned()).unwrap_or_else(|| "ray".into());
         let dir = config::expand(&self.config.screenshots);
         let _ = std::fs::create_dir_all(&dir);
-        let out = shot_path(&dir, &stem, &record::stamp());
-        let msg = match crate::render::write_png(&out, size[0], size[1], rgba) {
+        let stamp = record::stamp();
+        let out = shot_path(&dir, &stem, &stamp);
+        let mut scene = self.doc.v.clone();
+        self.view_into(&mut scene);
+        let version = env!("CARGO_PKG_VERSION");
+        let moment = serde_json::json!({
+            "source": std::path::absolute(&self.path).unwrap_or_else(|_| self.path.clone()),
+            "taken": stamp,
+            "size": size,
+            "objects": self.doc.objects().len(),
+            "game": self.game.as_ref().map(|g| serde_json::json!({"feet": g.feet, "height": g.height})),
+            "version": version,
+        });
+        // (for people and picture viewers: where it was taken from)
+        let (c, p) = (self.cam, self.cam.exact());
+        let mut about = format!(
+            "ray: {} from ({:.6}, {:.6}, {:.6}) m, yaw {:.2}°, pitch {:.2}°, field of view {:.1}°",
+            self.path.file_name().map(|n| n.to_string_lossy().into_owned()).unwrap_or_default(),
+            p[0],
+            p[1],
+            p[2],
+            c.yaw.to_degrees(),
+            c.pitch.to_degrees(),
+            c.fov
+        );
+        if let Some(g) = &self.game {
+            about += &format!("; the walker {} tall", length_text(g.height));
+        }
+        let scene = serde_json::to_string(&scene).unwrap_or_default();
+        let (moment, software) = (moment.to_string(), format!("ray {version}"));
+        let text = [(crate::scene::STILL_SCENE, scene.as_str(), true), (crate::scene::STILL_MOMENT, moment.as_str(), true), ("Description", about.as_str(), false), ("Software", software.as_str(), false)];
+        let msg = match crate::render::write_png_text(&out, size[0], size[1], rgba, &text) {
             Ok(()) => format!("saved {}", out.display()),
             Err(e) => format!("screenshot failed: {e}"),
         };
@@ -1283,7 +1422,42 @@ impl App {
 
     /// Whether the view is moving, for "fast while moving" (fewer pixels).
     fn moving(&self) -> bool {
-        self.settings.fast_motion && self.last_change.elapsed().as_secs_f32() < 0.15
+        // (a steady recording draws every frame whole)
+        self.settings.fast_motion && self.steady.is_none() && self.last_change.elapsed().as_secs_f32() < 0.15
+    }
+
+    /// The scene's clock, seconds (waves, ripples, stars, held keys, the
+    /// gravity gun's charge): the wall clock's, except that a steady
+    /// recording moves it a frame of the video at a time (and it goes on
+    /// from there after).
+    fn now(&self) -> f64 {
+        self.steady.as_ref().map_or(self.clock.elapsed().as_secs_f64() - self.clock_behind, |s| s.t)
+    }
+
+    /// The camera, easing toward a glide's pose: its position too, except
+    /// in game mode (the walker moves it; it turns).
+    fn glide_step(&mut self) {
+        let now = self.now();
+        // (a glide whose time is over gives way to the next, which starts
+        // where and when it ended)
+        while self.glides.len() > 1 && now >= self.glides[0].t0 + self.glides[0].secs as f64 {
+            self.glides.pop_front();
+        }
+        let Some(g) = self.glides.front() else { return };
+        let k = ((now - g.t0) as f32 / g.secs.max(1e-3)).clamp(0.0, 1.0);
+        let e = if g.linear { k } else { k * k * (3.0 - 2.0 * k) };
+        if self.game.is_none()
+            && let Some(to) = g.to_pos
+        {
+            let p = std::array::from_fn(|i| g.from_pos[i] + (to[i] - g.from_pos[i]) * e as f64);
+            self.cam.set_exact(p);
+        }
+        self.cam.yaw = g.from[0] + (g.to[0] - g.from[0]) * e;
+        self.cam.pitch = (g.from[1] + (g.to[1] - g.from[1]) * e).clamp(-1.55, 1.55);
+        self.cam.fov = g.from[2] + (g.to[2] - g.from[2]) * e;
+        if k >= 1.0 {
+            self.glides.pop_front();
+        }
     }
 
     /// Mouse look: radians per point (narrower views turn slower), and -1 when
@@ -1292,16 +1466,27 @@ impl App {
         (0.0025 * self.config.look_speed.clamp(0.05, 10.0) * (self.cam.fov / 60.0), if self.config.invert_look { -1.0 } else { 1.0 })
     }
 
+    /// The size the view renders at: a steady recording's frames' (whatever
+    /// the window's), else the view's (fewer pixels while moving, with
+    /// "fast while moving").
+    fn job_size(&self) -> (usize, usize) {
+        if let Some(st) = &self.steady {
+            return (st.size[0], st.size[1]);
+        }
+        let (w, h) = self.render_size;
+        if !self.moving() {
+            return (w, h);
+        }
+        let k = self.settings.motion_scale.clamp(0.1, 1.0);
+        (((w as f32 * k) as usize).max(8), ((h as f32 * k) as usize).max(8))
+    }
+
     /// The camera set up as the render sees it (its pixels: the fractals'
     /// detail follows them; fewer while moving, as post_job renders them),
     /// for what must collide with what is drawn.
     fn view_cam(&self) -> Camera {
         let mut c = self.cam;
-        let (mut w, mut h) = self.render_size;
-        if self.moving() {
-            let k = self.settings.motion_scale.clamp(0.1, 1.0);
-            (w, h) = (((w as f32 * k) as usize).max(8), ((h as f32 * k) as usize).max(8));
-        }
+        let (w, h) = self.job_size();
         if w > 0 {
             c.setup(w as u32, h as u32);
         } else {
@@ -1353,10 +1538,10 @@ impl App {
         if !lmb {
             self.gun_armed = true;
             if let Some(t0) = self.gun.take() {
-                self.gun_fire((t0.elapsed().as_secs_f32() / physics::GUN_CHARGE).min(1.0));
+                self.gun_fire(((self.now() - t0) as f32 / physics::GUN_CHARGE).min(1.0));
             }
         } else if self.gun_armed && self.gun.is_none() {
-            self.gun = Some(Instant::now());
+            self.gun = Some(self.now());
         }
         self.gun_target = self.gun_aim().is_some_and(|(_, movable)| movable);
         // Shift held runs; tapped while moving, it runs on until the keys
@@ -1391,7 +1576,7 @@ impl App {
         // rides them as much smaller (the water is drawn as a flat surface
         // with the waves in its shading: a small walker riding full-size
         // waves had its eye dip under it, the view flickering underwater)
-        let now = self.clock.elapsed().as_secs_f32();
+        let now = self.now() as f32;
         let wave_time = if self.waves_moving() { now * self.scene.wave_speed } else { 0.0 };
         let (wave_height, ripples) = (self.scene.wave_height, &self.world.ripples);
         let ride = self.game.as_ref().map_or(1.0, |g| (g.height / game::HUMAN).min(1.0)) as f32;
@@ -1423,7 +1608,7 @@ impl App {
     /// The gravity gun fires, `charge` 0..1: what is under the crosshair, in
     /// reach, is sent off along the look (harder the longer it was held).
     fn gun_fire(&mut self, charge: f32) {
-        self.gun_shot = Some(Instant::now());
+        self.gun_shot = Some(self.now());
         let Some((p, movable)) = self.gun_aim() else { return };
         if !movable {
             self.say("fixed in place: the gravity gun moves only what can move (not locked)");
@@ -1456,7 +1641,7 @@ impl App {
     /// a beam from below the view to the crosshair, fading.
     fn gun_sight(&self, p: &egui::Painter, r: egui::Rect, c: egui::Pos2) {
         if let Some(t0) = self.gun {
-            let k = (t0.elapsed().as_secs_f32() / physics::GUN_CHARGE).min(1.0);
+            let k = ((self.now() - t0) as f32 / physics::GUN_CHARGE).min(1.0);
             let ring = |a0: f32, a1: f32, w: f32, col: egui::Color32| {
                 let n = ((a1 - a0) * 40.0).ceil().max(2.0) as usize;
                 let pts: Vec<egui::Pos2> = (0..=n).map(|i| {
@@ -1472,7 +1657,7 @@ impl App {
             p.text(c + egui::vec2(28.0, 0.0), egui::Align2::LEFT_CENTER, format!("{:.0}%", strength * 100.0), egui::FontId::proportional(12.0), hot);
         }
         if let Some(t) = self.gun_shot {
-            let age = t.elapsed().as_secs_f32();
+            let age = (self.now() - t) as f32;
             if age < 0.2 {
                 let a = (255.0 * (1.0 - age / 0.2)) as u8;
                 let from = egui::pos2(c.x + r.width() * 0.12, r.bottom());
@@ -1709,7 +1894,7 @@ impl App {
     }
 
     fn physics_step(&mut self, dt: f32) {
-        let now = self.clock.elapsed().as_secs_f32();
+        let now = self.now() as f32;
         self.world.time = now;
         self.world.ripples.retain(|r| r.alive(now));
         let moving = self.waves_moving();
@@ -2438,24 +2623,21 @@ impl App {
                     self.enter_game();
                 }
             }
-            Act::Record => match self.recorder.take() {
-                Some(r) => {
-                    self.say(format!("finishing {}…", r.path.display()));
-                    self.record_done = r.stop();
+            Act::Record => {
+                if self.recorder.is_some() {
+                    self.stop_recording();
+                } else {
+                    // (steady: of the view, at the preferences' size)
+                    let steady = self.config.video_steady.then(|| {
+                        let [w, h] = self.config.video_size;
+                        let size = if w > 0 && h > 0 { video_size(w as f32, h as f32) } else { video_size(self.view_px.0, self.view_px.1) };
+                        record::Steady::new(self.config.video_fps, self.config.video_steady_samples, size, None, self.now())
+                    });
+                    if let Err(e) = self.start_recording(steady, self.config.video_quality) {
+                        self.say(format!("cannot record: {e}"));
+                    }
                 }
-                // (the title says it records, and where: a note in the window
-                // would be in the video)
-                None => match record::Recorder::start(
-                    &config::expand(&self.config.videos),
-                    self.window_px,
-                    self.test_mic.unwrap_or(self.config.microphone),
-                    self.config.video_fps,
-                    self.config.video_quality,
-                ) {
-                    Ok(r) => self.recorder = Some(r),
-                    Err(e) => self.say(format!("cannot record: {e}")),
-                },
-            },
+            }
             Act::Device => {
                 self.settings.device = self.settings.device.next();
                 self.say(format!("rendering on: {}", self.settings.device.label()));
@@ -2722,7 +2904,7 @@ impl App {
                 self.item(ui, Act::Screenshot);
                 ui.checkbox(&mut self.config.screenshot_interface, "Screenshots include the interface")
                     .on_hover_text("Screenshots are the whole window as you see it (panels, menus), not the 3D view alone.");
-                if ui.button("Open the screenshots folder").on_hover_text("Where screenshots go (Preferences: your Pictures folder unless set otherwise).").clicked() {
+                if ui.button("Open the screenshots folder").on_hover_text("Where screenshots go (Preferences: a ray folder in your Pictures folder unless set otherwise).").clicked() {
                     let dir = config::expand(&self.config.screenshots);
                     let _ = std::fs::create_dir_all(&dir);
                     open_externally(&std::fs::canonicalize(&dir).unwrap_or(dir));
@@ -2850,6 +3032,16 @@ impl App {
     }
 
     fn post_job(&mut self) {
+        // a steady recording's frame holds still until it is in the video:
+        // its view goes out once (a walker in the water settling by a
+        // micrometre each window frame restarted the frame's samples, and
+        // it never had them all)
+        if let Some(st) = &mut self.steady {
+            if st.posted_for == Some(st.frames) {
+                return;
+            }
+            st.posted_for = Some(st.frames);
+        }
         // anything moving? then (optionally) one sample per frame and fewer pixels
         let pose = self.cam.pose();
         if pose != self.last_pose || self.doc.version != self.last_version || self.gesture.is_some() || !self.world.bodies.is_empty() {
@@ -2857,17 +3049,22 @@ impl App {
             self.last_pose = pose;
             self.last_version = self.doc.version;
         }
-        let moving = self.moving();
         let mut s = self.settings;
-        let (mut w, mut h) = self.render_size;
-        if moving {
-            s.spp = 1;
-            let k = s.motion_scale.clamp(0.1, 1.0);
-            w = ((w as f32 * k) as usize).max(8);
-            h = ((h as f32 * k) as usize).max(8);
+        // a steady recording's frame accumulates its samples and stops there
+        // (on, it kept the GPU from the window)
+        if let Some(st) = &self.steady {
+            s.accumulate = true;
+            s.max_samples = st.wants(s.max_samples);
+            // (in about eight passes: each pass's post and hand-over cost as
+            // much as a sample of a simple scene)
+            s.spp = s.spp.max(s.max_samples.div_ceil(8)).min(64);
         }
+        if self.moving() {
+            s.spp = 1;
+        }
+        let (w, h) = self.job_size();
         // moving water: the waves' clock while they are animated, and the ripples
-        let now = self.clock.elapsed().as_secs_f32();
+        let now = self.now() as f32;
         let animate = self.waves_moving();
         let waves = if animate || !self.world.ripples.is_empty() {
             Waves { time: now, wave_time: if animate { now * self.scene.wave_speed } else { 0.0 }, ripples: self.world.ripples.clone() }
@@ -2883,12 +3080,14 @@ impl App {
             h,
             waves,
             view: View {
-                selected: self.selected_objects(),
+                // (a steady recording's frames without the editor's outline)
+                selected: self.selected_objects().filter(|_| self.steady.is_none()),
                 heat: self.heat,
                 profile: self.profile,
-                twinkle: self.twinkling().then(|| self.clock.elapsed().as_secs_f32()),
+                twinkle: self.twinkling().then(|| self.now() as f32),
             },
             serial: self.posted + 1,
+            load: self.steady.as_ref().map_or(1.0, |s| s.load),
         };
         if self.last_job.as_ref().is_none_or(|j| !j.same(&job)) {
             self.posted += 1;
@@ -2918,6 +3117,12 @@ impl App {
             }
             #[cfg(feature = "profile")]
             eprintln!("test: heap {}", crate::prof::heap_since(&mut self.heap));
+        }
+        // (not while a screenshot of the window, P, is on its way: this one
+        // closes the window, and under a busy GPU it came first)
+        if self.window_shot.is_some() {
+            ctx.request_repaint();
+            return;
         }
         // asked again now and then: a headless compositor sometimes drops the request
         if self.frames >= n && (self.frames - n).is_multiple_of(20) {
@@ -2954,7 +3159,7 @@ impl App {
         if self.held.is_empty() {
             return;
         }
-        let now = Instant::now();
+        let now = self.now();
         let pos = self.view_rect.center();
         let mut shift = false;
         for (name, until, down) in &mut self.held {
@@ -2984,7 +3189,7 @@ impl App {
     /// (lmb, rmb) for `seconds`, as if pressed: one already held is held
     /// longer (pressed once).
     pub(super) fn hold(&mut self, keys: &[String], seconds: f32) {
-        let until = Instant::now() + std::time::Duration::from_secs_f32(seconds.clamp(0.0, 600.0));
+        let until = self.now() + seconds.clamp(0.0, 600.0) as f64;
         for k in keys {
             let k = k.to_lowercase();
             match self.held.iter_mut().find(|h| h.0 == k) {
@@ -3060,7 +3265,7 @@ impl eframe::App for App {
 
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         let now = Instant::now();
-        let dt = (now - self.last).as_secs_f32().min(0.1);
+        let mut dt = (now - self.last).as_secs_f32().min(0.1);
         self.last = now;
         self.frame_ms = if self.frame_ms == 0.0 { dt * 1000.0 } else { self.frame_ms * 0.9 + dt * 100.0 };
         self.frames += 1;
@@ -3121,7 +3326,12 @@ impl eframe::App for App {
         let ppp = ctx.pixels_per_point();
         let screen = ctx.content_rect();
         self.window_px = [(screen.width() * ppp).round() as usize, (screen.height() * ppp).round() as usize];
-        self.record_frame(ctx, ppp);
+        // a steady recording: the scene moves 1/fps once this frame is in
+        // the video, and holds still meanwhile
+        if let Some(step) = self.record_frame(ctx, ppp) {
+            dt = if step { 1.0 / self.config.video_fps.clamp(5, 120) as f32 } else { 0.0 };
+        }
+        self.glide_step();
         self.window_shot(ctx);
         // Tab / Shift+Tab (raw_input_hook)
         if let Some(shift) = self.tab.take() {
@@ -3143,7 +3353,11 @@ impl eframe::App for App {
             let resp = ui.allocate_rect(rect, egui::Sense::click_and_drag());
             if let Some(tex) = &self.texture {
                 let uv = egui::Rect::from_min_max(egui::pos2(0.0, 0.0), egui::pos2(1.0, 1.0));
-                ui.painter().image(tex.id(), rect, uv, egui::Color32::WHITE);
+                // (a steady recording's frames are of their own shape: whole,
+                // not stretched to the view's)
+                let size = tex.size_vec2();
+                let at = if self.steady.is_some() { egui::Rect::from_center_size(rect.center(), size * (rect.width() / size.x).min(rect.height() / size.y)) } else { rect };
+                ui.painter().image(tex.id(), at, uv, egui::Color32::WHITE);
             }
             if playing {
                 self.game_frame(ctx, ui, dt);
@@ -3161,6 +3375,7 @@ impl eframe::App for App {
             let ppp = ctx.pixels_per_point();
             let scale = self.settings.scale.clamp(0.05, 2.0);
             self.render_size = render_size(rect.width() * ppp * scale, rect.height() * ppp * scale);
+            self.view_px = (rect.width() * ppp, rect.height() * ppp);
         });
         // out of game mode: the pointer is free again
         if self.game.is_none() && self.game_grab {
@@ -3174,6 +3389,9 @@ impl eframe::App for App {
         self.physics_step(dt);
         self.compile();
         self.post_job();
+        // (a screenshot of the window on its way: the GPU is the window's)
+        let shooting = self.window_shot.is_some() || self.test_shot.as_ref().is_some_and(|(_, n)| self.frames >= *n);
+        self.render.pause(shooting);
         self.finish_shots();
         self.test_hook(ctx);
         self.had_focus = ctx.memory(|m| m.focused().is_some());
@@ -3191,8 +3409,11 @@ impl eframe::App for App {
         if std::env::var("RAY_TEST_SCREENSHOT").is_ok_and(|v| v.trim().parse() == Ok(self.frames)) {
             self.run_act(Act::Screenshot);
         }
+        // (a steady recording is of the view)
         if self.recorder.is_some() {
-            ctx.send_viewport_cmd(egui::ViewportCommand::Screenshot(egui::UserData::new(record::Tag)));
+            if self.steady.is_none() {
+                ctx.send_viewport_cmd(egui::ViewportCommand::Screenshot(egui::UserData::new(record::Tag)));
+            }
             ctx.request_repaint();
         }
 
@@ -3200,7 +3421,7 @@ impl eframe::App for App {
         // window itself (the render thread asks for a frame with each image),
         // so it is not redrawn at the display's rate for nothing meanwhile
         let water_moves = self.waves_moving() || (self.scene.water.is_some() && !self.world.ripples.is_empty());
-        if self.gesture.is_some() || self.game.is_some() || self.recorder.is_some() || !self.world.bodies.is_empty() || water_moves {
+        if self.gesture.is_some() || self.game.is_some() || self.recorder.is_some() || !self.glides.is_empty() || !self.world.bodies.is_empty() || water_moves {
             ctx.request_repaint();
         } else if self.twinkling() {
             ctx.request_repaint_after(std::time::Duration::from_millis(33));
@@ -3218,14 +3439,17 @@ impl App {
     /// While recording: this frame's screenshot of the window (asked for last
     /// frame) to the recorder, with the pointer where it shows; the time in
     /// the title (outside the window, so not in the video). And a finished
-    /// recording's file, once it is written.
-    fn record_frame(&mut self, ctx: &egui::Context, ppp: f32) {
+    /// recording's file, once it is written. A steady recording's frame:
+    /// whether the scene moves on now (None: not steady).
+    fn record_frame(&mut self, ctx: &egui::Context, ppp: f32) -> Option<bool> {
         // the encoder gave up by itself: say why now, not when F10 is pressed
         if self.recorder.as_ref().is_some_and(record::Recorder::failed)
             && let Some(r) = self.recorder.take()
         {
             self.record_done = r.stop();
+            self.end_steady();
         }
+        let mut step = None;
         if let Some(r) = &self.recorder {
             let shot = ctx.input(|i| {
                 i.events.iter().find_map(|e| match e {
@@ -3233,19 +3457,41 @@ impl App {
                     _ => None,
                 })
             });
-            if let Some(image) = shot {
-                // (hidden while looking around, panning and in game mode)
-                let hidden = self.game.is_some() || matches!(self.gesture, Some(Gesture::Look | Gesture::Pan(_)));
-                let at = if hidden { None } else { ctx.input(|i| i.pointer.hover_pos()) };
-                r.frame(image, at, ppp);
+            // (hidden while looking around, panning and in game mode)
+            let hidden = self.game.is_some() || matches!(self.gesture, Some(Gesture::Look | Gesture::Pan(_)));
+            let at = if hidden { None } else { ctx.input(|i| i.pointer.hover_pos()) };
+            match &mut self.steady {
+                None => {
+                    if let Some(image) = shot {
+                        r.frame(image, at, ppp);
+                    }
+                }
+                // the view, once the image shown is of the last job, whole
+                Some(s) => {
+                    let drawn = self.shown_serial == self.posted && (self.stats.samples >= s.wants(self.settings.max_samples) || !self.stats.traced);
+                    let image = self.shown.clone().filter(|_| drawn);
+                    let stepped = s.tick(image.is_some());
+                    if let Some(image) = image {
+                        r.frame(image, None, 1.0);
+                    }
+                    step = Some(stepped);
+                }
             }
+        }
+        // a steady recording of so many frames: ended once it has them
+        if self.steady.as_ref().is_some_and(record::Steady::done) {
+            self.stop_recording();
         }
         // the title: the scene (● with unsaved edits), or while recording the
         // time and where it goes (outside the window: not in the video)
         let title = match &self.recorder {
             Some(r) => {
                 let mic = if r.mic { " + microphone" } else { "" };
-                format!("● REC {}  → {}{mic}  (F10 stops) — ray", record::clock(r.started.elapsed().as_secs() as f32), r.path.display())
+                let (time, steady) = match &self.steady {
+                    Some(s) => (s.frames as f32 / s.fps as f32, format!(" steady, {} frames", s.frames)),
+                    None => (r.started.elapsed().as_secs() as f32, String::new()),
+                };
+                format!("● REC {}{steady}  → {}{mic}  (F10 stops) — ray", record::clock(time), r.path.display())
             }
             None => {
                 let name = self.path.file_name().map(|f| f.to_string_lossy().into_owned()).unwrap_or_default();
@@ -3263,9 +3509,50 @@ impl App {
                     let path = std::fs::canonicalize(&path).unwrap_or_else(|_| PathBuf::from(path));
                     self.last_video = Some((path, Instant::now()));
                 }
-                Some(Err(e)) => self.say(format!("recording failed: {e}")),
+                Some(Err(e)) => {
+                    self.say(format!("recording failed: {e}"));
+                    self.record_error = Some(e);
+                }
                 None => {}
             }
+        }
+        step
+    }
+
+    /// Starts a recording: of the window as drawn, or (`steady`) of the view,
+    /// a whole frame at a time at the steady recording's size. Its file.
+    /// (The title says it records, and where: a note in the window would be
+    /// in the video.)
+    fn start_recording(&mut self, steady: Option<record::Steady>, quality: u32) -> Result<PathBuf, String> {
+        let r = record::Recorder::start(
+            &config::expand(&self.config.videos),
+            steady.as_ref().map_or(self.window_px, |s| s.size),
+            self.test_mic.unwrap_or(self.config.microphone),
+            steady.as_ref().map_or(self.config.video_fps, |s| s.fps),
+            quality,
+            steady.is_some(),
+        )?;
+        let path = r.path.clone();
+        self.recorder = Some(r);
+        self.steady = steady;
+        self.record_error = None;
+        Ok(path)
+    }
+
+    /// Ends the recording (its file is finished in the background).
+    fn stop_recording(&mut self) {
+        if let Some(r) = self.recorder.take() {
+            self.say(format!("finishing {}…", r.path.display()));
+            self.record_done = r.stop();
+            self.end_steady();
+        }
+    }
+
+    /// A steady recording over: the scene's clock goes on from where it left
+    /// it.
+    fn end_steady(&mut self) {
+        if let Some(s) = self.steady.take() {
+            self.clock_behind = self.clock.elapsed().as_secs_f64() - s.t;
         }
     }
 
@@ -3329,6 +3616,38 @@ mod tests {
         assert_eq!(second, dir.join("bonsai-2026-10-29-1200-00-2.png"));
         std::fs::write(&second, b"x").unwrap();
         assert_eq!(super::shot_path(&dir, "bonsai", "2026-10-29-1200-00"), dir.join("bonsai-2026-10-29-1200-00-3.png"));
+        let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// A screenshot carries its moment: the scene (the biggest saved one
+    /// here, a megabyte of JSON) comes back exactly, ahead of the pixels;
+    /// the Open window lists it; its scene file is the one it was taken of;
+    /// a picture with no scene in it does not open.
+    #[test]
+    fn screenshots_carry_the_scene() {
+        let dir = std::env::temp_dir().join(format!("ray-test-{}-stills", std::process::id()));
+        std::fs::create_dir_all(&dir).unwrap();
+        let scene: serde_json::Value = serde_json::from_str(&std::fs::read_to_string("saves/bonsai.json").unwrap()).unwrap();
+        let moment = serde_json::json!({"source": "/somewhere/bonsai.json", "objects": 7, "game": {"feet": [1.0, 2.0, 3.0], "height": 0.0042}});
+        let (s, m) = (scene.to_string(), moment.to_string());
+        let png = dir.join("bonsai-shot.png");
+        let rgba: Vec<u8> = (0..4 * 6 * 4).map(|i| i as u8).collect();
+        crate::render::write_png_text(&png, 6, 4, &rgba, &[(crate::scene::STILL_SCENE, &s, true), (crate::scene::STILL_MOMENT, &m, true), ("Description", "ray: a test", false)]).unwrap();
+        assert!(std::fs::metadata(&png).unwrap().len() < s.len() as u64 / 3, "the scene is compressed");
+        let (v, back) = crate::scene::read_doc(&png).unwrap();
+        assert_eq!((v, back.clone()), (scene, Some(moment)));
+        assert_eq!(super::still_source(&png, back.as_ref().unwrap()), std::path::PathBuf::from("/somewhere/bonsai.json"));
+        assert_eq!(super::still_entry(&png), Some((7, "screenshot of bonsai.json, the walker 4.20 mm tall".to_string())));
+        // (the pixels as they were)
+        let mut r = png::Decoder::new(std::io::BufReader::new(std::fs::File::open(&png).unwrap())).read_info().unwrap();
+        let mut px = vec![0; r.output_buffer_size().unwrap()];
+        r.next_frame(&mut px).unwrap();
+        assert_eq!(px, rgba);
+        let plain = dir.join("plain.png");
+        crate::render::write_png(&plain, 6, 4, &rgba).unwrap();
+        assert!(crate::scene::read_doc(&plain).unwrap_err().contains("no scene"));
+        assert_eq!(super::still_entry(&plain), None);
+        assert!(crate::scene::read_doc(std::path::Path::new("saves/bonsai.json")).unwrap().1.is_none());
         let _ = std::fs::remove_dir_all(&dir);
     }
 

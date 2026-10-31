@@ -1368,14 +1368,15 @@ fn shadow_object(i: u32, r: Ray, limit: f32, soft: bool, k: f32, vis: ptr<functi
         var t = max(s.x, 0.05 * cell);
         let end = min(s.y, limit);
         let kk = select(1.0e4, k * 0.4, soft);
-        for (var j = 0; j < 48; j++) {
+        // (steps of at least 1.5% of the way: trace.rs)
+        for (var j = 0; j < 96; j++) {
             if (t >= end || *vis <= 0.02) {
                 break;
             }
             let p = r.o + r.d * t;
             let dh = p.y - ter_height(ter, p.x, p.z);
             *vis = min(*vis, dh * kk / t);
-            let st = max(min(max(dh * 0.6, 0.6 * cell), 16.0 * cell), t * 0.05);
+            let st = max(min(max(dh * 0.6, 0.6 * cell), 16.0 * cell), t * 0.015);
             t += st;
         }
         return false;
@@ -2158,23 +2159,26 @@ fn wave_normal(p: vec3f, t: f32, n: vec3f) -> vec3f {
     return select(w, -w, n.y < 0.0);
 }
 
-/// fraktal256's terrain material: (albedo, detail normal).
-fn terrain_material(k: u32, p: vec3f, rt: f32, n: vec3f, cone: f32, albedo: ptr<function, vec3f>) -> vec3f {
+/// fraktal256's terrain material: (albedo, detail normal). The strata and
+/// the finest colour noise fade as they shrink below a few pixels
+/// (shade.rs terrain_material).
+fn terrain_material(k: u32, p: vec3f, rt: f32, n: vec3f, d: vec3f, cone: f32, albedo: ptr<function, vec3f>) -> vec3f {
     let b = ter_base(k);
     let seed = 0x27d4eb2fu;
+    let foot = rt * cone / max(abs(dot(n, d)), 0.1);
     let g1 = noised(p.x * 0.7, p.z * 0.7, seed);
     let n1 = g1.x;
     var fade = max(1.0 - rt * 0.01, 0.0) * 0.35;
     var nx = n.x - g1.y * fade;
     var nz = n.z - g1.z * fade;
-    let n2 = noised(p.x * 2.9, p.z * 2.9, seed).x;
+    let n2 = (noised(p.x * 2.9, p.z * 2.9, seed).x - 0.5) * clamp(1.5 - foot * 2.9 * 3.0, 0.0, 1.0) + 0.5;
     let g3 = noised(p.x * 0.06, p.z * 0.06, seed);
     let macro_n = g3.x - 0.5;
     fade = max(1.0 - rt * 0.04, 0.0) * 0.08;
     nx = nx - g3.y * fade;
     nz = nz - g3.z * fade;
     let nn = normalize(vec3f(nx, n.y, nz));
-    let strata = sin(p.y * 1.3 + n1 * 3.0);
+    let strata = sin(p.y * 1.3 + n1 * 3.0) * clamp(1.5 - foot * sqrt(max(1.0 - n.y * n.y, 0.0)) * (10.0 * 1.3 / 6.2831853) * 3.0, 0.0, 1.0);
     var bright = (strata * 0.12 + 0.9) + n2 * 0.3;
     bright = macro_n * 0.5 + bright;
     let rock = v3(b + 16u) * bright;
@@ -2308,7 +2312,7 @@ fn surface(r: Ray, hit: Hit, cone: f32) -> Surf {
         terrain = true;
         foot = 1.0;
         if (u(mat_base(mat) + 21u) == TX_TERRAIN) {
-            n = terrain_material(ter, p, hit.t, tn.xyz, cone, &tcol);
+            n = terrain_material(ter, p, hit.t, tn.xyz, r.d, cone, &tcol);
             terrain_tex = true;
         } else {
             n = tn.xyz;

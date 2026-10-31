@@ -82,7 +82,24 @@ impl Terrain {
                 if d.rim > 0.0 {
                     let (dx, dz) = (x - center.x, z - center.z);
                     let r = (dz.mul_add(dz, dx * dx).sqrt() - d.rim).max(F8::zero());
-                    v = (r * r).mul_add(F8::splat(0.03), v);
+                    if d.rim_height > 0.0 {
+                        // a ring of mountains: sin² up and down again across
+                        // its width (the slopes stay ones a heightfield
+                        // shades smoothly; the bowl's steepened to a wall
+                        // that rippled as the view moved)
+                        let k = (r * (1.0 / d.rim_width.max(1.0))).clamp(0.0, 1.0).to_array().map(|k| (k * std::f32::consts::PI).sin().powi(2));
+                        v = F8::from_array(k).mul_add(F8::splat(d.rim_height), v);
+                    } else {
+                        v = (r * r).mul_add(F8::splat(0.03), v);
+                    }
+                }
+                if d.island > 0.0 {
+                    // full height to a third of the radius, then easing down
+                    // to below the sea floor at it
+                    let (dx, dz) = (x - center.x, z - center.z);
+                    let k = ((dz.mul_add(dz, dx * dx).sqrt() - F8::splat(d.island / 3.0)) * F8::splat(1.5 / d.island)).clamp(0.0, 1.0);
+                    let k = k * k * (F8::splat(3.0) - k - k);
+                    v = v - k * F8::splat(d.height + d.base.max(0.0) + 8.0);
                 }
                 if let Some(cap) = d.cap {
                     v = v.min(F8::splat(cap + center.y));

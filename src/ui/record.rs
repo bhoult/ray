@@ -6,6 +6,17 @@
 //! the picture whatever the frame rate; the file runs at a steady frame rate
 //! (a slower frame is shown for longer). Where, how many frames a second and
 //! how sharp: the preferences (config.rs).
+//!
+//! A steady recording (the preference, or render_video over MCP) is made the
+//! other way round: every frame of the video is the view drawn whole, the
+//! scene 1/fps later than in the one before, however long the frames take to
+//! draw (`Steady`). A scene that draws at 8 frames a second then plays
+//! smoothly at 30, recorded slower than it plays. It is of the view, as
+//! rendered (not the window: no panels, game mode's crosshair or pointer; a
+//! busy GPU kept the window from drawing more than a frame a second), at a
+//! size of its own (1920 x 1080, say, whatever the window's), each frame
+//! with the samples a pixel asked for, and without sound (it would not keep
+//! time with the picture).
 
 use eframe::egui;
 use std::io::Write;
@@ -33,6 +44,7 @@ pub struct Recorder {
     pub path: PathBuf,
     pub started: Instant,
     pub mic: bool,
+    pub steady: bool,
     tx: Option<SyncSender<Frame>>,
     writer: Option<JoinHandle<Result<String, String>>>,
 }
@@ -42,8 +54,15 @@ impl Recorder {
     /// frames of another size are cropped or padded to it), into folder
     /// `dir`, with the default microphone when `mic`, at `fps` frames a
     /// second and `quality` (the encoder's cq / crf: lower is sharper).
-    pub fn start(dir: &std::path::Path, size: [usize; 2], mic: bool, fps: u32, quality: u32) -> Result<Recorder, String> {
+    /// `steady`: each frame is the next 1/fps of the video, however late it
+    /// comes, and none is dropped (no microphone then; x264's slow preset,
+    /// as the frames come slowly anyway).
+    pub fn start(dir: &std::path::Path, size: [usize; 2], mic: bool, fps: u32, quality: u32, steady: bool) -> Result<Recorder, String> {
+        let mic = mic && !steady;
+        let fps = fps.clamp(5, 120).to_string();
         std::fs::create_dir_all(dir).map_err(|e| format!("{}: {e}", dir.display()))?;
+        // (whole: the path is reported, and looked for once the file is done)
+        let dir = &std::path::absolute(dir).unwrap_or_else(|_| dir.to_path_buf());
         // (a second one within the same second: -2, -3...)
         let base = format!("ray-{}", stamp());
         let mut stem = dir.join(&base);
@@ -62,17 +81,25 @@ impl Recorder {
         }
         let mut cmd = Command::new("ffmpeg");
         cmd.args(["-hide_banner", "-loglevel", "warning", "-y"]);
-        cmd.args(["-thread_queue_size", "64", "-use_wallclock_as_timestamps", "1"]);
+        if steady {
+            cmd.args(["-thread_queue_size", "64", "-framerate", &fps]);
+        } else {
+            cmd.args(["-thread_queue_size", "64", "-use_wallclock_as_timestamps", "1"]);
+        }
         cmd.args(["-f", "rawvideo", "-pix_fmt", "rgba", "-video_size", &format!("{w}x{h}"), "-i", "pipe:0"]);
         if mic {
             cmd.args(["-thread_queue_size", "4096", "-f", "pulse", "-i", "default"]);
         }
         // both on the wall clock, from the first of them
-        cmd.args(["-copyts", "-start_at_zero", "-fps_mode", "cfr", "-r", &fps.clamp(5, 120).to_string()]);
+        if !steady {
+            cmd.args(["-copyts", "-start_at_zero", "-fps_mode", "cfr", "-r", &fps]);
+        }
         let q = quality.clamp(0, 51).to_string();
         // (NVENC refuses frames below its minimum size, about 145 x 49: a
         // small window is encoded by x264)
-        if nvenc() && w >= 256 && h >= 128 {
+        if steady {
+            cmd.args(["-c:v", "libx264", "-preset", "slow", "-crf", &q]);
+        } else if nvenc() && w >= 256 && h >= 128 {
             cmd.args(["-c:v", "h264_nvenc", "-preset", "p5", "-tune", "hq", "-rc", "vbr", "-cq", &q, "-b:v", "0"]);
         } else {
             cmd.args(["-c:v", "libx264", "-preset", "veryfast", "-crf", &q]);
@@ -114,14 +141,21 @@ impl Recorder {
                 }
             })
             .map_err(|e| e.to_string())?;
-        Ok(Recorder { path, started: Instant::now(), mic, tx: Some(tx), writer: Some(writer) })
+        Ok(Recorder { path, started: Instant::now(), mic, steady, tx: Some(tx), writer: Some(writer) })
     }
 
     /// Hands a frame of the window over, with the pointer at `pointer`
-    /// (points; None: hidden) and `scale` pixels per point.
+    /// (points; None: hidden) and `scale` pixels per point. One that finds
+    /// the encoder behind is dropped, unless the recording is steady (it
+    /// waits).
     pub fn frame(&self, image: Arc<egui::ColorImage>, pointer: Option<egui::Pos2>, scale: f32) {
         if let Some(tx) = &self.tx {
-            let _ = tx.try_send(Frame { image, pointer: pointer.map(|p| (p.x * scale, p.y * scale)), scale });
+            let f = Frame { image, pointer: pointer.map(|p| (p.x * scale, p.y * scale)), scale };
+            if self.steady {
+                let _ = tx.send(f);
+            } else {
+                let _ = tx.try_send(f);
+            }
         }
     }
 
@@ -137,6 +171,69 @@ impl Recorder {
     pub fn stop(mut self) -> Option<JoinHandle<Result<String, String>>> {
         drop(self.tx.take());
         self.writer.take()
+    }
+}
+
+/// A steady recording's clock: the scene moves 1/fps a frame of the video,
+/// and only once the frame before is in it (the view drawn whole, with the
+/// samples asked for).
+pub struct Steady {
+    pub fps: u32,
+    /// samples a pixel each frame waits for (0: as many as the render
+    /// settings' max_samples, the frame converged)
+    pub samples: u32,
+    /// the frames' size, pixels (the view renders at it, whatever the
+    /// window's)
+    pub size: [usize; 2],
+    /// the frames it ends after (None: when it is stopped)
+    pub until: Option<u64>,
+    /// frames in the video so far
+    pub frames: u64,
+    /// the scene's clock, seconds: `start` and frames/fps on (worked out,
+    /// not added up: a viewer up for hours keeps its clock in the
+    /// thousands of seconds, where adding 1/fps a frame in f32 drifted a
+    /// frame in a few hundred)
+    pub t: f64,
+    start: f64,
+    /// when it started: how long its frames take to draw
+    pub began: Instant,
+    /// the share of the time the renderer may keep the GPU and the CPU busy
+    /// meanwhile (1: all of it)
+    pub load: f32,
+    /// the frame whose view has gone to the renderer (it is not sent again
+    /// until that frame is in the video)
+    pub posted_for: Option<u64>,
+}
+
+impl Steady {
+    pub fn new(fps: u32, samples: u32, size: [usize; 2], until: Option<u64>, t: f64) -> Steady {
+        Steady { fps: fps.clamp(5, 120), samples, size, until, frames: 0, t, start: t, began: Instant::now(), load: 1.0, posted_for: None }
+    }
+
+    /// The samples a pixel each frame waits for, with the render settings'
+    /// `max_samples`.
+    pub fn wants(&self, max_samples: u32) -> u32 {
+        if self.samples == 0 { max_samples.max(1) } else { self.samples }
+    }
+
+    /// Whether it has all its frames.
+    pub fn done(&self) -> bool {
+        self.until.is_some_and(|n| self.frames >= n)
+    }
+
+    /// Seconds a frame has taken to draw, on average (the wall clock's).
+    pub fn secs_a_frame(&self) -> f32 {
+        self.began.elapsed().as_secs_f32() / self.frames.max(1) as f32
+    }
+
+    /// The view is drawn whole (`drawn`): that frame goes into the video,
+    /// and the scene moves on 1/fps. Whether it does.
+    pub fn tick(&mut self, drawn: bool) -> bool {
+        if drawn {
+            self.frames += 1;
+            self.t = self.start + self.frames as f64 / self.fps as f64;
+        }
+        drawn
     }
 }
 
@@ -308,7 +405,7 @@ mod tests {
         let _ = std::fs::remove_dir_all(&dir);
         let mut paths = Vec::new();
         for (w, h) in [(64, 48), (320, 240)] {
-            let r = Recorder::start(&dir, [w, h], false, 30, 30).unwrap();
+            let r = Recorder::start(&dir, [w, h], false, 30, 30, false).unwrap();
             for k in 0..20u8 {
                 r.frame(image(w, h, egui::Color32::from_rgb(k * 12, 80, 160)), Some(egui::pos2(10.0, 10.0)), 1.0);
                 std::thread::sleep(std::time::Duration::from_millis(20));
@@ -325,6 +422,49 @@ mod tests {
         // (both within a second: the second named apart, not over the first)
         assert_ne!(paths[0], paths[1]);
         assert!(paths.iter().all(|p| p.exists()));
+        // steady: every frame handed over is one of the video, at its rate,
+        // however slowly they come
+        let r = Recorder::start(&dir, [320, 240], true, 30, 30, true).unwrap();
+        assert!(!r.mic, "a steady recording takes no sound");
+        for k in 0..12u8 {
+            r.frame(image(320, 240, egui::Color32::from_rgb(k * 20, 80, 160)), None, 1.0);
+            std::thread::sleep(std::time::Duration::from_millis(if k % 4 == 0 { 120 } else { 5 }));
+        }
+        let path = r.path.clone();
+        assert!(r.stop().unwrap().join().unwrap().is_ok());
+        let probe = Command::new("ffprobe")
+            .args(["-v", "error", "-count_frames", "-select_streams", "v:0", "-show_entries", "stream=nb_read_frames,r_frame_rate", "-of", "csv=p=0"])
+            .arg(&path)
+            .output();
+        if let Ok(o) = probe {
+            let said = String::from_utf8_lossy(&o.stdout).trim().to_string();
+            assert_eq!(said, "30/1,12", "the steady video's rate and frames");
+        }
         let _ = std::fs::remove_dir_all(&dir);
+    }
+
+    /// A steady recording moves on a frame (1/fps of the scene's clock) each
+    /// time the view is drawn whole, and waits otherwise.
+    #[test]
+    fn steady_steps_once_each_frame_is_drawn() {
+        let mut s = Steady::new(30, 4, [64, 48], Some(3), 10.0);
+        assert!(!s.tick(false), "not drawn yet");
+        assert!(s.tick(true));
+        assert!(!s.tick(false));
+        assert!(s.tick(true));
+        assert_eq!(s.frames, 2);
+        assert!((s.t - (10.0 + 2.0 / 30.0)).abs() < 1e-5, "{}", s.t);
+        assert!(!s.done());
+        assert!(s.tick(true) && s.done(), "done after its frames");
+        assert_eq!(Steady::new(1000, 4, [64, 48], None, 0.0).fps, 120, "(clamped)");
+        // 0 samples: until the frame converges
+        assert_eq!((s.wants(1024), Steady::new(30, 0, [64, 48], None, 0.0).wants(1024)), (4, 1024));
+        // a viewer up for three hours: after 7 s of frames its clock is 7 s
+        // on, to the microsecond (added up in f32 it was a frame off)
+        let mut s = Steady::new(30, 4, [64, 48], None, 10_800.0);
+        for _ in 0..210 {
+            s.tick(true);
+        }
+        assert!((s.t - 10_807.0).abs() < 1e-6, "{}", s.t);
     }
 }

@@ -72,7 +72,7 @@ pub const ACTIONS: &[Action] = &[
         tip: "Back to the quick save (F5): its scene, camera and render settings. Saving then writes the quick save, not the file it came from. With unsaved edits it asks a second time.",
     },
     Action { act: Act::Revert, name: "Revert", keys: &[cmd(Key::R)], tip: "Load the file again from disk. With unsaved edits it asks a second time, since they would be lost." },
-    Action { act: Act::Screenshot, name: "Screenshot", keys: &[key(Key::P), key(Key::F12)], tip: "Save a PNG in the screenshots folder (Preferences; your Pictures folder by default): the 3D view alone, or the whole window with File > Screenshots include the interface." },
+    Action { act: Act::Screenshot, name: "Screenshot", keys: &[key(Key::P), key(Key::F12)], tip: "Save a PNG in the screenshots folder (Preferences; ray in your Pictures folder by default): the 3D view alone, or the whole window with File > Screenshots include the interface. The picture carries the moment: the scene with your unsaved edits, the camera exactly, every setting and the walker. Open it (File > Open) to come back to it." },
     Action {
         act: Act::Record,
         name: "Record video",

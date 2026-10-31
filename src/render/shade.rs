@@ -260,7 +260,7 @@ pub fn surface(ctx: &Ctx, regs: &mut Regs, ray: &Ray, hit: &Hit, active: M8, con
                 foot = F8::select(g, F8::one(), foot);
                 mat = I8::select(g, om, mat);
                 if sc.materials[o.material as usize].tex == tex::TERRAIN {
-                    let (col, nd) = terrain_material(tr, p, hit.t, nn, cone);
+                    let (col, nd) = terrain_material(tr, p, hit.t, nn, ray.d, cone);
                     n = V8::select(g, nd, n);
                     tcol = V8::select(g, col, tcol);
                     terrain_tex |= g;
@@ -450,14 +450,23 @@ fn wave_normal(ctx: &Ctx, p: V8, t: F8, n: V8) -> V8 {
 }
 
 /// fraktal256's terrain material: rock with strata, grass where flat and low,
-/// snow high up, sand at the shore; detail normals from noise.
-fn terrain_material(tr: &Terrain, p: V8, rt: F8, n: V8, cone: f32) -> (V8, V8) {
+/// snow high up, sand at the shore; detail normals from noise. The strata
+/// and the finest colour noise fade out as they shrink below a few pixels
+/// (`d`: the ray, as a slope seen edge on squeezes them): far off they
+/// aliased, and crawled over the mountains as the view moved.
+fn terrain_material(tr: &Terrain, p: V8, rt: F8, n: V8, d: V8, cone: f32) -> (V8, V8) {
     let seed = I8::splat(0x27d4_eb2f);
+    // metres a pixel covers along the surface; a layer of `f` cycles a
+    // metre is whole down to 6 pixels a cycle and gone at 2 (the strata at
+    // ten times that: far off, even bands 20 pixels apart read as scanlines)
+    let foot = rt * cone / n.dot(d).abs().max(F8::splat(0.1));
+    let shown = |f: F8| (F8::splat(1.5) - foot * f * 3.0).clamp(0.0, 1.0);
     let (n1, g1x, g1z) = noised8(p.x * 0.7, p.z * 0.7, seed);
     let fade = (F8::one() - rt * 0.01).max(F8::zero()) * 0.35;
     let nx = g1x.neg_mul_add(fade, n.x);
     let nz = g1z.neg_mul_add(fade, n.z);
     let (n2, _, _) = noised8(p.x * 2.9, p.z * 2.9, seed);
+    let n2 = (n2 - 0.5).mul_add(shown(F8::splat(2.9)), F8::splat(0.5));
     let (macro_n, g3x, g3z) = noised8(p.x * 0.06, p.z * 0.06, seed);
     let macro_n = macro_n - 0.5;
     let fade = (F8::one() - rt * 0.04).max(F8::zero()) * 0.08;
@@ -465,7 +474,8 @@ fn terrain_material(tr: &Terrain, p: V8, rt: F8, n: V8, cone: f32) -> (V8, V8) {
     let nz = g3z.neg_mul_add(fade, nz);
     let n = V8::new(nx, n.y, nz).normalize();
 
-    let strata = (p.y * 1.3 + n1 * 3.0).sin();
+    // (1.3 radians a metre of height: across the slope, as steep as it is)
+    let strata = (p.y * 1.3 + n1 * 3.0).sin() * shown((F8::one() - n.y * n.y).max(F8::zero()).sqrt() * (10.0 * 1.3 / std::f32::consts::TAU));
     let bright = (strata * 0.12 + 0.9) + n2 * 0.3;
     let bright = macro_n.mul_add(F8::splat(0.5), bright);
     let rock = V8::splat(tr.rock) * bright;
