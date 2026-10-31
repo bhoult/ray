@@ -3,7 +3,8 @@
 caption (assemble.py's style) for its first few seconds, half-second
 crossfades between them, 1920x1080 at 30 frames a second, no sound.
     python3 tools/demo/interiors_reel.py WORKDIR OUT.mp4 [name ...]
-(default: every clip in WORKDIR/clips, fractals in interiors.py's order)"""
+(default: every clip in WORKDIR/clips, fractals in interiors.py's order;
+name the clips of tools/demo/originals.py's walks to join those)"""
 import os
 import subprocess
 import sys
@@ -24,6 +25,17 @@ TITLES = {
     "kifs": "Inside a kaleidoscopic IFS",
     "kleinian": "Inside the pseudo-Kleinian",
     "beams": "Light through haze, from a screenshot",
+    # (tools/demo/originals.py's walks: the fractals invented for ray)
+    "labyrinth_sponge": "Labyrinth Sponge",
+    "quasicrystal_rooms": "Quasicrystal Rooms",
+    "screw_sponge": "Screw Sponge",
+    "cusp_vaults": "Cusp Vaults",
+    "cathedral": "Möbius Cathedral",
+    "octet_truss": "Octet Truss of Trusses",
+    "nil_stair": "Nil Staircase",
+    "mayer_julia": "Mayer Julia",
+    "dirac_frost": "Dirac Frost",
+    "horned_sphere": "Alexander's Horned Sphere",
 }
 # seconds each caption shows
 SHOWN = 3.5
