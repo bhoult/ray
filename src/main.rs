@@ -5,6 +5,7 @@
 //!
 //!   ray scene.json                      the viewer
 //!   ray scene.json --out shot.png       render headless (see --help)
+//!   ray raycast scene.json              rays from stdin, hits to stdout
 
 mod camera;
 mod formulas;
@@ -37,6 +38,9 @@ usage:
                                       running viewer: see the README (MCP)
   ray SCENE.json --out FILE.png [options]
                                       render headless and write a PNG
+  ray raycast SCENE.json              for each line \"ox oy oz dx dy dz\" on stdin, a
+                                      line on stdout: the distance to what the ray
+                                      hits and its normal, or \"miss\" (for tools)
 
 headless options:
   --size WxH          image size (default 1280x720)
@@ -187,6 +191,50 @@ fn parse_args() -> Result<Args, String> {
 }
 
 /// The scene's render settings, then `--set` over them.
+/// `ray raycast`: the rays on stdin cast through the scene, as the viewer's
+/// raycast does, but without a window or a frame to wait for (a planner's
+/// thousands of rays took a frame each). Each is seen from its own origin, at
+/// the fractals' detail a 1920 x 1080 view from there would draw.
+fn raycast(path: &std::path::Path) -> Result<(), String> {
+    use std::io::{BufRead, Write};
+    let scene = Scene::load(path)?;
+    let s = initial_settings(&scene, None)?;
+    let mut out = std::io::stdout().lock();
+    for line in std::io::stdin().lock().lines() {
+        let line = line.map_err(|e| e.to_string())?;
+        let v: Vec<f32> = line.split_whitespace().filter_map(|w| w.parse().ok()).collect();
+        if v.len() != 6 {
+            writeln!(out, "error: want ox oy oz dx dy dz").map_err(|e| e.to_string())?;
+            continue;
+        }
+        let (o, d) = (math::Vec3::new(v[0], v[1], v[2]), math::Vec3::new(v[3], v[4], v[5]).normalize());
+        let mut cam = Camera::new(o, 0.0, 0.0, 60.0);
+        cam.setup(1920, 1080);
+        let hit = render::pick_ray(&scene, &cam, &s, o, d).map(|mut p| {
+            // (begun again a little short of the hit, twice, as the viewer's
+            // raycast does: a march stops within a pixel's footprint)
+            let (mut from, mut leg) = (0.0, p.t);
+            for _ in 0..2 {
+                let t = p.t - (2.0 * leg * cam.pixel_angle + 1e-4);
+                if t <= from {
+                    break;
+                }
+                let Some(q) = render::pick_ray(&scene, &cam, &s, o + d * t, d) else { break };
+                (from, leg) = (t, q.t);
+                p = render::Pick { t: t + q.t, ..q };
+            }
+            p
+        });
+        match hit {
+            Some(p) => writeln!(out, "{} {} {} {}", p.t, p.normal.x, p.normal.y, p.normal.z),
+            None => writeln!(out, "miss"),
+        }
+        .and_then(|_| out.flush())
+        .map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 pub fn initial_settings(scene: &Scene, set: Option<&serde_json::Value>) -> Result<Settings, String> {
     let mut v = serde_json::to_value(Settings::default()).map_err(|e| e.to_string())?;
     for layer in [scene.render.as_ref(), set].into_iter().flatten() {
@@ -311,6 +359,10 @@ fn run() -> Result<(), String> {
 fn run_args() -> Result<(), String> {
     if std::env::args().nth(1).as_deref() == Some("mcp") {
         return mcp::run();
+    }
+    if std::env::args().nth(1).as_deref() == Some("raycast") {
+        let path = std::env::args().nth(2).ok_or("ray raycast SCENE.json")?;
+        return raycast(&PathBuf::from(path));
     }
     let args = parse_args()?;
     if args.out.is_none() {
