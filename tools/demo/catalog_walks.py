@@ -84,6 +84,7 @@ MATERIALS = {
     "verdigris": {"description": "Bronze gone green in the hollows (orbit).", "color": [0.7, 0.45, 0.2], "metallic": 1, "roughness": 0.3, "color2": [0.3, 0.62, 0.52], "metallic2": 0, "roughness2": 0.7, "texture": "orbit", "texture_scale": 1.5},
     "ember": {"description": "Charcoal grey glowing red-hot in the bands (orbit).", "color": [0.12, 0.11, 0.1], "roughness": 0.7, "color2": [0.9, 0.12, 0.04], "emission2": [0.8, 0.08, 0.01], "texture": "orbit", "texture_scale": 3},
     "sandstone": {"description": "Red and cream sandstone in warped layers.", "color": [0.78, 0.42, 0.25], "color2": [0.92, 0.8, 0.62], "texture": "stripes", "texture_scale": 4, "warp": 1.6, "sharpness": 1.2, "roughness": 0.85, "bump": 0.2},
+    "corroded copper": {"description": "Copper eaten into by blotches of green verdigris, raised.", "color": [0.78, 0.38, 0.2], "metallic": 1, "roughness": 0.35, "color2": [0.24, 0.56, 0.46], "metallic2": 0, "roughness2": 0.85, "texture": "noise", "texture_scale": 3, "warp": 1.0, "sharpness": 1.8, "bump": 0.35},
 }
 
 # each fractal's material: neighbours in the catalog's order differ
@@ -101,7 +102,7 @@ MATERIAL_OF = {
     "menger4d": "molten seams", "sierpinski4d": "porcelain", "mandelbox4d": "abyssal glow", "kleinian4d": "ember",
     "xenodreambuie": "dragon scales", "pine_tree": "lava", "makin": "opal", "ides": "lapis", "difs": "candy",
     "msltoe_sym": "verdigris", "eiffie": "amethyst", "mandelnest": "terracotta", "seifert_gasket": "glacier",
-    "indra_cells": "neon grid", "zorich_pagodas": "lit windows",
+    "indra_cells": "corroded copper", "zorich_pagodas": "lit windows",
 }
 
 
