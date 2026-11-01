@@ -298,15 +298,15 @@ impl FlameGrid {
 type System = (Vec<XForm>, Vec<f32>, Option<XForm>);
 
 /// The maps of a spec (its own, a preset's, or for preset "random" a random
-/// system picked by the seed, with its symmetry's turns added), how much
-/// each weighs, and the final map.
+/// system picked by the seed, with its symmetry's turns added: a preset's
+/// own, then the spec's), how much each weighs, and the final map.
 fn system(spec: &FlameSpec) -> Result<System, String> {
-    let (mut xs, mut weights): (Vec<XForm>, Vec<f32>) = match &spec.transforms {
-        Some(t) if !t.is_empty() => (t.iter().map(XForm::from_def).collect::<Result<_, _>>()?, t.iter().map(|x| x.weight).collect()),
+    let (mut xs, mut weights, own): (Vec<XForm>, Vec<f32>, u32) = match &spec.transforms {
+        Some(t) if !t.is_empty() => (t.iter().map(XForm::from_def).collect::<Result<_, _>>()?, t.iter().map(|x| x.weight).collect(), 1),
         _ if spec.preset == "random" => {
             let xs = random_system(spec.seed);
             let w = random_weights(spec.seed, xs.len());
-            (xs, w)
+            (xs, w, 1)
         }
         _ => {
             let p = PRESETS.iter().find(|p| p.0 == spec.preset).ok_or_else(|| {
@@ -314,7 +314,7 @@ fn system(spec: &FlameSpec) -> Result<System, String> {
                 format!("unknown flame preset '{}' ({})", spec.preset, names.join(", "))
             })?;
             let defs: Vec<XFormDef> = serde_json::from_str(p.2).map_err(|e| format!("preset {}: {e}", p.0))?;
-            (defs.iter().map(XForm::from_def).collect::<Result<_, _>>()?, defs.iter().map(|x| x.weight).collect())
+            (defs.iter().map(XForm::from_def).collect::<Result<_, _>>()?, defs.iter().map(|x| x.weight).collect(), p.3)
         }
     };
     if xs.iter().all(|x| x.vars.is_empty()) {
@@ -326,12 +326,15 @@ fn system(spec: &FlameSpec) -> Result<System, String> {
     if !(weights.iter().sum::<f32>() > 0.0) {
         return Err("a flame's transforms all weigh 0".into());
     }
-    // the turns weigh as much as the mean of the maps
-    let n = spec.symmetry.clamp(1, 12);
+    // the turns weigh as much as the mean of the maps (a preset's own turns
+    // and the spec's together make the symmetry of both)
     let mean = weights.iter().sum::<f32>() / weights.len() as f32;
-    for k in 1..n {
-        xs.push(XForm::turn(std::f32::consts::TAU * k as f32 / n as f32));
-        weights.push(mean);
+    for n in [own, spec.symmetry] {
+        let n = n.clamp(1, 12);
+        for k in 1..n {
+            xs.push(XForm::turn(std::f32::consts::TAU * k as f32 / n as f32));
+            weights.push(mean);
+        }
     }
     let fin = spec.final_xform.as_ref().map(XForm::from_def).transpose()?;
     Ok((xs, weights, fin))
@@ -607,8 +610,20 @@ fn plausible(xs: &[XForm]) -> bool {
 }
 
 /// The preset flames: name, what it looks like, its maps (JSON, as a node's
-/// `transforms`).
-pub const PRESETS: &[(&str, &str, &str)] = &[
+/// `transforms`), and its own symmetry (copies turned about y, as a node's
+/// `symmetry`; 1 for none).
+pub const PRESETS: &[(&str, &str, &str, u32)] = &[
+    (
+        "wildfire",
+        "A tongue of flame curling up out of a smoldering heap (palette fire).",
+        r#"[
+        {"weight": 0.659, "color": 0, "matrix": [[0.382, 0.022, -0.06], [-0.02, 0.388, 0.048], [0.028, -0.02, 0.872]], "offset": [0.462, 0.636, 0.67], "variations": {"swirl": 0.713, "spherical": 0.287}},
+        {"weight": 0.364, "color": 0.333, "matrix": [[0.511, -0.059, -0.641], [-0.197, 0.742, -0.298], [0.508, 0.347, 0.529]], "offset": [-0.662, 0.547, 0.306], "variations": {"swirl": 0.312, "linear": 0.688}},
+        {"weight": 0.393, "color": 0.667, "matrix": [[0.448, -0.202, -0.022], [0.129, 0.279, -0.41], [0.177, 0.309, 0.356]], "offset": [0.655, 0.49, 0.035], "variations": {"horseshoe": 1}},
+        {"weight": 0.606, "color": 1, "matrix": [[0.767, -0.033, 0.281], [0.136, 0.485, -0.19], [-0.277, 0.148, 0.685]], "offset": [0.07, -0.181, 0.527], "variations": {"linear": 1}}
+    ]"#,
+        1,
+    ),
     (
         "jellyfish",
         "A glassy bell of curved threads trailing tendrils (try palette ice).",
@@ -616,16 +631,7 @@ pub const PRESETS: &[(&str, &str, &str)] = &[
         {"weight": 0.809, "color": 0, "matrix": [[0.483, -0.064, -0.003], [0.057, 0.511, -0.135], [0.015, 0.118, 0.582]], "offset": [-0.699, 0.456, -0.777], "variations": {"cylinder": 1}},
         {"weight": 0.872, "color": 1, "matrix": [[0.207, -0.064, -0.653], [0.029, 0.33, -0.148], [0.274, 0.014, 0.51]], "offset": [0.285, 0.083, 0.201], "variations": {"spherical": 1}}
     ]"#,
-    ),
-    (
-        "wildfire",
-        "A tongue of flame curling up out of a smouldering heap (palette fire).",
-        r#"[
-        {"weight": 0.659, "color": 0, "matrix": [[0.382, 0.022, -0.06], [-0.02, 0.388, 0.048], [0.028, -0.02, 0.872]], "offset": [0.462, 0.636, 0.67], "variations": {"swirl": 0.713, "spherical": 0.287}},
-        {"weight": 0.364, "color": 0.333, "matrix": [[0.511, -0.059, -0.641], [-0.197, 0.742, -0.298], [0.508, 0.347, 0.529]], "offset": [-0.662, 0.547, 0.306], "variations": {"swirl": 0.312, "linear": 0.688}},
-        {"weight": 0.393, "color": 0.667, "matrix": [[0.448, -0.202, -0.022], [0.129, 0.279, -0.41], [0.177, 0.309, 0.356]], "offset": [0.655, 0.49, 0.035], "variations": {"horseshoe": 1}},
-        {"weight": 0.606, "color": 1, "matrix": [[0.767, -0.033, 0.281], [0.136, 0.485, -0.19], [-0.277, 0.148, 0.685]], "offset": [0.07, -0.181, 0.527], "variations": {"linear": 1}}
-    ]"#,
+        1,
     ),
     (
         "seahorse",
@@ -636,6 +642,7 @@ pub const PRESETS: &[(&str, &str, &str)] = &[
         {"weight": 0.755, "color": 0.667, "matrix": [[0.757, 0.056, 0.06], [-0.046, 0.361, -0.122], [-0.181, 0.145, 0.281]], "offset": [-0.309, 0.485, 0.185], "variations": {"linear": 0.524, "julia3d": 0.476}, "power": 2},
         {"weight": 0.852, "color": 1, "matrix": [[-0.516, 0.081, -0.096], [0.122, -0.238, -0.291], [-0.126, -0.563, 0.109]], "offset": [0.156, -0.025, 0.06], "variations": {"cylinder": 1}}
     ]"#,
+        1,
     ),
     (
         "rosebud",
@@ -645,6 +652,7 @@ pub const PRESETS: &[(&str, &str, &str)] = &[
         {"weight": 0.448, "color": 0.5, "matrix": [[0.569, -0.229, 0.027], [0.287, 0.385, 0.289], [-0.137, -0.147, 0.716]], "offset": [0.121, 0.262, 0.142], "variations": {"bent": 1}},
         {"weight": 0.477, "color": 1, "matrix": [[0.178, -0.559, -0.21], [0.154, 0.068, 0.742], [-0.203, -0.44, 0.381]], "offset": [-0.517, 0.283, 0.713], "variations": {"swirl": 1}}
     ]"#,
+        1,
     ),
     (
         "spiral",
@@ -654,14 +662,16 @@ pub const PRESETS: &[(&str, &str, &str)] = &[
         {"weight": 0.674, "color": 0.5, "matrix": [[0.179, 0.174, 0.372], [-0.041, 0.522, -0.127], [-0.716, 0.014, 0.101]], "offset": [0.265, 0.385, 0.003], "variations": {"sinusoidal": 0.665, "linear": 0.335}},
         {"weight": 0.845, "color": 1, "matrix": [[0.611, 0.091, 0.25], [-0.026, 0.647, -0.062], [-0.593, 0.066, 0.26]], "offset": [-0.289, -0.595, -0.686], "variations": {"swirl": 1}}
     ]"#,
+        1,
     ),
     (
         "nautilus",
-        "A coiled shell of lace, spiralling out to a point (try palette gold).",
+        "A coiled shell of lace, spiraling out to a point (try palette gold).",
         r#"[
         {"weight": 0.452, "color": 0, "matrix": [[0.32, 0.158, -0.079], [-0.07, 0.758, -0.095], [0.023, 0.106, 0.8]], "offset": [-0.575, 0.322, -0.454], "variations": {"spherical": 1}},
         {"weight": 0.996, "color": 1, "matrix": [[0.208, 0.741, 0.116], [0.6, -0.228, 0.463], [0.521, -0.034, -0.58]], "offset": [-0.232, 0.781, 0.405], "variations": {"linear": 1}}
     ]"#,
+        1,
     ),
     (
         "bloom",
@@ -672,6 +682,7 @@ pub const PRESETS: &[(&str, &str, &str)] = &[
         {"weight": 0.31, "color": 0.667, "matrix": [[0.509, 0.196, -0.332], [0.378, 0.151, 0.446], [0.193, -0.814, 0.003]], "offset": [0.114, -0.187, -0.482], "variations": {"eyefish": 0.616, "sinusoidal": 0.384}},
         {"weight": 0.862, "color": 1, "matrix": [[0.311, 0.097, 0.48], [-0.07, -0.683, 0.297], [0.254, -0.308, -0.506]], "offset": [0.442, 0.198, 0.57], "variations": {"spherical": 1}}
     ]"#,
+        1,
     ),
     (
         "dandelion",
@@ -680,6 +691,7 @@ pub const PRESETS: &[(&str, &str, &str)] = &[
         {"weight": 0.61, "color": 0, "matrix": [[0.875, 0.035, 0.006], [-0.039, 0.781, 0.017], [-0.008, -0.026, 0.528]], "offset": [0.517, -0.504, -0.635], "variations": {"eyefish": 0.641, "horseshoe": 0.359}},
         {"weight": 0.664, "color": 1, "matrix": [[-0.111, 0.065, 0.366], [-0.546, 0.448, -0.068], [-0.363, -0.694, -0.01]], "offset": [0.329, 0.496, 0.104], "variations": {"linear": 0.421, "spherical": 0.579}}
     ]"#,
+        1,
     ),
     (
         "veil",
@@ -690,17 +702,212 @@ pub const PRESETS: &[(&str, &str, &str)] = &[
         {"weight": 0.712, "color": 0.667, "matrix": [[0.762, 0.265, 0.074], [0.092, 0.229, -0.289], [-0.38, 0.586, 0.079]], "offset": [-0.287, 0.413, -0.504], "variations": {"spherical": 1}},
         {"weight": 0.49, "color": 1, "matrix": [[-0.008, 0.181, 0.809], [-0.528, 0.262, -0.237], [-0.443, -0.315, 0.267]], "offset": [-0.254, -0.04, 0.241], "variations": {"cylinder": 1}}
     ]"#,
+        1,
     ),
     (
-    "sierpinski",
-    "The Sierpinski tetrahedron: four maps that halve toward the corners of a tetrahedron, the plainest flame of all.",
-    r#"[
+        "comet",
+        "A comet: a bright head in a veil of coma, trailing a long straight tail (try palette ice).",
+        r#"[
+        {"weight": 0.593, "color": 0, "matrix": [[-0.606, -0.214, 0.198], [0.12, 0.087, 0.776], [-0.382, 0.366, -0.069]], "offset": [-0.512, 0.599, -0.164], "variations": {"swirl": 1}},
+        {"weight": 0.764, "color": 0.333, "matrix": [[0.605, -0.039, -0.01], [0.064, 0.37, 0.116], [-0.002, -0.056, 0.767]], "offset": [-0.511, -0.426, -0.002], "variations": {"bent": 1}},
+        {"weight": 0.928, "color": 0.667, "matrix": [[0.281, -0.151, -0.375], [0.459, 0.328, 0.019], [0.408, -0.265, 0.237]], "offset": [0.101, 0.218, -0.519], "variations": {"linear": 1}},
+        {"weight": 0.695, "color": 1, "matrix": [[0.299, -0.318, 0.123], [-0.133, -0.239, -0.352], [0.341, 0.185, -0.245]], "offset": [-0.102, -0.788, -0.598], "variations": {"cylinder": 0.256, "linear": 0.744}}
+    ]"#,
+        1,
+    ),
+    (
+        "supernova",
+        "A star blowing apart: streamers of gas bursting from a white-hot core (try palette sunset).",
+        r#"[
+        {"weight": 0.356, "color": 0, "matrix": [[0.462, 0.282, 0.477], [-0.392, 0.084, 0.668], [0.145, -0.671, 0.284]], "offset": [-0.019, -0.305, -0.728], "variations": {"linear": 0.318, "bent": 0.682}},
+        {"weight": 0.778, "color": 1, "matrix": [[0.52, -0.287, 0.396], [0.396, 0.602, -0.066], [-0.324, 0.276, 0.556]], "offset": [-0.519, 0.401, -0.048], "variations": {"linear": 1}}
+    ]"#,
+        1,
+    ),
+    (
+        "galaxy",
+        "A spiral galaxy, seen from above: six feathery arms wound about a bright core (try palette sunset).",
+        r#"[
+        {"weight": 0.799, "color": 0, "matrix": [[0.499, -0.144, -0.236], [-0.006, 0.236, -0.355], [0.412, 0.178, 0.28]], "offset": [0.393, 0.387, 0.179], "variations": {"bent": 1}},
+        {"weight": 0.527, "color": 1, "matrix": [[0.345, -0.194, -0.446], [0.466, 0.261, -0.192], [0.608, -0.09, 0.4]], "offset": [0.044, 0.47, 0.398], "variations": {"swirl": 1}}
+    ]"#,
+        6,
+    ),
+    (
+        "saturn",
+        "A ringed planet seen edge on: a flat disc of streaks with a ring arching over it (try palette gold).",
+        r#"[
+        {"weight": 0.41, "color": 0, "matrix": [[0.545, 0.102, 0.187], [-0.167, 0.361, 0.032], [-0.126, -0.04, 0.768]], "offset": [-0.267, 0.536, -0.333], "variations": {"eyefish": 1}},
+        {"weight": 0.861, "color": 0.5, "matrix": [[-0.049, -0.338, 0.098], [0.048, 0.055, 0.569], [-0.524, 0.037, 0.044]], "offset": [0.283, 0.273, 0.621], "variations": {"spherical": 0.424, "swirl": 0.576}},
+        {"weight": 0.6, "color": 1, "matrix": [[-0.834, -0.028, -0.295], [-0.144, 0.297, 0.169], [0.273, 0.072, -0.811]], "offset": [-0.187, -0.207, 0.387], "variations": {"bent": 1}}
+    ]"#,
+        1,
+    ),
+    (
+        "cumulus",
+        "A heaped summer cloud, puff upon billowing puff (try palette white).",
+        r#"[
+        {"weight": 0.711, "color": 0, "matrix": [[-0.187, 0.231, -0.379], [0.114, -0.432, -0.274], [-0.347, -0.266, 0.115]], "offset": [0.513, 0.749, 0.53], "variations": {"spherical": 1}},
+        {"weight": 0.33, "color": 1, "matrix": [[0.238, 0.571, 0.398], [-0.215, 0.597, -0.384], [-0.758, 0.01, 0.233]], "offset": [0.662, 0.693, 0.625], "variations": {"julia3d": 0.223, "linear": 0.777}, "power": 4}
+    ]"#,
+        1,
+    ),
+    (
+        "snowflake",
+        "A six-pointed star of feathered ice, seen from above (try palette ice).",
+        r#"[
+        {"weight": 0.927, "color": 0, "matrix": [[0.561, 0.168, 0.144], [-0.092, -0.066, 0.786], [0.17, -0.591, -0.047]], "offset": [0.523, -0.215, -0.038], "variations": {"linear": 0.725, "sinusoidal": 0.275}},
+        {"weight": 0.831, "color": 1, "matrix": [[-0.277, -0.5, 0.079], [-0.023, 0.38, 0.293], [-0.227, 0.571, -0.126]], "offset": [0.514, 0.778, -0.582], "variations": {"bent": 0.37, "sinusoidal": 0.63}}
+    ]"#,
+        6,
+    ),
+    (
+        "pearl",
+        "A glowing pearl wrapped in veils of mist (try palette white).",
+        r#"[
+        {"weight": 0.402, "color": 0, "matrix": [[0.554, 0.327, -0.027], [-0.346, 0.519, -0.084], [-0.021, 0.077, 0.675]], "offset": [-0.288, 0.378, -0.173], "variations": {"spherical": 0.487, "sinusoidal": 0.513}},
+        {"weight": 0.31, "color": 0.5, "matrix": [[-0.058, 0.59, -0.263], [-0.419, 0.069, 0.562], [0.345, 0.182, 0.638]], "offset": [0.551, 0.086, 0.437], "variations": {"linear": 0.688, "julia3d": 0.312}, "power": 2},
+        {"weight": 0.612, "color": 1, "matrix": [[-0.778, -0.296, -0.121], [0.384, -0.621, -0.01], [-0.136, -0.063, 0.661]], "offset": [0.77, -0.125, 0.598], "variations": {"swirl": 1}}
+    ]"#,
+        1,
+    ),
+    (
+        "cobra",
+        "A snake coiled on itself, rearing up with its hood spread (try palette gold).",
+        r#"[
+        {"weight": 0.439, "color": 0, "matrix": [[-0.306, -0.436, -0.29], [0.075, 0.46, -0.4], [0.413, -0.406, -0.142]], "offset": [-0.415, -0.78, 0.582], "variations": {"horseshoe": 1}},
+        {"weight": 1, "color": 0.333, "matrix": [[0.741, 0.25, 0.087], [-0.319, 0.307, 0.469], [0.213, -0.411, 0.403]], "offset": [0.443, -0.667, -0.634], "variations": {"swirl": 1}},
+        {"weight": 0.604, "color": 0.667, "matrix": [[-0.275, 0.264, -0.581], [-0.306, -0.427, 0.351], [-0.1, 0.58, 0.523]], "offset": [-0.274, -0.125, -0.492], "variations": {"eyefish": 1}},
+        {"weight": 0.832, "color": 1, "matrix": [[-0.209, 0.394, -0.265], [-0.46, -0.025, 0.151], [0.096, 0.74, 0.146]], "offset": [-0.314, 0.712, 0.03], "variations": {"eyefish": 0.723, "spherical": 0.277}}
+    ]"#,
+        1,
+    ),
+    (
+        "anemone",
+        "A sea anemone's crown of feathery tentacles, streaming out to one side (try palette nebula).",
+        r#"[
+        {"weight": 0.3, "color": 0, "matrix": [[0.546, 0.316, -0.298], [-0.041, 0.594, 0.362], [0.465, -0.318, 0.381]], "offset": [0.197, 0.565, -0.732], "variations": {"eyefish": 0.501, "horseshoe": 0.499}},
+        {"weight": 0.78, "color": 1, "matrix": [[0.328, -0.571, -0.066], [0.545, 0.35, -0.061], [0.108, -0.032, 0.504]], "offset": [0.571, -0.253, -0.179], "variations": {"swirl": 0.227, "spherical": 0.773}}
+    ]"#,
+        1,
+    ),
+    (
+        "starfish",
+        "A five-armed star of bristling spines, seen from above (try palette fire).",
+        r#"[
+        {"weight": 0.617, "color": 0, "matrix": [[0.028, -0.389, 0.231], [0.338, 0.091, 0.548], [-0.31, 0.064, 0.619]], "offset": [0.683, 0.519, -0.608], "variations": {"bent": 0.646, "sinusoidal": 0.354}},
+        {"weight": 0.453, "color": 1, "matrix": [[0.343, -0.284, 0.03], [0.164, 0.477, 0.308], [-0.091, -0.208, 0.664]], "offset": [-0.653, 0.216, -0.729], "variations": {"linear": 1}}
+    ]"#,
+        5,
+    ),
+    (
+        "diatom",
+        "A diatom, seen from above: a round glassy cell with six curved spines and gossamer between them (try palette aurora).",
+        r#"[
+        {"weight": 0.959, "color": 0, "matrix": [[0.695, -0.133, 0.13], [0.211, 0.558, -0.073], [-0.182, 0.141, 0.413]], "offset": [0.423, 0.634, -0.529], "variations": {"swirl": 0.312, "eyefish": 0.688}},
+        {"weight": 0.544, "color": 1, "matrix": [[-0.183, -0.475, -0.446], [0.68, 0.059, -0.459], [0.397, -0.319, 0.581]], "offset": [-0.652, 0.184, 0.706], "variations": {"linear": 0.283, "spherical": 0.717}}
+    ]"#,
+        6,
+    ),
+    (
+        "fern",
+        "A fern frond, its leaflets in tufts up a leaning stem (try palette rainbow).",
+        r#"[
+        {"weight": 0.333, "color": 0, "matrix": [[0.041, 0.769, -0.012], [0.199, -0.037, -0.648], [-0.455, 0.054, -0.284]], "offset": [-0.332, 0.472, -0.557], "variations": {"sinusoidal": 0.292, "linear": 0.708}},
+        {"weight": 0.846, "color": 0.333, "matrix": [[0.006, 0.007, -0.431], [0.794, -0.041, 0.002], [-0.087, -0.375, -0.008]], "offset": [-0.079, 0.055, -0.269], "variations": {"julia3d": 0.427, "bent": 0.573}, "power": 2},
+        {"weight": 0.334, "color": 0.667, "matrix": [[-0.015, 0.03, 0.357], [-0.735, 0.128, -0.016], [-0.262, -0.36, 0.024]], "offset": [0.782, -0.448, 0.175], "variations": {"sinusoidal": 1}},
+        {"weight": 0.436, "color": 1, "matrix": [[0.721, -0.042, -0.097], [0.007, 0.716, -0.202], [0.114, 0.224, 0.627]], "offset": [0.69, 0.744, -0.612], "variations": {"linear": 1}}
+    ]"#,
+        1,
+    ),
+    (
+        "ivy",
+        "A trailing vine of tiny clustered leaves (try palette sunset).",
+        r#"[
+        {"weight": 0.547, "color": 0, "matrix": [[0.215, -0.443, 0.304], [0.728, 0.195, 0.079], [-0.22, 0.213, 0.561]], "offset": [0.163, -0.372, 0.51], "variations": {"linear": 0.634, "horseshoe": 0.366}},
+        {"weight": 0.409, "color": 0.5, "matrix": [[0.313, 0.034, 0.05], [0.013, 0.434, -0.22], [-0.047, 0.348, 0.27]], "offset": [0.453, 0.143, -0.601], "variations": {"linear": 1}},
+        {"weight": 0.395, "color": 1, "matrix": [[0.448, -0.207, 0.063], [0.226, 0.396, 0.073], [-0.089, -0.032, 0.503]], "offset": [0.624, 0.765, 0.168], "variations": {"linear": 1}}
+    ]"#,
+        1,
+    ),
+    (
+        "orchid",
+        "An open flower of ruffled petals around a pale throat (try palette nebula).",
+        r#"[
+        {"weight": 0.767, "color": 0, "matrix": [[0.612, 0.155, -0.283], [-0.32, 0.35, -0.041], [0.216, 0.079, 0.742]], "offset": [-0.232, 0.237, -0.272], "variations": {"spherical": 0.2, "linear": 0.8}},
+        {"weight": 0.946, "color": 0.5, "matrix": [[-0.032, -0.368, 0.351], [0.282, -0.25, -0.379], [0.451, 0.131, 0.262]], "offset": [-0.093, -0.538, 0.661], "variations": {"julia3d": 0.433, "eyefish": 0.567}, "power": 3},
+        {"weight": 0.375, "color": 1, "matrix": [[0.496, 0.057, 0.322], [0.591, -0.255, -0.245], [0.151, 0.81, -0.1]], "offset": [0.155, 0.522, 0.732], "variations": {"sinusoidal": 0.394, "julia3d": 0.606}, "power": 4}
+    ]"#,
+        1,
+    ),
+    (
+        "reeds",
+        "Rows of slanting blades, like reeds in a marsh or a brush's strokes (try palette gold).",
+        r#"[
+        {"weight": 0.579, "color": 0, "matrix": [[0.575, 0.071, 0.268], [0.039, 0.233, -0.605], [-0.23, 0.216, 0.566]], "offset": [-0.179, -0.217, 0.058], "variations": {"linear": 0.617, "swirl": 0.383}},
+        {"weight": 0.349, "color": 0.5, "matrix": [[0.303, -0.087, -0.432], [0.08, 0.801, 0.022], [0.296, -0.127, 0.437]], "offset": [0.483, 0.019, -0.08], "variations": {"eyefish": 0.272, "linear": 0.728}},
+        {"weight": 0.844, "color": 1, "matrix": [[0.48, -0.182, -0.025], [0.118, 0.696, 0.141], [-0.015, -0.325, 0.317]], "offset": [-0.565, 0.561, 0.213], "variations": {"linear": 0.764, "sinusoidal": 0.236}}
+    ]"#,
+        1,
+    ),
+    (
+        "genie",
+        "A thread of smoke rising and billowing out, like a genie leaving its lamp (try palette nebula).",
+        r#"[
+        {"weight": 0.738, "color": 0, "matrix": [[-0.559, 0.334, 0.019], [-0.081, -0.176, 0.324], [0.355, 0.486, 0.104]], "offset": [0.468, 0.463, -0.759], "variations": {"eyefish": 0.674, "linear": 0.326}},
+        {"weight": 0.91, "color": 0.333, "matrix": [[-0.247, -0.295, 0.018], [-0.162, 0.029, -0.711], [0.538, -0.126, -0.206]], "offset": [-0.786, 0.302, -0.319], "variations": {"spherical": 1}},
+        {"weight": 0.532, "color": 0.667, "matrix": [[0.676, 0.037, 0.026], [-0.055, 0.439, -0.037], [-0.036, 0.028, 0.546]], "offset": [0.738, 0.065, -0.27], "variations": {"spherical": 0.54, "linear": 0.46}},
+        {"weight": 0.937, "color": 1, "matrix": [[0.245, -0.003, -0.411], [-0.014, 0.819, -0.027], [0.248, 0.051, 0.405]], "offset": [0.448, -0.718, 0.308], "variations": {"swirl": 1}}
+    ]"#,
+        1,
+    ),
+    (
+        "lantern",
+        "A cage of fine wire, like a paper lantern's frame with only light in it (try palette white).",
+        r#"[
+        {"weight": 0.792, "color": 0, "matrix": [[0.206, 0.597, 0.209], [0.261, -0.539, 0.132], [0.159, 0.11, -0.488]], "offset": [0.405, -0.159, 0.64], "variations": {"cylinder": 1}},
+        {"weight": 0.749, "color": 1, "matrix": [[-0.023, 0.778, -0.397], [0.705, -0.196, -0.428], [-0.451, -0.346, -0.649]], "offset": [-0.54, -0.231, 0.69], "variations": {"linear": 0.244, "swirl": 0.756}}
+    ]"#,
+        1,
+    ),
+    (
+        "pagoda",
+        "Tiers of feathered eaves stacked one above another (try palette rainbow).",
+        r#"[
+        {"weight": 0.385, "color": 0, "matrix": [[-0.691, -0.156, 0.069], [-0.194, 0.637, -0.073], [-0.097, -0.166, -0.346]], "offset": [-0.36, 0.281, 0.162], "variations": {"julia3d": 0.589, "horseshoe": 0.411}, "power": 3},
+        {"weight": 0.368, "color": 1, "matrix": [[0.553, 0.151, -0.149], [-0.2, 0.456, 0.022], [0.231, 0.034, 0.375]], "offset": [0.515, 0.369, 0.016], "variations": {"sinusoidal": 1}}
+    ]"#,
+        6,
+    ),
+    (
+        "infinity",
+        "A figure eight of knotted lace, standing on end (try palette rainbow).",
+        r#"[
+        {"weight": 0.458, "color": 0, "matrix": [[-0.011, 0.176, 0.421], [0.778, 0.145, -0.068], [-0.316, 0.352, -0.183]], "offset": [-0.147, -0.276, -0.659], "variations": {"julia3d": 0.797, "linear": 0.203}, "power": 2},
+        {"weight": 0.334, "color": 1, "matrix": [[0.141, 0.199, -0.614], [-0.365, 0.492, -0.08], [0.232, 0.653, 0.247]], "offset": [-0.359, 0.033, 0.31], "variations": {"julia3d": 1}, "power": 2}
+    ]"#,
+        1,
+    ),
+    (
+        "centurion",
+        "A crest of plumes sweeping over rolls of white, like a centurion's helmet (try palette fire).",
+        r#"[
+        {"weight": 0.337, "color": 0, "matrix": [[-0.68, -0.028, -0.133], [-0.158, 0.24, 0.394], [0.073, 0.257, -0.383]], "offset": [-0.062, 0.37, -0.269], "variations": {"spherical": 0.702, "linear": 0.298}},
+        {"weight": 0.495, "color": 1, "matrix": [[0.508, 0.073, -0.261], [-0.123, 0.491, -0.145], [0.173, 0.136, 0.664]], "offset": [-0.614, 0.222, 0.551], "variations": {"linear": 0.725, "julia3d": 0.275}, "power": 4}
+    ]"#,
+        1,
+    ),
+    (
+        "sierpinski",
+        "The Sierpinski tetrahedron: four maps that halve toward the corners of a tetrahedron, the plainest flame of all.",
+        r#"[
         {"color": 0.0, "matrix": [[0.5,0,0],[0,0.5,0],[0,0,0.5]], "offset": [0.5,0.5,0.5]},
         {"color": 0.33, "matrix": [[0.5,0,0],[0,0.5,0],[0,0,0.5]], "offset": [-0.5,-0.5,0.5]},
         {"color": 0.67, "matrix": [[0.5,0,0],[0,0.5,0],[0,0,0.5]], "offset": [-0.5,0.5,-0.5]},
         {"color": 1.0, "matrix": [[0.5,0,0],[0,0.5,0],[0,0,0.5]], "offset": [0.5,-0.5,-0.5]}
     ]"#,
-),
+        1,
+    ),
 ];
 
 #[cfg(test)]
@@ -722,10 +929,12 @@ mod tests {
         }
     }
 
-    /// Every preset draws, into a grid with something in it and empty borders.
+    /// Every preset draws, into a grid with something in it and empty borders;
+    /// no two share a name.
     #[test]
     fn presets_draw() {
-        for p in PRESETS {
+        for (i, p) in PRESETS.iter().enumerate() {
+            assert!(p.0 != "random" && PRESETS[..i].iter().all(|q| q.0 != p.0), "preset {} named twice", p.0);
             let g = build(&spec(p.0, 0)).unwrap_or_else(|e| panic!("{}: {e}", p.0));
             assert!(g.filled > 100, "{}: {} voxels filled", p.0, g.filled);
             let [nx, ny, _] = g.n;
@@ -767,7 +976,8 @@ mod dump {
     #[test]
     #[ignore]
     fn dump_seeds() {
-        let r3 = |x: f32| (x * 1000.0).round() / 1000.0;
+        // (in f64, so that the JSON prints 0.809, not 0.8090000152587891)
+        let r3 = |x: f32| (x as f64 * 1000.0).round() / 1000.0;
         for s in std::env::var("RAY_FLAME_SEEDS").unwrap_or_default().split(',').filter_map(|s| s.trim().parse::<u32>().ok()) {
             let xs = random_system(s);
             let ws = random_weights(s, xs.len());
