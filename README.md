@@ -44,8 +44,6 @@ The same renderer also runs on the GPU as a generated WGSL compute shader, and b
 
 [<img src="docs/images/fractals-reel.avif" width="800" alt="The first half minute of the reel: a fractal every three seconds, each named">](https://drive.google.com/file/d/1k_OUvG_8LEdAwtTfD1yklZo6yg_-SzaS/view)
 
-**[The best of the fractals](https://drive.google.com/file/d/1k_OUvG_8LEdAwtTfD1yklZo6yg_-SzaS/view)** (1 min 45 s, 1080p, on Google Drive): 33 of them, three seconds each with quick crossfades, walked through, circled and flown into; above, its first half minute. `tools/demo/best_reel.py` cuts it from the fractals' 10-second clips, all of which are in the same [Drive folder](https://drive.google.com/drive/folders/1-cfL4Qp0S2akdnPGr2mFj9DpIPR-bGfk).
-
 **[docs/FRACTALS.md](docs/FRACTALS.md)** is the fractal reference: an index of all 74 kinds of fractal surface ray draws and of the fractal flame's 30 presets, with a picture and a line on each, and a page for each (`docs/fractals/`) with its formula and distance estimate (or a flame's maps), where it came from, its parameters and pictures, and a 10-second animation of it (a looping preview on the page, linked to the full 1080p clip on Google Drive). The families:
 
 - the classics: Menger sponge, Mandelbulb, Mandelbox, quaternion Julia, Sierpinski, Apollonian, kaleidoscopic IFS, pseudo-Kleinian;
