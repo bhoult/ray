@@ -51,6 +51,10 @@ ORBIT = {"benesi", "hypercomplex"}
 # ceiling or a floor fills the view; these look level, along the walk's
 # heading, down the rows of arches between the two
 LEVEL = {"kleinian_mod", "kleinian4d"}
+# orbits higher than the others (their heights, as shares of the radius):
+# zorich_pagodas is a field of domes, and lower round it the camera grazes
+# one (1.7 cm away); from above, it looks down on the pagodas
+ABOVE = {"zorich_pagodas": (1.0, 0.8)}
 # the ones walked through or round already (interiors.py, originals.py)
 DONE = set(it.FRACTALS) | {"labyrinth_sponge", "quasicrystal_rooms", "screw_sponge", "cusp_vaults", "cathedral", "octet_truss", "nil_stair", "mayer_julia", "dirac_frost", "horned_sphere"}
 
@@ -301,7 +305,8 @@ def orbit_of(name, half_cat):
     from start to end, its angles (degrees, from an angle its name picks)."""
     radius = 1.8 * half_cat + 0.2
     a0 = zlib.crc32(name.encode()) % 360
-    return radius, (0.55 * radius, 0.15 * radius), (a0, a0 + 140)
+    h0, h1 = ABOVE.get(name, (0.55, 0.15))
+    return radius, (h0 * radius, h1 * radius), (a0, a0 + 140)
 
 
 if __name__ == "__main__":
