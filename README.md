@@ -13,7 +13,7 @@ An experiment in how complex a scene can get when it is made only of maths: sign
 - a day sky with a time of day (sunrise, sunset, night with a moon and twinkling stars), a night sky of stars, or none;
 - volume clouds (Add > Landscape > cloud), billowing and wispy, lit through (silver linings toward the sun, pink from below at sunset), casting soft shadows;
 - 3D fractal flames (Add > Fractals > flame): Scott Draves's flame algorithm in three dimensions, drawn by the chaos game into a grid of voxels and rendered as a volume that glows in its palette's colors, scatters the sun and casts soft shadows; 30 presets, from a comet and a spiral galaxy to a snowflake and a cobra, and a random flame for every seed ([docs/fractals/flame.md](docs/fractals/flame.md));
-- 74 kinds of fractal surface (Add > Fractals, a submenu for each family): the Menger sponge, Mandelbulb and Mandelbox and the rest of the 3D fractal community's best-known formulas, and 13 made for ray by Claude, Anthropic's AI model; [docs/FRACTALS.md](docs/FRACTALS.md) gives each one's formula, origin and a picture, and a page to each of the 30 presets of one more type, the fractal flame (`flame`);
+- 74 kinds of fractal surface (Add > Fractals, a submenu for each family): the Menger sponge, Mandelbulb and Mandelbox and the rest of the 3D fractal community's best-known formulas, and 13 made for ray by Claude, Anthropic's AI model; [docs/FRACTALS.md](docs/FRACTALS.md) gives each one's formula, origin, a picture and a 10-second animation, and a page to each of the 30 presets of one more type, the fractal flame (`flame`);
 - NURBS surfaces (Add > Surfaces): free-form control nets and profiles turned about an axis (vases, glasses, an exact sphere or torus), hit exactly on their patches;
 - the cost of every shape, and the CPU and GPU load over time;
 - a settings panel for bounces, global illumination, anti-aliasing and the rest;
@@ -42,7 +42,11 @@ The same renderer also runs on the GPU as a generated WGSL compute shader, and b
 
 ## Fractals
 
-**[docs/FRACTALS.md](docs/FRACTALS.md)** is the fractal reference: an index of all 74 kinds of fractal surface ray draws and of the fractal flame's 30 presets, with a picture and a line on each, and a page for each (`docs/fractals/`) with its formula and distance estimate (or a flame's maps), where it came from, its parameters and pictures. The families:
+[<img src="docs/images/fractals-reel.avif" width="800" alt="The first half minute of the reel: a fractal every three seconds, each named">](https://drive.google.com/file/d/1k_OUvG_8LEdAwtTfD1yklZo6yg_-SzaS/view)
+
+**[The best of the fractals](https://drive.google.com/file/d/1k_OUvG_8LEdAwtTfD1yklZo6yg_-SzaS/view)** (1 min 45 s, 1080p, on Google Drive): 33 of them, three seconds each with quick crossfades, walked through, circled and flown into; above, its first half minute. `tools/demo/best_reel.py` cuts it from the fractals' 10-second clips, all of which are in the same [Drive folder](https://drive.google.com/drive/folders/1-cfL4Qp0S2akdnPGr2mFj9DpIPR-bGfk).
+
+**[docs/FRACTALS.md](docs/FRACTALS.md)** is the fractal reference: an index of all 74 kinds of fractal surface ray draws and of the fractal flame's 30 presets, with a picture and a line on each, and a page for each (`docs/fractals/`) with its formula and distance estimate (or a flame's maps), where it came from, its parameters and pictures, and a 10-second animation of it (a looping preview on the page, linked to the full 1080p clip on Google Drive). The families:
 
 - the classics: Menger sponge, Mandelbulb, Mandelbox, quaternion Julia, Sierpinski, Apollonian, kaleidoscopic IFS, pseudo-Kleinian;
 - box folds: Amazing Surf, Kalibox, Mandalay box, Kaliset, bulb-box;
@@ -258,6 +262,8 @@ target/release/ray SCENE.json --out shot.png [--size 1280x720] [--frames N] [--s
     [--mode direct|path_trace|normals|albedo|depth|steps|cost] [--bounces N]
     [--camera x,y,z,yaw,pitch] [--set '{"ao": false}'] [--bench] [--device both|gpu|cpu]
 ```
+
+`ray raycast SCENE.json` casts rays through a scene without a window, for tools: each line `ox oy oz dx dy dz` on stdin gets a line on stdout, `t nx ny nz` (the distance to what the ray hits and its normal) or `miss`. Each ray is seen from its own origin, at the detail a 1920 x 1080 view from there would draw; the demo's planners (`tools/demo/interiors.py`, `catalog_walks.py`) find their walks through the fractals with thousands of them.
 
 This renders `N` frames (accumulating), writes the PNG and prints the median frame time. `--bench` prints every frame: how the rows were shared, the GPU's and the CPU's time, and post. Per-object profiling is on. `--drop N[,H]` first drops object N with the physics.
 
@@ -503,7 +509,7 @@ A light is any object whose material has emission. The scene panel's **+ Light**
 | `src/mcp.rs` | the MCP server (`ray mcp`) |
 | `src/ui/remote.rs`, `control.rs` | the viewer's control socket, and the commands it carries out |
 | `src/ui/emitter.rs`, `library.rs`, `previews.rs` | emitters and their copies; the material and modifier libraries; their preview renders |
-| `tools/demo/` | the demo video: a private headless viewer, the director (each segment a `render_video` take at 1920 x 1080) and the assembly (captions, crossfades); `bulb_dive.py`, a second video, recorded in 7-second pieces that a rerun resumes: into a hole in the Mandelbulb and through a tunnel under its lobes by headlight, its material morphing on the way; `still.py` reads a screenshot's moment (its camera, to start a video from) |
+| `tools/demo/` | the demo video: a private headless viewer, the director (each segment a `render_video` take at 1920 x 1080) and the assembly (captions, crossfades); `bulb_dive.py`, a second video, recorded in 7-second pieces that a rerun resumes: into a hole in the Mandelbulb and through a tunnel under its lobes by headlight, its material morphing on the way; `still.py` reads a screenshot's moment (its camera, to start a video from); a 10 s clip of every fractal, at 1920 x 1080: `interiors.py` walks through the classics and `originals.py` through and around the ones made for ray (along paths found by `ray raycast`; `interiors_reel.py` joins them), `catalog_walks.py` the rest of the catalog (inside where a walk has room and a view, else round it, each in a material of its own) and `flame_walks.py` the flames; `previews.py` puts each clip on its fractal's page as a small looping preview (AV1, `docs/images/fractals/anim/`) linked to the clip on Google Drive, and `best_reel.py` cuts the best of them into one reel |
 | `tools/readme-images.sh`, `logo.py` | the README's pictures in `docs/images` (the banner is `assets/banner.json` with the name set on it) |
 | `tools/scenes/*.py` | the generators of most default scenes (`city.py` writes night-city and `bonsai.py` the bonsai, each with any seed; see `common.py` for how to run them) |
 
