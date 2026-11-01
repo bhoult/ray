@@ -1,7 +1,7 @@
 //! The signed-distance interpreter: runs a compiled program (scene/sdf.rs)
 //! on eight points at once. Dispatch costs one branch per op for all eight
 //! lanes; the fractal ops are whole loops, so the interpretation overhead
-//! stays small next to the maths. The Menger op is fraktal256's menger8.
+//! stays small next to the math. The Menger op is fraktal256's menger8.
 
 use crate::math::Vec3;
 use crate::noise::fbm3;

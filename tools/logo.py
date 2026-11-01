@@ -19,7 +19,7 @@ for x in range(W):
 bg = Image.composite(Image.new('RGBA', (W, H), (25, 12, 8, 255)), bg, shade)
 big = ImageFont.truetype(LATO.format('Black'), int(0.42 * H))
 x0 = int(0.47 * W)
-lines = ['mesh-free ray tracing of pure maths', 'SDFs · fractals · NURBS · CPU and GPU']
+lines = ['mesh-free ray tracing of pure math', 'SDFs · fractals · NURBS · CPU and GPU']
 # (the lines as big as fit)
 size = int(0.088 * H)
 while True:

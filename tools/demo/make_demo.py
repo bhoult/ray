@@ -297,7 +297,7 @@ def nurbs(v, take):
 # the video's order: (name, caption, record); the stills and cards are
 # assemble.py's
 SEGMENTS = [
-    ("showcase", "Every shape is maths, ray traced with no meshes: distance fields, booleans, metaballs, a gyroid", showcase),
+    ("showcase", "Every shape is math, ray traced with no meshes: distance fields, booleans, metaballs, a gyroid", showcase),
     ("glass", "NURBS surfaces of revolution in clear and smoked glass, refracting", glass),
     ("nurbs", "NURBS in booleans, cut and blended like any other shape", nurbs),
     ("landscape", "A 512 m eroded landscape and lake; fractals in the distance, coloured by orbit traps", landscape),

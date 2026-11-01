@@ -1,5 +1,5 @@
-//! Scalar maths for scene setup and per-object constants: `Vec3`, `Mat3`
-//! (rotations) and `Aabb`. Per-pixel maths is 8-wide, in simd.rs.
+//! Scalar math for scene setup and per-object constants: `Vec3`, `Mat3`
+//! (rotations) and `Aabb`. Per-pixel math is 8-wide, in simd.rs.
 
 use core::ops::*;
 
