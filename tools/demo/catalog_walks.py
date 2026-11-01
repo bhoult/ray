@@ -47,6 +47,10 @@ STARTS = 16
 # gone round even so: the best walk found through benesi ends inside it,
 # hypercomplex's is mostly sky
 ORBIT = {"benesi", "hypercomplex"}
+# Kleinian slabs: their walks climb or fall steeply, and looking along one a
+# ceiling or a floor fills the view; these look level, along the walk's
+# heading, down the rows of arches between the two
+LEVEL = {"kleinian_mod", "kleinian4d"}
 # the ones walked through or round already (interiors.py, originals.py)
 DONE = set(it.FRACTALS) | {"labyrinth_sponge", "quasicrystal_rooms", "screw_sponge", "cusp_vaults", "cathedral", "octet_truss", "nil_stair", "mayer_julia", "dirac_frost", "horned_sphere"}
 
@@ -270,7 +274,7 @@ def main():
         if plan_.get("path"):
             json.dump(scene_for(name, node, GROW), open(scene_file, "w"), indent=1)
             md.setup(v, scene_file, settings={"headlight": 1.0, "headlight_shadows": False, "headlight_reach": max(4.0 * plan_["open"], 1.0)})
-            it.walk(v, take, plan_["path"], plan_["open"])
+            it.walk(v, take, plan_["path"], plan_["open"], looks=level(plan_["path"]) if name in LEVEL else None)
         else:
             # (round it at its catalog size, a little above, from an angle
             # its name picks)
@@ -282,6 +286,14 @@ def main():
             with take(LENGTH) as t:
                 md.orbit(t, [0, 0, 0], radius, heights, angles, (0.0, LENGTH), legs=it.LEGS)
                 t.end()
+
+
+def level(path):
+    """Where the camera looks from each point of a walk to look level, along
+    the walk's heading (its first point to its last, flattened)."""
+    h = [path[-1][0] - path[0][0], 0.0, path[-1][2] - path[0][2]]
+    n = math.hypot(h[0], h[2])
+    return [[p[0] + 3.0 * h[0] / n, p[1], p[2] + 3.0 * h[2] / n] for p in path]
 
 
 def orbit_of(name, half_cat):
