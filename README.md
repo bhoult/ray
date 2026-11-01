@@ -2,6 +2,8 @@
 
 <p align="center">Made by Claude Opus 5.5, instigated by <a href="https://hoult.co">Brandon Hoult</a>.</p>
 
+<p align="center">Dedicated to <a href="https://www.povray.org/">POV-Ray</a> and <a href="https://www.fractint.org/">Fractint</a>, which gave me thousands of hours of entertainment in the early '90s.</p>
+
 An experiment in how complex a scene can get when it is made only of maths: signed-distance shapes, fractals, noise heightfields, NURBS surfaces and analytic primitives, with no meshes, ray traced in real time. A JSON file describes the scene; the editor flies through it and edits it:
 - every object's parameters, editable on click;
 - procedural materials from a library, each assignment editable on its own;
