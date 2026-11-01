@@ -8,6 +8,10 @@
 
 A heaped summer cloud, puff upon billowing puff: a soft, dense mass of rounded lobes, each lumpy with smaller ones. Above: palette `white`, over a lake just after sunset.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1N6mbdgbJKTXQr9PqZXghzfotVPgmnXVb/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_cumulus.avif" width="640" alt="Cumulus, animated">](https://drive.google.com/file/d/1N6mbdgbJKTXQr9PqZXghzfotVPgmnXVb/view)
+
 **Maps.** Two maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward.
 
 | map | weight | color | variations |

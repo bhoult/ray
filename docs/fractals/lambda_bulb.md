@@ -8,6 +8,10 @@
 
 The logistic map's Julia set in 3D: a twisted, cratered lump with three-fold symmetry about its axis, its rims seamed with chains of tiny buds. Unlike the bulbs around it, it is a Julia set, and it multiplies by its constant instead of adding one.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1yq3w87AbemXpiEJgJmq17Fu34SzY8vXP/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/lambda_bulb.avif" width="640" alt="Lambdabulb, animated">](https://drive.google.com/file/d/1yq3w87AbemXpiEJgJmq17Fu34SzY8vXP/view)
+
 **Formula.** Start from $`z = p`$ and repeat:
 
 ```math

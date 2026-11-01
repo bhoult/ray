@@ -8,6 +8,10 @@
 
 A comet: a bright head in a veil of coma, trailing a long straight tail. The tail is a sheaf of fine parallel threads; the coma, faint arcs wrapped around the head. Above: palette `ice`, over a lake just after sunset.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1RPQya-ulaI0mnpk4IF3zfWlFPkIfzEhF/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_comet.avif" width="640" alt="Comet, animated">](https://drive.google.com/file/d/1RPQya-ulaI0mnpk4IF3zfWlFPkIfzEhF/view)
+
 **Maps.** Four maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward.
 
 | map | weight | color | variations |

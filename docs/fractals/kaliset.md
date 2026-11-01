@@ -8,6 +8,10 @@
 
 Kali's Kaliset in 3D: mirror space into one octant, invert it in the unit sphere, add a constant, and repeat. Everything far away lands near the constant, so the set fills space; what shapes it are the holes, the points whose orbit falls close to the center, and cutting them away leaves a lace of domed chambers, round windows and bony struts. Cut to a box here; fly inside it.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1IdtXagEt-m2o-ApdvehfYNicONQYOU3z/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/kaliset.avif" width="640" alt="Kaliset, animated">](https://drive.google.com/file/d/1IdtXagEt-m2o-ApdvehfYNicONQYOU3z/view)
+
 **Formula.** Start from $`z = p`$ and repeat:
 
 ```math

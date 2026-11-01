@@ -8,6 +8,10 @@
 
 The 3D Collatz map with its turn, axis, offset and scale opened up. At its default angle the shell twists into a three-armed pinwheel with fringed blades; angles either side of a half turn twist it opposite ways, and adding the point gives a swirled, Mandelbrot-type shape.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1ztYXw0Mq4DBrmkV3H9rf4ZELIVhrL12K/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/collatz_mod.avif" width="640" alt="Collatz Mod, animated">](https://drive.google.com/file/d/1ztYXw0Mq4DBrmkV3H9rf4ZELIVhrL12K/view)
+
 **Formula.** Start from $`z = p`$ (scaled 6.2 times and moved to $`(3.92, 3.92, 3.92)`$) and repeat:
 
 ```math

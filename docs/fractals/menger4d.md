@@ -8,6 +8,10 @@
 
 A slice through a four-dimensional Menger sponge (pictured at `w` = 0.15). Its holes run in all four directions, so a 3D slice cuts them at angles. Each slice is a cube, and sliding `w` changes its pattern of tunnels and pores.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1nOrUdq4r-qli6g2Ov6GwPUKMHvd5JkAH/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/menger4d.avif" width="640" alt="Menger 4D, animated">](https://drive.google.com/file/d/1nOrUdq4r-qli6g2Ov6GwPUKMHvd5JkAH/view)
+
 **Formula.** Start from $`z = (x, y, z, w)`$ and repeat $`n`$ times: fold into the positive orthant, $`z_i \leftarrow |z_i|`$; sort so that $`z_1 \ge z_2 \ge z_3 \ge z_4`$; then
 
 ```math

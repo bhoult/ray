@@ -8,6 +8,10 @@
 
 The first Mandelbulb, before the power went up to 8: the slice facing you is exactly the Mandelbrot set, and in depth it swells into a smeared, "whipped cream" body with a whorl at its heart. Shown here from behind, so the needle points right.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1xGpgLDyaXeKejRnIrvqxLAPKkFK1RaaN/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/power2_bulb.avif" width="640" alt="Quadratic Mandelbulb, animated">](https://drive.google.com/file/d/1xGpgLDyaXeKejRnIrvqxLAPKkFK1RaaN/view)
+
 **Formula.** Daniel White's triplex square, in its non-trigonometric form: with $`\rho^2 = x^2 + y^2`$,
 
 ```math

@@ -8,6 +8,10 @@
 
 A floor of domed pagodas, each crowned with tiers of spiky pinnacles and ringed by smaller pinnacles that are ringed in turn, in a lattice that runs on forever. They are the points that escape upward under a three-dimensional analogue of the exponential function.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1DQGD_ZtlZpzMZnw1lX6NsdfXoZOQqvGj/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/zorich_pagodas.avif" width="640" alt="Zorich Pagodas, animated">](https://drive.google.com/file/d/1DQGD_ZtlZpzMZnw1lX6NsdfXoZOQqvGj/view)
+
 **Formula.** Zorich's map is the 3D counterpart of $`e^z`$. On the square beam $`|x_1|, |x_2| \le 1`$,
 
 ```math

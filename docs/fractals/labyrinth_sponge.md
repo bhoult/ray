@@ -8,6 +8,10 @@
 
 The two interwoven labyrinths of a gyroid, whose walls are not solid. Each wall is a lattice of small rooms (Schwarz's P surface), each room with doors onto both sides of the wall. The rooms' own walls are pierced by gyroid corridors five times finer again, and so on down. Every tunnel opens into the larger ones, so all of it can be walked: from the corridors into the rooms in their walls, and from the rooms into the tunnels in theirs. Left: a cube of it, as Add makes it. Right: down one of the gyroid's corridors, lit through the windows in its walls.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/13X3Vh8GG0cbzfVcxOTy9KxjCaJlE3XOp/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/labyrinth_sponge.avif" width="640" alt="Labyrinth Sponge, animated">](https://drive.google.com/file/d/13X3Vh8GG0cbzfVcxOTy9KxjCaJlE3XOp/view)
+
 **Formula.** A triply periodic minimal surface is approximated by the zero set of a short trigonometric sum, its nodal approximation:
 
 ```math

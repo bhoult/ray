@@ -8,6 +8,10 @@
 
 Inigo Quilez's Apollonian fractal: a lattice of spheres in which every gap holds smaller spheres, and every gap between those smaller ones still, like foam or coral. It fills all of space, so the Add example cuts a 2 m cube out of it; try the orbit texture on it.
 
+**Animation.** Two walks of ten seconds inside it, in full 1080p on Google Drive: [the first](https://drive.google.com/file/d/1GwCRrGYKU4lG7osO9QnknJXs0Ny70EIB/view), previewed below, and [the second](https://drive.google.com/file/d/1AsvNcE7l6-lm788lDdhGmv_TT8YJRWm5/view).
+
+[<img src="../images/fractals/anim/apollonian.avif" width="640" alt="Apollonian, animated">](https://drive.google.com/file/d/1GwCRrGYKU4lG7osO9QnknJXs0Ny70EIB/view)
+
 **Formula.** Start from $`q = p`$ and $`S = 1`$, and repeat `iterations` times:
 
 ```math

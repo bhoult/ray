@@ -8,6 +8,10 @@
 
 A cube with a square tunnel bored through the middle of each face, then the same done to each of the 20 smaller cubes that remain, level after level. ray carves the holes directly rather than by escape time, so its distance estimate is tight, and it adds levels by itself as the camera closes in.
 
+**Animation.** Two walks of ten seconds inside it, in full 1080p on Google Drive: [the first](https://drive.google.com/file/d/1-EYKFH126YbBkLXnZgFbfXY1jvPuWvQT/view), previewed below, and [the second](https://drive.google.com/file/d/1NwWN1F_VoeQjdMbgR7J5wL5fJR_IT1FV/view).
+
+[<img src="../images/fractals/anim/menger.avif" width="640" alt="Menger Sponge, animated">](https://drive.google.com/file/d/1-EYKFH126YbBkLXnZgFbfXY1jvPuWvQT/view)
+
 **Formula.** Start from the exact distance to the cube $`[-1, 1]^3`$, $`d = \mathrm{sdBox}(p, 1)`$. For each level $`i = 0, 1, \dots, n-1`$, fold each coordinate into that level's cell:
 
 ```math

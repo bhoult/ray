@@ -8,6 +8,10 @@
 
 A Mandelbulb built on true spherical coordinates whose polar angle is folded back into one hemisphere before it is multiplied. The result is mirrored top to bottom and covered in stacked, petal-like domes rather than the classic bulb's swirls.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1Dk6tVT6mLwUfgfMea3A7EL8rEmyvKgy9/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/xenodreambuie.avif" width="640" alt="Xenodreambuie, animated">](https://drive.google.com/file/d/1Dk6tVT6mLwUfgfMea3A7EL8rEmyvKgy9/view)
+
 **Formula.** Start from $`z = p`$ and repeat, with $`r = |z|`$ and $`y`$ as the polar axis:
 
 ```math

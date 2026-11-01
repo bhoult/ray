@@ -8,6 +8,10 @@
 
 A thread of smoke rising and billowing out, like a genie leaving its lamp: a single thin wisp curls up from below and opens into a swirling cloud. Above: palette `nebula`, over a lake just after sunset.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1Y_D7t9uOALB0-ZJ7qp_xdsQy8maXdcPt/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_genie.avif" width="640" alt="Genie, animated">](https://drive.google.com/file/d/1Y_D7t9uOALB0-ZJ7qp_xdsQy8maXdcPt/view)
+
 **Maps.** Four maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward.
 
 | map | weight | color | variations |

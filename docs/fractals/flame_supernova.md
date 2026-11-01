@@ -8,6 +8,10 @@
 
 A star blowing apart: streamers of gas bursting from a white-hot core, longest to one side. It has only two maps, one plain and one mostly bent. Above: palette `sunset`, over a lake just after sunset.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1UlnNugKIjsQj-WK2SbzdMAk2l9iATXAO/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_supernova.avif" width="640" alt="Supernova, animated">](https://drive.google.com/file/d/1UlnNugKIjsQj-WK2SbzdMAk2l9iATXAO/view)
+
 **Maps.** Two maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward.
 
 | map | weight | color | variations |

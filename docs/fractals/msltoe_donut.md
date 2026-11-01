@@ -8,6 +8,10 @@
 
 A torus with nine smaller tori looped around its tube like chain links, each of those looped with nine smaller ones, and so on, so the ring sprouts bushy clusters of links. Unlike the escape-time bulbs, it is built from exact tori, so every generation is crisp.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1qFqTjxIWACv0OR1sbxKJBX5JcX2xoBiw/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/msltoe_donut.avif" width="640" alt="Msltoe Donut, animated">](https://drive.google.com/file/d/1qFqTjxIWACv0OR1sbxKJBX5JcX2xoBiw/view)
+
 **Formula.** In a frame with the ring about the third axis, start from $`(x, y, z) = p`$ and repeat for generation $`n = 0, 1, \dots`$:
 
 ```math

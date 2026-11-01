@@ -8,6 +8,10 @@
 
 A trailing vine of tiny clustered leaves: two strands of small, crinkled clusters climbing side by side, the finest-grained of the presets. Its three maps are nearly plain: two linear and one with a little horseshoe. Above: palette `sunset`, over a lake just after sunset.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1qB4K2TJK5XGGLoOQZZAZwZNIRTRhBLwX/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_ivy.avif" width="640" alt="Ivy, animated">](https://drive.google.com/file/d/1qB4K2TJK5XGGLoOQZZAZwZNIRTRhBLwX/view)
+
 **Maps.** Three maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward.
 
 | map | weight | color | variations |

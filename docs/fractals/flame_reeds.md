@@ -8,6 +8,10 @@
 
 Rows of slanting blades, like reeds in a marsh or a brush's strokes: two rows of short, slanting blades, each a bundle of fine parallel strokes, the blades shrinking along each row. Above: palette `gold`, over a lake just after sunset.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1QrwnKxRpV-vWUKmd84LCy7mZBB-U7Y_r/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_reeds.avif" width="640" alt="Reeds, animated">](https://drive.google.com/file/d/1QrwnKxRpV-vWUKmd84LCy7mZBB-U7Y_r/view)
+
 **Maps.** Three maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward.
 
 | map | weight | color | variations |

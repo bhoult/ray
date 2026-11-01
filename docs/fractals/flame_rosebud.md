@@ -8,6 +8,10 @@
 
 Petals of fine threads furled around a bud: sheaves of thread swept around a denser knot, as a rose's petals are around its heart. Above: palette `sunset`, over a lake just after sunset.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1aUP_LURtKQjux9fm-XYqylDSnH_XYv5n/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_rosebud.avif" width="640" alt="Rosebud, animated">](https://drive.google.com/file/d/1aUP_LURtKQjux9fm-XYqylDSnH_XYv5n/view)
+
 **Maps.** Three maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward.
 
 | map | weight | color | variations |

@@ -8,6 +8,10 @@
 
 Doug Bristor's 3D Mandelbrot set: the Mandelbrot set's outline along x, swept around into a swirled, lopsided solid with a long antenna. Squaring in his algebra mixes the two imaginary axes, which gives the surface its twisted bands.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1olSiBSkXgHkvlxS6JPKY1h72GafjD1sV/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/bristorbrot.avif" width="640" alt="Bristorbrot, animated">](https://drive.google.com/file/d/1olSiBSkXgHkvlxS6JPKY1h72GafjD1sV/view)
+
 **Formula.** Start from $`z = c = p`$ (shifted so the solid sits centered) and repeat
 
 ```math

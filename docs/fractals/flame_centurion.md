@@ -8,6 +8,10 @@
 
 A crest of plumes sweeping over rolls of white, like a centurion's helmet: long, dark red plumes swept back over curved golden vanes and a stack of white rolls. Above: palette `fire`, over a lake just after sunset.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1Pg280hCce45VSnl5jOVsiiT_9O1krY0E/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_centurion.avif" width="640" alt="Centurion, animated">](https://drive.google.com/file/d/1Pg280hCce45VSnl5jOVsiiT_9O1krY0E/view)
+
 **Maps.** Two maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward.
 
 | map | weight | color | variations |

@@ -8,6 +8,10 @@
 
 The limit set of a true Kleinian group: floors of great domes with necklaces of ever smaller spheres strung between them into columns, layer upon layer. It is what the pseudo-Kleinian imitates, done with the group itself.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1kmKRexQOVBC35VbEVWRaS4DnoK_VzBOl/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/jos_kleinian.avif" width="640" alt="Jos Leys's Kleinian, animated">](https://drive.google.com/file/d/1kmKRexQOVBC35VbEVWRaS4DnoK_VzBOl/view)
+
 **Formula.** Start from $`z = p`$ and $`\partial = 1`$ (or from $`p`$ inverted in the sphere `inversion_centre`, `inversion_radius`, with $`\partial`$ that inversion's scale) and repeat: wrap $`z`$ into the cell $`[-1, 1) \times [0, a) \times [-1, 1)`$ (with `box` at 1); above the separation line, $`z_y \ge a\left(\tfrac12 + \tfrac15 \sin\left(\pi\,\mathrm{sgn}(b)\,(z_x + \tfrac b2)\right)\right)`$, turn it half round, $`z \leftarrow (-b, a, 0) - z`$; then apply the generator
 
 ```math

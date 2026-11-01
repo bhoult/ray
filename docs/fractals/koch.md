@@ -8,6 +8,10 @@
 
 Eric Baird's Koch curve in three dimensions, the "delta" fractal: a triangular body whose copies hinge up out of its plane at the Koch angle, again and again, so that its edges and profile are Koch curves and its body is a crumpled crystal. The angle runs from a flat Koch tree at 60° to a solid at 90°.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1flbukpQNf6GuaO-Lvo5KXsddRrNFZUxx/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/koch.avif" width="640" alt="Koch Delta, animated">](https://drive.google.com/file/d/1flbukpQNf6GuaO-Lvo5KXsddRrNFZUxx/view)
+
 **Formula.** With the Koch angle $`\theta`$, let $`\beta = \theta/2`$, $`t = \tfrac14\sqrt{3\tan^2\beta - 1}`$, the hinge normal $`\mathbf{h} = (1, 0, -2t)/\sqrt{1 + 4t^2}`$ and the scale $`s = 4\cos^2\beta = 2(1 + \cos\theta)`$. Start from $`\mathbf{z} = \mathbf{p}`$ and repeat: mirror $`y \leftarrow |y|`$, $`z \leftarrow |z|`$; fold the plane into the triangle's 60° wedge,
 
 ```math

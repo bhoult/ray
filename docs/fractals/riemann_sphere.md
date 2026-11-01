@@ -8,6 +8,10 @@
 
 A bell-shaped body covered in a curved grid of studs, with clusters of pyramids around its rim and on its face. Each step folds the point's direction on the Riemann sphere into a grid of cells, and the radius is raised to a power that grows toward the sphere's pole, so the shape is lopsided top to bottom.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1PAFF4dVgp519KcSNuAjrJUywhTcnPs_j/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/riemann_sphere.avif" width="640" alt="Riemann Sphere, animated">](https://drive.google.com/file/d/1PAFF4dVgp519KcSNuAjrJUywhTcnPs_j/view)
+
 **Formula.** Start from $`z = p`$ and repeat: put the direction on a sphere of radius $`\rho`$, $`u = \rho\,z/|z|`$, project it stereographically from the pole $`+y`$,
 
 ```math

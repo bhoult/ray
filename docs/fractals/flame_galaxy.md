@@ -8,6 +8,10 @@
 
 A spiral galaxy, seen from above: six feathery arms wound about a bright core. Its two maps alone draw only a sparse, lopsided spray; the preset's own symmetry, 6, adds five more maps, pure turns about the flame's y axis by multiples of 60°, so the spray repeats six-fold around it. Above: palette `sunset`, over a lake just after sunset, turned 80° about x so that its symmetry axis points nearly at the camera.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1dsnaU1y1X4mTOewDb-5f6WMqayTDkIcU/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_galaxy.avif" width="640" alt="Galaxy, animated">](https://drive.google.com/file/d/1dsnaU1y1X4mTOewDb-5f6WMqayTDkIcU/view)
+
 **Maps.** Two maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward. Then the preset's own symmetry, 6.
 
 | map | weight | color | variations |

@@ -8,6 +8,10 @@
 
 A coiled shell of lace, spiraling out to a point: chambers of foamy lace, each smaller than the last, winding out to a sharp tip. Two maps are all it takes, one spherical and one plain. Above: palette `gold`, over a lake just after sunset.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1lC70wGPaNf7yx8AdHpzwvYjqMlArxKbS/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_nautilus.avif" width="640" alt="Nautilus, animated">](https://drive.google.com/file/d/1lC70wGPaNf7yx8AdHpzwvYjqMlArxKbS/view)
+
 **Maps.** Two maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward.
 
 | map | weight | color | variations |

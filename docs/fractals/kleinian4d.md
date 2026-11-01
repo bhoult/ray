@@ -8,6 +8,10 @@
 
 A slice through a four-dimensional pseudo-Kleinian (pictured at `w` = 0.2): box folds and a 4D sphere inversion, drawn around a vertical pillar and a floor plane. Each slice is a hall of floors, columns, domes and arches. Like the 3D one it fills space, so it is cut to a box here.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1U4ZhXe5buL2l_TR7JLteICImpGOR-SVT/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/kleinian4d.avif" width="640" alt="Kleinian 4D, animated">](https://drive.google.com/file/d/1U4ZhXe5buL2l_TR7JLteICImpGOR-SVT/view)
+
 **Formula.** Start from $`z = (x, y, z, w)`$, $`D = 1`$, and repeat:
 
 ```math

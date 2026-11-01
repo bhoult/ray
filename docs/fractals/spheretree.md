@@ -8,6 +8,10 @@
 
 A dome of spheres within spheres. Every ball is lined inside with a hexagonal layer of smaller balls, and each of those with smaller ones again, so the surface grows like a cauliflower of bubbles.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1y7_H5BDWStmdbj3hO6k6k9FQ9q1Qh1Rh/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/spheretree.avif" width="640" alt="Sphere Tree, animated">](https://drive.google.com/file/d/1y7_H5BDWStmdbj3hO6k6k9FQ9q1Qh1Rh/view)
+
 **Formula.** With $`z`$ up and the base sphere of diameter 1 resting on the origin, start from $`z = p`$ and repeat:
 
 - Stop inside the solid inner sphere of diameter $`\sqrt3/(1+\sqrt3)`$ resting on the origin. After the first step, also stop where $`z_z \gt  0.4`$ and the point is outside the sphere of radius 0.6 about $`(0, 0, 0.6)`$; that region is empty.

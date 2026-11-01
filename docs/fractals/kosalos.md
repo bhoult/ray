@@ -8,6 +8,10 @@
 
 A power-9 bulb whose polar angle is squashed the more, the less the orbit moved on its last step. The first step moves least, so it is squashed most, and the bulb stacks into tiers like a pagoda under a star-shaped crown, each tier studded with scaly buds.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1SBNO7JK8g0WoXy9pu3yiaXbxVFj1z2px/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/kosalos.avif" width="640" alt="Kosalos, animated">](https://drive.google.com/file/d/1SBNO7JK8g0WoXy9pu3yiaXbxVFj1z2px/view)
+
 **Formula.** With $`z`$ up, start from $`z = z_{\text{prev}} = p`$ and repeat:
 
 ```math

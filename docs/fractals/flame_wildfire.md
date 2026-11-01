@@ -8,6 +8,10 @@
 
 A tongue of flame curling up out of a smoldering heap: threads sweep up out of a dense, pale tangle and curl over at the top. It is the default flame: a new flame node is a wildfire. Above: palette `fire`, over a lake just after sunset.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1D4RGWXG3xURc9cFbYmw3vOXlCwpGYPO3/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_wildfire.avif" width="640" alt="Wildfire, animated">](https://drive.google.com/file/d/1D4RGWXG3xURc9cFbYmw3vOXlCwpGYPO3/view)
+
 **Maps.** Four maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward.
 
 | map | weight | color | variations |

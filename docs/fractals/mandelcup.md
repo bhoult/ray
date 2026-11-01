@@ -8,6 +8,10 @@
 
 A goblet: a smooth bowl on a stem, with layered ornament inside the bowl and at the foot. Each point's direction is projected onto a plane, squared there as a complex number and wrapped back onto the sphere, and its distance is squared.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/11VS8Uc9BuZOKdzWzUpTJbWh7RwsgdOhj/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/mandelcup.avif" width="640" alt="Mandelcup, animated">](https://drive.google.com/file/d/11VS8Uc9BuZOKdzWzUpTJbWh7RwsgdOhj/view)
+
 **Formula.** Start from $`z = c = p`$. With $`r = |z|`$, shape $`s`$ and stretch $`k`$, let
 
 ```math

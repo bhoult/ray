@@ -8,6 +8,10 @@
 
 The best-known 3D relative of the Mandelbrot set: a round bulb covered in buds, ridges and cauliflower-like growths, made by raising a point to a power in spherical coordinates. ray stands it upright, with the y axis as its pole.
 
+**Animation.** Two walks of ten seconds inside it, in full 1080p on Google Drive: [the first](https://drive.google.com/file/d/19QC4fO2qDoiiK8VD5ODw8qPx5_0UwQii/view), previewed below, and [the second](https://drive.google.com/file/d/1Q95sAJ9ssRBhN5N3vhDIv6W9nXhjCrpC/view).
+
+[<img src="../images/fractals/anim/mandelbulb.avif" width="640" alt="Mandelbulb, animated">](https://drive.google.com/file/d/19QC4fO2qDoiiK8VD5ODw8qPx5_0UwQii/view)
+
 **Formula.** Start from $`z = p`$ and $`dr = 1`$, and while $`r = |z| \lt  2`$, for at most `iterations` steps, repeat:
 
 ```math

@@ -8,6 +8,10 @@
 
 A Mandelbox that box-folds only x and y, so z is never folded back: unturned, the set is a flat fractal sheet with the 2D Mandelbox's pattern of holes. A quarter turn about y at every step folds that sheet into a leaning tower of thin plates pierced with round windows, with narrow slots and corridors between the plates.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1yvdGpDJUvVKczaQugmjlTkuXRbBt_gI5/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/amazing_surf.avif" width="640" alt="Amazing Surf, animated">](https://drive.google.com/file/d/1yvdGpDJUvVKczaQugmjlTkuXRbBt_gI5/view)
+
 **Formula.** Start from $`z = p`$ and repeat:
 
 ```math

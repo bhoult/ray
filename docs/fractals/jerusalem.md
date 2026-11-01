@@ -8,6 +8,10 @@
 
 A cube with a Greek cross drilled through each face. What remains is eight corner cubes and twelve smaller edge cubes, and each of those is drilled the same way. Unlike the 3×3×3 fractals, its two sizes of cube are in an irrational ratio, which gives it a stepped, architectural look.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/10asdbxKjpB-AUBVz4Pn9Xupq3ghBfUed/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/jerusalem.avif" width="640" alt="Jerusalem Cube, animated">](https://drive.google.com/file/d/10asdbxKjpB-AUBVz4Pn9Xupq3ghBfUed/view)
+
 **Formula.** The corner cubes are $`k = \sqrt2 - 1`$ times the parent's size and the edge cubes $`k^2`$. This fits because $`2k + k^2 = 1`$: two corners and one edge cube exactly span an edge. Two scales can't share one periodic fold, so it is an IFS. Start from $`z = p`$, scale $`s = 1`$, and repeat:
 
 ```math

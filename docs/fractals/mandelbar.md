@@ -8,6 +8,10 @@
 
 The Tricorn grown into 3D: the slice facing you is the three-cornered Mandelbar set, the level slice through it is the Mandelbrot set, and between them the surface sweeps round in smooth, swirled folds, with a beaded needle running out to the left.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1--I5uVyNGUINi15ANgRcPO-r93vnsbfv/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/mandelbar.avif" width="640" alt="Mandelbar, animated">](https://drive.google.com/file/d/1--I5uVyNGUINi15ANgRcPO-r93vnsbfv/view)
+
 **Formula.** Take $`x`$ as the real part and $`(y, z)`$ as one imaginary direction, conjugate $`y`$, and raise to the $`n`$th power as a complex number: with $`\rho = \sqrt{y^2+z^2}`$ and $`w = (x + i\rho)^n`$,
 
 ```math

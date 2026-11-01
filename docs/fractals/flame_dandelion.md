@@ -8,6 +8,10 @@
 
 A ball of fine curved filaments, a seed head: thousands of arcs crossing in a loose sphere, with a few long spikes through it. Above: palette `ice`, over a lake just after sunset.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1FgokpA9MhhXdZAPihtpfbeZ2d-WKE2kp/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_dandelion.avif" width="640" alt="Dandelion, animated">](https://drive.google.com/file/d/1FgokpA9MhhXdZAPihtpfbeZ2d-WKE2kp/view)
+
 **Maps.** Two maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward.
 
 | map | weight | color | variations |

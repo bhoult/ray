@@ -8,6 +8,10 @@
 
 A bulb whose point is sorted and sign-matched before every squaring, so it grows with the symmetry of a cube. Its Julia sets are ornate, carved knots of bulbs on bulbs; the default is the one at $`c = (-1, 0, 0)`$.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1tKYVSzDxn1wv9TYHtCCq5omwE2ldLmzd/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/msltoe_sym.avif" width="640" alt="msltoe Sym4, animated">](https://drive.google.com/file/d/1tKYVSzDxn1wv9TYHtCCq5omwE2ldLmzd/view)
+
 **Formula.** Start from $`z = p`$ and repeat: swap coordinates so that $`|z_x| \ge |z_y| \ge |z_z|`$ (x with z, x with y, then y with z, each when the second is larger in magnitude), give $`z_y`$ and $`z_z`$ the sign of $`z_x`$, then
 
 ```math

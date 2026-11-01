@@ -8,6 +8,10 @@
 
 A crystal of hoarfrost: six feathered spires along the axes, joined by fronds of ice, around eight smooth, dished hollows that face the corners of a cube. It is the Mandelbrot set of a monogenic polynomial, the three-dimensional counterpart of a holomorphic one in Clifford analysis, chosen to have a polyhedron's symmetry. Left: the cubic, as Add makes it. Right: the quintic with the icosahedron's symmetry, a dodecahedral cage whose twelve faces are pressed in as pentagonal hollows. The orbit texture shades the frost in one color and the hollows in the other.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/17C0I74RsfcSspg9Zuem6OscaoMj_o6gR/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/dirac_frost.avif" width="640" alt="Dirac Frost, animated">](https://drive.google.com/file/d/17C0I74RsfcSspg9Zuem6OscaoMj_o6gR/view)
+
 **Formula.** In the geometric algebra $`\mathrm{Cl}(3,0)`$ the vector derivative $`\nabla = e_1\partial_x + e_2\partial_y + e_3\partial_z`$ acts on a vector field $`f`$ as $`\nabla f = \nabla\cdot f + \nabla\wedge f`$, a scalar plus a bivector. The field is *monogenic* when $`\nabla f = 0`$, that is, when its divergence and curl both vanish: these are the Cauchy–Riemann equations of three dimensions, and $`\nabla`$ is the Dirac operator. In the plane, with vectors read as complex numbers, the same equation picks out the complex conjugates of holomorphic functions, so the planar ancestor of this fractal is the multicorn $`z \leftarrow \bar z^{\,n} + c`$ (the Tricorn for $`n = 2`$). In space, a polynomial vector field is monogenic exactly when it is the gradient of a harmonic polynomial $`h`$. Take $`h`$ invariant under the rotations of a polyhedron and, from $`z = c = p`$, repeat
 
 ```math

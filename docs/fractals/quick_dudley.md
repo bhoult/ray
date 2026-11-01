@@ -8,6 +8,10 @@
 
 A lopsided, wind-swept lump with a crest of spikes, frilled edges and a long needle: the Mandelbrot set of squaring in a three-dimensional algebra of its own. It is not a power map in spherical coordinates like the bulbs, so it stretches unevenly and its surface comes out streaked and furry rather than lobed.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1wqx6WYWw9htImAtE4ZFChpk6Kcecg73l/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/quick_dudley.avif" width="640" alt="Quick Dudley, animated">](https://drive.google.com/file/d/1wqx6WYWw9htImAtE4ZFChpk6Kcecg73l/view)
+
 **Formula.** Start from $`z = p`$ (moved by $`(-0.67, -0.2, -0.2)`$ to center the set) and repeat:
 
 ```math

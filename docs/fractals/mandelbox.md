@@ -8,6 +8,10 @@
 
 Box folds and sphere folds repeated with a scale. At the Add example's fold scale of -1.5 it is a cube whose faces are carved with symmetric relief and whose inside is a maze; positive scales from 2 to 3 give boxy cities.
 
+**Animation.** Two walks of ten seconds inside it, in full 1080p on Google Drive: [the first](https://drive.google.com/file/d/1fMBltRqRABSn99GsLUj01l9UWHpdg0q6/view), previewed below, and [the second](https://drive.google.com/file/d/1RvNiAfc6T4R6YKrmGL3jV3K6qWWyz3Hf/view).
+
+[<img src="../images/fractals/anim/mandelbox.avif" width="640" alt="Mandelbox, animated">](https://drive.google.com/file/d/1fMBltRqRABSn99GsLUj01l9UWHpdg0q6/view)
+
 **Formula.** Start from $`z = p`$ and $`dr = 1`$, and repeat `iterations` times (there is no bailout):
 
 ```math

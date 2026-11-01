@@ -8,6 +8,10 @@
 
 The Mandelbulb's power map in four dimensions, written in the Hopf coordinates of the 3-sphere and cut by a 3D slice. The plane facing you holds the Mandelbrot set of the same power, the cubic one at the default power 3. Behind that plane the body swells into a ribbed barrel fringed with bulbs, whorled where the Hopf circles wind.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1JkZc2piCLoK_6YJqK98YqMKrZqqXmiyo/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/hopfbrot.avif" width="640" alt="Hopfbrot, animated">](https://drive.google.com/file/d/1JkZc2piCLoK_6YJqK98YqMKrZqqXmiyo/view)
+
 **Formula.** The point is $`c = (x + \delta,\ y,\ z\cos\tau - \sigma\sin\tau,\ z\sin\tau + \sigma\cos\tau)`$ in four dimensions, where $`\tau`$ is the slice's tilt, $`\sigma`$ its offset, and $`\delta`$ centers the power 2 set. Start from $`w = c`$ and repeat
 
 ```math

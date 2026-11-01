@@ -8,6 +8,10 @@
 
 The Burning Ship in 3D: seen from the front, its silhouette is the familiar ship, masts and flames on top and the keel's needle trailing to the left, while in depth the hull rounds out into a swirled, glassy bowl.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1MofmrGOhIyXilrE1HN5GD1rx1eW9aXUL/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/burning_ship.avif" width="640" alt="Burning Ship, animated">](https://drive.google.com/file/d/1MofmrGOhIyXilrE1HN5GD1rx1eW9aXUL/view)
+
 **Formula.** Take the absolute value of every component, then apply the Mandelbulb's power map in its latitude form, about a pole running front to back ($`r = |\mathbf z|`$, latitude $`\theta = \mathrm{atan2}(z, \sqrt{x^2+y^2})`$, longitude $`\phi = \mathrm{atan2}(y, x)`$, with $`x, y, z`$ the absolute values of the components):
 
 ```math

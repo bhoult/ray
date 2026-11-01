@@ -8,6 +8,10 @@
 
 A dome of arching threads over a dense heap: a thin, nearly round veil of arcs stands over a block of denser, brighter matter. Above: palette `aurora`, over a lake just after sunset.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1K7FPneHH-nrwWdcLw2q8e305BjR7cFjm/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_veil.avif" width="640" alt="Veil, animated">](https://drive.google.com/file/d/1K7FPneHH-nrwWdcLw2q8e305BjR7cFjm/view)
+
 **Maps.** Four maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward.
 
 | map | weight | color | variations |

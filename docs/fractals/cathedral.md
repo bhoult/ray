@@ -8,6 +8,10 @@
 
 A Gothic cathedral: a tall nave with an arcade on piers, aisles with a tribune gallery over them, rib and groin vaults, blind lancets in the clerestory and a tiled floor. Every seventh bay a passage leaves the aisle for a round chapel, and inside each chapel stands the whole cathedral again, turned inside out: its nave bent into a crescent and smaller, with the same arcades, tribunes and vaults, and passages to chapels of its own, each holding a smaller cathedral still. Every level has a flat floor and upright walls, so all of it can be walked. Left: the nave. Right: from a passage, the door of a chapel and the cathedral inside it.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1pryEy7oOQLAK53n4VMj4GvB7g_Wc3JFo/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/cathedral.avif" width="640" alt="Möbius Cathedral, animated">](https://drive.google.com/file/d/1pryEy7oOQLAK53n4VMj4GvB7g_Wc3JFo/view)
+
 **Formula.** In the floor plan $`w = x + iz`$ the cathedral repeats along the nave (period $`P`$, the chapel spacing) and is symmetric about its axis. Its cell holds the nave, an aisle, the passage and the rim of a chapel, the circle $`|w - c| = R`$. Inside the circle lies the image of everything outside it under the inversion $`g(w) = c + R^2 (w - c)/|w - c|^2`$. A map of the plan is lifted to space by scaling heights with its own local scale:
 
 ```math

@@ -8,6 +8,10 @@
 
 The Mandelbrot set iterated with quaternions and sliced in 3D. Squaring a quaternion never takes it out of the plane spanned by the real axis and its own imaginary part, so the set is the Mandelbrot set spun about its real axis: a lathe-turned ornament of discs and rings with the antenna for a spire. Moving the slice along the fourth axis cuts it down to a dish.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1bFgGITkuLwgqhk1E4-Ftendn0rtTxct0/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/quaternion.avif" width="640" alt="Quaternion Mandelbrot, animated">](https://drive.google.com/file/d/1bFgGITkuLwgqhk1E4-Ftendn0rtTxct0/view)
+
 **Formula.** With the point $`p`$, let $`c = (p_x - 0.75) + p_y\,i + p_z\,j + w\,k`$, start from $`q = c`$ and repeat:
 
 ```math

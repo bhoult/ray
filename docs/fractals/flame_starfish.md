@@ -8,6 +8,10 @@
 
 A five-armed star of bristling spines, seen from above: five arms around a dense center, each a sheaf of spines. Its two maps alone draw only a sparse, lopsided spray; the preset's own symmetry, 5, adds four more maps, pure turns about the flame's y axis by multiples of 72°, so the spray repeats five-fold around it. Above: palette `fire`, over a lake just after sunset, turned 80° about x so that its symmetry axis points nearly at the camera.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1ctRfNtYBvCXZqmYHVOX_ASxq37h83aXB/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_starfish.avif" width="640" alt="Starfish, animated">](https://drive.google.com/file/d/1ctRfNtYBvCXZqmYHVOX_ASxq37h83aXB/view)
+
 **Maps.** Two maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward. Then the preset's own symmetry, 5.
 
 | map | weight | color | variations |

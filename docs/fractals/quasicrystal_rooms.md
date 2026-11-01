@@ -8,6 +8,10 @@
 
 The rooms of an icosahedral quasicrystal, which never repeat. Each room is a dodecahedron cut from a six-dimensional cube. Only the room at the center is regular; every other one is the same cube cut at another depth, so it is lopsided in its own way, and no two are alike. The walls between rooms are pierced by rooms $`\tau^3 \approx 4.24`$ times smaller ($`\tau`$ the golden ratio), whose walls are pierced in turn, so every wall is a rose window of pentagons, pentagrams and golden triangles. Seen along a five-fold axis, the center is a perfect star, and stars, rings and windows recur at every scale without ever lining up into a period. The rooms are open to walk through: the windows of each level lead into the next room. Left: the rooms within a ball, as Add makes it, a five-fold axis toward the camera. Right: inside the central room, looking at one of its faces.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1a83MhjnOcW5mpqOTerTO3iUd-YPnO7yd/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/quasicrystal_rooms.avif" width="640" alt="Quasicrystal Rooms, animated">](https://drive.google.com/file/d/1a83MhjnOcW5mpqOTerTO3iUd-YPnO7yd/view)
+
 **Formula.** Cut and project, from the six-dimensional cubic lattice $`\mathbb{Z}^6`$. Let $`\mathbf a_i`$ be the six five-fold axes of the icosahedron, $`(A, B, 0), (-A, B, 0), (0, A, B), (0, -A, B), (B, 0, A), (-B, 0, A)`$, and $`\mathbf a^{\ast}_i`$ their Galois conjugates ($`\tau \to -1/\tau`$), $`(B, -A, 0), (-B, -A, 0), (0, B, -A), (0, -B, -A), (-A, 0, B), (A, 0, B)`$, with $`A = 1/\sqrt{2(2+\tau)} \approx 0.3717`$ and $`B = \tau A`$. The six vectors $`(\mathbf a_i, \mathbf a^{\ast}_i)`$ are orthonormal in $`\mathbb{R}^6`$, so our space sits in $`\mathbb{R}^6`$ as a 3-plane at an irrational angle to the lattice. A point $`\mathbf x`$ lifts to the lattice coordinates
 
 ```math

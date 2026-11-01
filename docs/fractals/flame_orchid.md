@@ -8,6 +8,10 @@
 
 An open flower of ruffled petals around a pale throat: broad, ruffled petals spread around a paler, finely veined center. Two of its maps take julia3d's roots, the cube root in one and the fourth in the other. Above: palette `nebula`, over a lake just after sunset.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1-7eC_Uqh6-rDxG3R-cITqs39JvRrzeh0/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_orchid.avif" width="640" alt="Orchid, animated">](https://drive.google.com/file/d/1-7eC_Uqh6-rDxG3R-cITqs39JvRrzeh0/view)
+
 **Maps.** Three maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward.
 
 | map | weight | color | variations |

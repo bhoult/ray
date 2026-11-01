@@ -8,6 +8,10 @@
 
 A Julia set of $`z \mapsto z^2 + c`$ over the quaternions, a 4D object, sliced in 3D where the fourth coordinate is 0. It is smooth and organic, with swirling shells and whorls, and a small change to $`c`$ reshapes it completely.
 
+**Animation.** Two walks of ten seconds inside it, in full 1080p on Google Drive: [the first](https://drive.google.com/file/d/1242cKOBVoI2ILLFotxkk8qR80I-Rcx1y/view), previewed below, and [the second](https://drive.google.com/file/d/1ZbmibDOE0VBhqrylEUrtYlT9FZU3NaNs/view).
+
+[<img src="../images/fractals/anim/julia.avif" width="640" alt="Quaternion Julia, animated">](https://drive.google.com/file/d/1242cKOBVoI2ILLFotxkk8qR80I-Rcx1y/view)
+
 **Formula.** Start from the quaternion $`z = (p_x, p_y, p_z, 0)`$, whose first component is the real part, and $`|z'|^2 = 1`$. While $`|z|^2 \lt  16`$, for at most `iterations` steps, repeat:
 
 ```math

@@ -8,6 +8,10 @@
 
 Indra's Pearls in 3D: kissing spheres at the corners of a regular solid, each holding the others' images under inversion in it, and so on down, until necklaces of pearls within pearls gather on the group's limit set. It is bounded, unlike the two Kleinian sets beside it.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1tF0BQgkjsnxpFAj3XjzPfPmL_-pdMBD1/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/schottky.avif" width="640" alt="Schottky group, animated">](https://drive.google.com/file/d/1tF0BQgkjsnxpFAj3XjzPfPmL_-pdMBD1/view)
+
 **Formula.** Spheres $`S_j`$ of radius $`r`$ sit on the corners $`c_j`$ of a regular solid, a unit from the center; with `centre` above 0, one more of radius $`r_0`$ sits at the center. Inversion in one is $`\sigma_j(z) = c_j + r_j^2\,(z - c_j)/|z - c_j|^2`$. What is drawn is every sphere $`\sigma_{j_1} \sigma_{j_2} \cdots \sigma_{j_n}(S_{j_{n+1}})`$ with no two neighboring indices equal and $`n`$ = `iterations`: the pearls $`n`$ levels down. Start from $`z = p`$ and repeat $`n`$ times: invert $`z`$ in the sphere nearest it other than the last one used, $`z \leftarrow \sigma_j(z)`$. The rest of that branch then lies in the spheres other than $`S_j`$, and the other branches are no nearer than the second-nearest sphere. Distances are carried back to $`p`$ as strict lower bounds. For an inversion of radius $`R`$ about $`c`$, with $`q = |z - c|`$ before it, a distance $`d`$ after it is at least
 
 ```math

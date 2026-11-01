@@ -8,6 +8,10 @@
 
 A cube whose corners are notched off at every scale, leaving a crinkled block that looks like a six-pointed snowflake when you view it along a long diagonal. The light variant is hollow and can be seen straight through along its diagonals (pictured: `light` 1, looking down one of them).
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1zdeaFrdokMwG-TN__AerkkKynUWjuvr5/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/mosely.avif" width="640" alt="Mosely Snowflake, animated">](https://drive.google.com/file/d/1zdeaFrdokMwG-TN__AerkkKynUWjuvr5/view)
+
 **Formula.** Split the cube $`[-1,1]^3`$ into $`3\times3\times3`$ cells and drop the 8 corner cells, keeping 19 of 27 (the light variant also drops the center cell, keeping 18), then do the same to every cell that is left. Level $`i`$ uses cells $`2/3^i`$ across. One periodic fold covers all of them at once: $`u = 1 - \lvert 2\,\mathrm{fract}(c\,3^i/2) - 1\rvert`$ on each axis is 0 at a cell's center and 1 at its faces. In those coordinates the corners are the cells with $`\min(u) \gt  1/3`$, and their signed distance is
 
 ```math

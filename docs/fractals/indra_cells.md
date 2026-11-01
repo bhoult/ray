@@ -8,6 +8,10 @@
 
 The rooms of the 120-cell, the four-dimensional polytope of 120 dodecahedra, seen in our space by stereographic projection. The rooms have pentagonal windows and grow larger toward the edge. Each room holds a pearl, a small inside-out copy of the whole, and each room in the pearl holds a pearl of its own. Left: the rooms within a ball, as Add makes it. Right: inside a room, with its pearl and the rooms and pearls beyond the windows.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1OnvtUPtpatFHevI0Y8UsQZiDqFIE-0xR/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/indra_cells.avif" width="640" alt="Indra's Cells, animated">](https://drive.google.com/file/d/1OnvtUPtpatFHevI0Y8UsQZiDqFIE-0xR/view)
+
 **Formula.** A point $`x`$ goes to $`S^3 \subset \mathbb{R}^4`$ by inverse stereographic projection, $`q = (1 - |x|^2, 2x)/(1 + |x|^2)`$, which sends the origin to the center $`e = (1, 0, 0, 0)`$ of one room. Then repeat, up to `iterations` times:
 
 1. Fold $`q`$ into the room around $`e`$ by the 120-cell's symmetry group $`H_4`$ (order 14400). Fold the vector part into the dodecahedron's chamber three times: take absolute values, then reflect in the plane with normal $`(-\varphi/2, -1/2, 1/(2\varphi))`$. Then reflect in the face $`\nu`$ between this room and its neighbor $`36°`$ away if $`q`$ is past it, and go back to the dodecahedral fold. These five mirrors generate $`H_4`$; six rounds always reach the chamber.

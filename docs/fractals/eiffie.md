@@ -8,6 +8,10 @@
 
 msltoe's squaring with the point first folded into a one-sixteenth wedge around the vertical axis, so the bulb grows eight-fold: in its Mandelbrot form, a fluted stone vase standing on a long spike. Its Julia sets with the constant on the axis are knobbed spindles, eight-pointed in cross-section.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/16tU34GRNRoUffFIJmn40X4iOnXd3x3Zt/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/eiffie.avif" width="640" alt="eiffie's bulb, animated">](https://drive.google.com/file/d/16tU34GRNRoUffFIJmn40X4iOnXd3x3Zt/view)
+
 **Formula.** In a frame whose x axis is the vertical, start from $`z = p`$ and repeat: fold the angle around the axis, $`\psi = \mathrm{atan2}(z_z, z_y)`$, into $`[0, \pi/8]`$,
 
 ```math

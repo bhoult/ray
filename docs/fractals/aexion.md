@@ -8,6 +8,10 @@
 
 Aexion's quadray Mandelbrot set: the point is written in four tetrahedral coordinates and squared in four dimensions. At the default shift the set falls apart into six blade-like lobes along the axes, four around the middle and two at the poles, with Mandelbrot-style bulbs along their edges.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1wQ_rIdxDf3kw3nxW5f7QyzzvwqFMzz6_/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/aexion.avif" width="640" alt="Aexion, animated">](https://drive.google.com/file/d/1wQ_rIdxDf3kw3nxW5f7QyzzvwqFMzz6_/view)
+
 **Formula.** Write the point in folded quadray coordinates, each shifted by $`s`$,
 
 ```math

@@ -8,6 +8,10 @@
 
 A space frame built from space frames. Buckminster Fuller's octet truss, the frame of octahedra and tetrahedra used for exhibition halls and roofs, is laid out as a block, and every strut of it carries a lattice girder: a cage of the same truss several times finer, braced to the strut along its length. Every strut of that cage carries a cage of its own, and so on down. Where struts meet, their cages run together into one knot of finer truss, so the levels join with no seams. Left: the block as Add makes it, a frame of girders. Right: inside a single cell (`cells` 1, three levels), looking up through the octahedron, where the coarse struts are tan, their cages white and the cages' cages blue.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1MdREEEM_KVm4v4uEfcMtdD7j__0za7zX/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/octet_truss.avif" width="640" alt="Octet Truss of Trusses, animated">](https://drive.google.com/file/d/1MdREEEM_KVm4v4uEfcMtdD7j__0za7zX/view)
+
 **Formula.** The octet truss is the face-centered cubic lattice joined to its nearest neighbors. In node units, its nodes are the integer points of even sum (odd for an odd number of cells), and each node has twelve struts of length $`\sqrt2`$, along the directions with two entries $`\pm1`$ and one 0. Level $`l`$ is this lattice with node unit $`u_l = u_0/g^l`$, for $`g`$ = `refine`. Every lattice of even-sum integer points contains itself scaled by a whole $`g`$, so each level contains the one before: a coarse node is a fine node, and a coarse strut is a row of $`g`$ fine struts. That answers how a strut's frame carries the next level: no frame has to be chosen, because the finer lattice already lies along every coarser strut. The rule for what is kept:
 
 1. Level 0 keeps the struts with both ends in the block of `cells` cubic cells.

@@ -8,6 +8,10 @@
 
 A cage of fine wire, like a paper lantern's frame with only light in it: a rounded shell of fine threads, open at one end, with a few flat triangular panes inside. Wire-thin and see-through, it is the sparest of the presets. Above: palette `white`, over a lake just after sunset.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/19lBzO4cEHiUFo41EUX94J36VrxB8F6YK/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_lantern.avif" width="640" alt="Lantern, animated">](https://drive.google.com/file/d/19lBzO4cEHiUFo41EUX94J36VrxB8F6YK/view)
+
 **Maps.** Two maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward.
 
 | map | weight | color | variations |

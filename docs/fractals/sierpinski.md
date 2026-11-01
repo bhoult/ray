@@ -8,6 +8,10 @@
 
 The 3D analog of Sierpiński's triangle: a tetrahedron made of four half-size copies of itself, each made of four more, and so on, so that it is mostly air. ray builds it by folding space and adds levels by itself close up.
 
+**Animation.** Two walks of ten seconds inside it, in full 1080p on Google Drive: [the first](https://drive.google.com/file/d/1EF6KIPu2OD64UbsAJFU7k5mqfUIVV78I/view), previewed below, and [the second](https://drive.google.com/file/d/1abmmQY28uQBk5CTzHMf0cVZvsGyRItim/view).
+
+[<img src="../images/fractals/anim/sierpinski.avif" width="640" alt="Sierpinski Tetrahedron, animated">](https://drive.google.com/file/d/1EF6KIPu2OD64UbsAJFU7k5mqfUIVV78I/view)
+
 **Formula.** Start from $`q = p`$ and repeat `iterations` times: reflect in three of the tetrahedron's mirror planes,
 
 ```math

@@ -8,6 +8,10 @@
 
 A spire of icy fronds: fans of long blades with serrated, feathered edges, smaller fronds sprouting from the larger ones, and seen end on, a four-armed star. It is a Julia set of $`z^2 + c`$ made three-dimensional the way analysts do it: not with an algebra of triples, but with a quasiregular map, one of bounded distortion: it turns small balls into ellipsoids at most a fixed number of times as long as they are wide, where a holomorphic map keeps small disks round. The long blades come from that distortion, compounded step after step. Left: the Add example, its axis standing up. Right: fronds fanning out of one of the star points.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/12jDeewKhygoo3LkdXlwgsLlgZd4Bw_iU/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/mayer_julia.avif" width="640" alt="Mayer Julia, animated">](https://drive.google.com/file/d/12jDeewKhygoo3LkdXlwgsLlgZd4Bw_iU/view)
+
 **Formula.** Zorich's map, as in Zorich Pagodas, takes the beam over the square $`|x_1|, |x_2| \le 1`$ onto the upper half-space,
 
 ```math

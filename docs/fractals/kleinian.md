@@ -8,6 +8,10 @@
 
 Knighty's pseudo-Kleinian: box folds and sphere inversions, like a Mandelbox of scale 1, whose limit set is a lace of rings, arches and tunnels, a cathedral of coral that resembles the limit sets of Kleinian groups. It fills all of space, so the Add example cuts a 2 m cube out of it; it is at its best seen from inside (as here).
 
+**Animation.** Two walks of ten seconds inside it, in full 1080p on Google Drive: [the first](https://drive.google.com/file/d/1Xu6qnowA2T_EnW2TXhEHG4uN-EFgRs4V/view), previewed below, and [the second](https://drive.google.com/file/d/1TajErD0Dhky99Nq8-1ll-0WQj2utqV7E/view).
+
+[<img src="../images/fractals/anim/kleinian.avif" width="640" alt="Pseudo-Kleinian, animated">](https://drive.google.com/file/d/1Xu6qnowA2T_EnW2TXhEHG4uN-EFgRs4V/view)
+
 **Formula.** Start from $`q = p`$ and $`T = 1`$, and repeat `iterations` times:
 
 ```math

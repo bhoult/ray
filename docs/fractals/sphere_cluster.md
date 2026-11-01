@@ -8,6 +8,10 @@
 
 A hollow ball of sphere clusters with icosahedral symmetry, spiked like a snowflake. Clusters crowd toward an inner sphere in ever smaller copies, and every ball in a cluster is a smaller cluster in turn.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/13drgplJ6NM8j2NnE3bI8zCKK53TD6TXf/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/sphere_cluster.avif" width="640" alt="Sphere Cluster, animated">](https://drive.google.com/file/d/13drgplJ6NM8j2NnE3bI8zCKK53TD6TXf/view)
+
 **Formula.** Twenty face spheres of radius $`r`$, centered at distance $`l = \sqrt{1 + r^2}`$ along the icosahedron's face directions so that each meets the unit sphere at right angles, leave a hole of radius $`h = l - r`$ about the center. For each generation, starting from $`z = p`$:
 
 ```math

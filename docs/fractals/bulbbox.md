@@ -8,6 +8,10 @@
 
 A Mandelbox and a Mandelbulb in one step: the box and sphere folds and a scale, then the power 2 bulb's squaring. The result is a craggy floating block of rippled ledges, caves and bulb-like knots, with a pattern of flowers on its top.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1b0331W5XHcEy7FtMdsrUmiuHogrDlvns/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/bulbbox.avif" width="640" alt="Bulb Box, animated">](https://drive.google.com/file/d/1b0331W5XHcEy7FtMdsrUmiuHogrDlvns/view)
+
 **Formula.** Start from $`z = p`$ and repeat: fold each coordinate at $`F`$, $`x \leftarrow 2F\mathrm{sign}(x) - x`$ where $`|x| \gt  F`$. Then sphere fold with $`k = 1/m^2`$ if $`|z|^2 \lt  m^2`$, $`1/|z|^2`$ if $`|z|^2 \lt  1`$, else 1, and scale: $`w = 2 s k\, z`$. Then square as the power 2 Mandelbulb does, with $`\rho = \sqrt{w_x^2 + w_z^2}`$:
 
 ```math

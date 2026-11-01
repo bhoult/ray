@@ -8,6 +8,10 @@
 
 A mixed quadratic and cubic map that grows a mirror-symmetric, moth-like body of hollow wings, ribs and hair-fine spikes. Seen edge-on it shows a long stem; from behind, a smooth hollow.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/10k3PgwRN-QTeE50CkKVsgKpHL3dkiJ7w/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/ides.avif" width="640" alt="Ides, animated">](https://drive.google.com/file/d/10k3PgwRN-QTeE50CkKVsgKpHL3dkiJ7w/view)
+
 **Formula.** Start from $`z = p`$ and repeat: shrink $`x`$ and $`z`$ by a tenth, $`x' = s(x)`$ and $`z' = s(z)`$ with $`s(u) = 0.9u`$, then
 
 ```math

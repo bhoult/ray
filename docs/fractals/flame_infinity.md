@@ -8,6 +8,10 @@
 
 A figure eight of knotted lace, standing on end: a loop of rough, lacy strands crossing at the waist. Both of its maps are mostly julia3d with power 2, the inverse of squaring as in a Julia set. Above: palette `rainbow`, over a lake just after sunset.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1lehMgk2uj4wpgJu9W_3m4W4RmIKCDxK8/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_infinity.avif" width="640" alt="Infinity, animated">](https://drive.google.com/file/d/1lehMgk2uj4wpgJu9W_3m4W4RmIKCDxK8/view)
+
 **Maps.** Two maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward.
 
 | map | weight | color | variations |

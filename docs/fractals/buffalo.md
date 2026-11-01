@@ -8,6 +8,10 @@
 
 A shaggy 3D relative of the 2D Buffalo and Burning Ship fractals: the power 2 Mandelbulb's squaring with some of its components made positive. The default holds the 2D Buffalo in its xy plane, facing the camera, with a radial whorl where the bulb's axis comes through; from other sides it grows into tufts and fronds.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1JRmRW85D56_aETXZqPWmueOVkkWh60f5/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/buffalo.avif" width="640" alt="Buffalo, animated">](https://drive.google.com/file/d/1JRmRW85D56_aETXZqPWmueOVkkWh60f5/view)
+
 **Formula.** Start from $`z = c = p`$ (shifted so the shape sits centered) and repeat, with $`\rho^2 = x^2 + y^2`$,
 
 ```math

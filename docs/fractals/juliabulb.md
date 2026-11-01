@@ -8,6 +8,10 @@
 
 The Mandelbulb's Julia sets: the bulb's power-8 map with a fixed constant added at every step in place of the point. Every constant sculpts something different; the default stacks knobbed, ringed tiers studded with small rosettes, like an ornate urn.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1awxWA9l_CgZCwQfdVE0mXh4l_b4RqnQM/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/juliabulb.avif" width="640" alt="Juliabulb, animated">](https://drive.google.com/file/d/1awxWA9l_CgZCwQfdVE0mXh4l_b4RqnQM/view)
+
 **Formula.** Start from $`\mathbf z = p`$ and repeat, in spherical coordinates about the vertical axis ($`r = |\mathbf z|`$, $`\theta = \mathrm{atan2}(\sqrt{x^2+z^2},\, y)`$, $`\phi = \mathrm{atan2}(z, x)`$):
 
 ```math

@@ -8,6 +8,10 @@
 
 Knighty's kaleidoscopic IFS for all three polyhedral mirror groups: space is folded into one cell of the tetrahedral, octahedral or icosahedral group, then scaled away from a point of that cell. Moving the point around the cell's corners and setting the scale gives the icosahedral, dodecahedral and octahedral flakes, the Sierpinski tetrahedron and everything between them. The built-in `kifs` folds by the octahedral group alone, sorting the axes; this one takes any of the three groups and any point of the cell, and ends each copy as that point's polyhedron.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1iYAiQpBSlF5n9rDLLIblNwHQJfp0xfTs/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/polyhedral.avif" width="640" alt="Polyhedral IFS, animated">](https://drive.google.com/file/d/1iYAiQpBSlF5n9rDLLIblNwHQJfp0xfTs/view)
+
 **Formula.** With $`n`$ the symmetry (3, 4 or 5) and $`c = \cos(\pi/n)`$, the third mirror has normal $`\mathbf{m} = (-\tfrac12, -c, \sqrt{3/4 - c^2})`$; the other two are the planes $`x = 0`$ and $`y = 0`$. The fold $`F`$ repeats $`n`$ times
 
 ```math

@@ -8,6 +8,10 @@
 
 A ringed planet seen edge on: a flat disc of streaks with a ring arching over it, and fainter arcs around. Above: palette `gold`, over a lake just after sunset.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/17DUEm9YCpnd5LO0G1hjSylj9xVhOxxMV/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_saturn.avif" width="640" alt="Saturn, animated">](https://drive.google.com/file/d/17DUEm9YCpnd5LO0G1hjSylj9xVhOxxMV/view)
+
 **Maps.** Three maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward.
 
 | map | weight | color | variations |

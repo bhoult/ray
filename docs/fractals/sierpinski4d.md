@@ -8,6 +8,10 @@
 
 A slice through a four-dimensional Sierpinski solid: eight half-size copies on the corners of a 16-cell, each made the same way. At `w` = 0 (pictured) the slice is a cuboctahedron walled with Sierpinski triangles; at ±1 it is the Sierpinski tetrahedron.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1JUGhgyYrVQ-oDleUaVbKGOzB4wqn3cxY/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/sierpinski4d.avif" width="640" alt="Sierpinski 4D, animated">](https://drive.google.com/file/d/1JUGhgyYrVQ-oDleUaVbKGOzB4wqn3cxY/view)
+
 **Formula.** Start from $`z = (x, y, z, w)`$ and repeat $`n`$ times: for each pair of axes in turn, $`(x,y), (x,z), (y,z), (x,w), (y,w), (z,w)`$, reflect if their sum is negative,
 
 ```math

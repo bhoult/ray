@@ -8,6 +8,10 @@
 
 A Mandelbulb whose polar angle is measured with acos, asin, or a blend of the two, then put back as a latitude, so sine and cosine trade places. The default blend halves the polar angle's power against the longitude's, which turns the bulb into stacked onion domes draped in long folds, with star-centered buds around them.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1K9HUYF_u60eqFxBm6jY2Lw_oSdhuQ0TF/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/sincos_bulb.avif" width="640" alt="Sine/cosine bulb, animated">](https://drive.google.com/file/d/1K9HUYF_u60eqFxBm6jY2Lw_oSdhuQ0TF/view)
+
 **Formula.** With $`z`$ up, start from $`z = p`$ and repeat:
 
 ```math

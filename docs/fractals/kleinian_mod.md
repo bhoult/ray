@@ -8,6 +8,10 @@
 
 Stories of domed floors held up by columns of beads, an endless arcade. It has the pseudo-Kleinian's box folds and inversions, but its distance is measured to a floor plate and to struts along the axes instead of to rings. Where ray's `kleinian` is a tangle of wire rings, this one is architecture.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1eJvImcC7LaFEaJ5uuLeSSLFNEhoXf7SN/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/kleinian_mod.avif" width="640" alt="Pseudo-Kleinian Mod 3, animated">](https://drive.google.com/file/d/1eJvImcC7LaFEaJ5uuLeSSLFNEhoXf7SN/view)
+
 **Formula.** Start from $`z = p`$ and $`\partial = 1`$ and repeat: push out by the box offset, $`z \leftarrow z - o\,\mathrm{sgn}(z)`$; box fold, $`z \leftarrow 2\,\mathrm{clamp}(z, -c, c) - z`$; invert, $`k = \max(s/|z|^2, 1)`$, $`z \leftarrow k z + u`$, $`\partial \leftarrow k\,\partial`$. Distance estimate:
 
 ```math

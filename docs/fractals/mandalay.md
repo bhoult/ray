@@ -8,6 +8,10 @@
 
 A Mandelbox whose box fold is DarkBeam's Mandalay fold, which carves every face into stepped frames instead of mirroring it. The set grows into a cathedral: ornamented panels and buttresses outside, and inside, chambers with vaults, arches and framed windows to the sky.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1_zmC_6UmLYHzOWmSt73vG3N9z7r8jwrK/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/mandalay.avif" width="640" alt="Mandalay, animated">](https://drive.google.com/file/d/1_zmC_6UmLYHzOWmSt73vG3N9z7r8jwrK/view)
+
 **Formula.** Start from $`z = p`$ and repeat:
 
 ```math

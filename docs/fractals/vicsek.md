@@ -8,6 +8,10 @@
 
 A 3D cross whose six arms are themselves crosses, and so on down: a branching, loop-free tree of beams. Seen face on, it is the flat Vicsek cross. From any other angle, its arms reach out in all six directions.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1-lkXnVNO2eWezvQvVnbuW-K2b8usxSra/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/vicsek.avif" width="640" alt="Vicsek Fractal, animated">](https://drive.google.com/file/d/1-lkXnVNO2eWezvQvVnbuW-K2b8usxSra/view)
+
 **Formula.** Of the cube's $`3\times3\times3`$ cells keep only the center and the six face cells (7 of 27), and repeat in each. Using the same periodic fold as the Mosely snowflake, the cut cells are those where at least two of $`u`$ pass $`1/3`$. With $`a \ge b`$ the two largest of $`u`$, its distance is
 
 ```math

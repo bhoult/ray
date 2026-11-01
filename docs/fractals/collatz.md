@@ -8,6 +8,10 @@
 
 A curved, three-cornered shell with layered ridges and fine fringed edges, symmetric under any swap of the axes; from behind it is a lantern of nested rims. It is Mandelbulber 2's 3D lift of the Collatz fractal, the escape-time picture of the Collatz rule carried over to complex numbers.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1pRfiXP8CuSYj1peRt8WLbVHH0OFCs3wA/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/collatz.avif" width="640" alt="Collatz, animated">](https://drive.google.com/file/d/1pRfiXP8CuSYj1peRt8WLbVHH0OFCs3wA/view)
+
 **Formula.** Start from $`z = p`$ (scaled 4.4 times and moved to $`(2.69, 2.69, 2.69)`$ to center the set) and repeat:
 
 ```math

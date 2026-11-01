@@ -8,6 +8,10 @@
 
 A square tower of spiral stairs, four turns of eight steps around a central post. Every step, and every stone of the post, is a smaller copy of the whole tower: about a third as wide and a ninth as high, and sheared along a plane that tilts more the farther it stands from the tower's axis. So the copies flatten level by level. The steps are blocks, their steps are louvers, and theirs are tiles. Left: the tower. Right: a turn of the stair up close. Each step is a louvered tower of its own, and its top is a ring of smaller steps around a smaller post. The orbit texture shades the stair from one color at its foot to the other at its top, and each step's own stair again within it.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1f0Y2eWiSpgvEm6Nc3VCCNIXTL1I1d1VQ/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/nil_stair.avif" width="640" alt="Nil Staircase, animated">](https://drive.google.com/file/d/1f0Y2eWiSpgvEm6Nc3VCCNIXTL1I1d1VQ/view)
+
 **Formula.** Nil, one of Thurston's eight model geometries, is the Heisenberg group. In exponential coordinates its product is
 
 ```math

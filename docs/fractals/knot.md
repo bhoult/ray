@@ -8,6 +8,10 @@
 
 A torus knot whose tube is a rope: strands twisted about its core, each of them a rope of finer strands twisted the other way, and so on down, the way rope is laid. It is a fractal that keeps its shape: close up, every strand turns out to be a rope too.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1CGp5CsVGofU5hNPlgKRuca09S0hY0Mq_/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/knot.avif" width="640" alt="Knotted Rope, animated">](https://drive.google.com/file/d/1CGp5CsVGofU5hNPlgKRuca09S0hY0Mq_/view)
+
 **Formula.** With $`\theta = \mathrm{atan2}(y, x)`$ and $`\rho = \sqrt{x^2 + y^2}`$, the point's place in the meridian plane, $`(\rho - 1, z)`$, is turned by $`(q/p)\,\theta`$ and folded to the nearest of the $`p`$ strands at distance $`r_g`$ from the core circle: that is DarkBeam's torus knot of $`p`$ laps and $`q`$ turns. The strand leans across the plane by $`\tan\alpha = r_g\,(q/p)/\rho`$, so its round section is the plane's ellipse: the section is taken square to it, $`(u, v) = (u, v\cos\alpha)/r_t`$ for the tube radius $`r_t`$, and $`\theta`$ is moved along the strand to its nearest point, $`\varphi`$. Each rope level then repeats the knot's step about the strand's own axis:
 
 ```math

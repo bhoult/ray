@@ -8,6 +8,10 @@
 
 A glassy bell of curved threads trailing tendrils: domes nested one inside another, with fainter threads hanging below them. The shells come from its spherical map, an inversion in the unit sphere. Above: palette `ice`, over a lake just after sunset.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1ln2k9mLo1hlKM_WYXs0fgvbEgQ9E0tJn/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_jellyfish.avif" width="640" alt="Jellyfish, animated">](https://drive.google.com/file/d/1ln2k9mLo1hlKM_WYXs0fgvbEgQ9E0tJn/view)
+
 **Maps.** Two maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward.
 
 | map | weight | color | variations |

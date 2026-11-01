@@ -8,6 +8,10 @@
 
 A 3D squaring with a twist in its cross terms. It comes out as a swept, three-cornered sail under a spire, its edges frayed into spikes.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/138D0JGZH2hQuYK4ImBui-wBe-j5gXT_S/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/makin.avif" width="640" alt="Makin, animated">](https://drive.google.com/file/d/138D0JGZH2hQuYK4ImBui-wBe-j5gXT_S/view)
+
 **Formula.** Start from $`z = p`$ and repeat:
 
 ```math

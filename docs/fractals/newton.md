@@ -8,6 +8,10 @@
 
 A Newton fractal in 3D: a ribbed barrel whose ends are sets of concentric rings. Newton's method for $`w^3 = 1`$ in the triplex (Mandelbulb) algebra sends most points to the root 1; the solid is everything that goes to the other two roots instead.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1kPyxQ4_814WlfkAQpDlyQ3y419P5PqM_/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/newton.avif" width="640" alt="Newton, animated">](https://drive.google.com/file/d/1kPyxQ4_814WlfkAQpDlyQ3y419P5PqM_/view)
+
 **Formula.** Start from $`z = p`$ (moved by $`-0.655`$ along x) and repeat:
 
 ```math

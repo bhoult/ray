@@ -8,6 +8,10 @@
 
 Tiers of feathered eaves stacked one above another: two broad, feathery tiers over a narrower one, seen from a little above. Its two maps alone draw only a sparse, lopsided spray; the preset's own symmetry, 6, adds five more maps, pure turns about the flame's y axis by multiples of 60°, so the spray repeats six-fold around it. Above: palette `rainbow`, over a lake just after sunset, turned by `rotation` [12, 0, 0].
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/18PNHcF-zZdQ6G3waV_2Xx3BhZXb8boTd/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_pagoda.avif" width="640" alt="Pagoda, animated">](https://drive.google.com/file/d/18PNHcF-zZdQ6G3waV_2Xx3BhZXb8boTd/view)
+
 **Maps.** Two maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward. Then the preset's own symmetry, 6.
 
 | map | weight | color | variations |

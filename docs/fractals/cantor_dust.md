@@ -8,6 +8,10 @@
 
 A cloud of cubes in clusters of eight, the clusters in clusters of eight, with none of them touching. It is the three-dimensional Cantor set: a set with no volume and no connected piece larger than a point.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1qbB_FZnDUuwDzExSr1SlJGxH5_AEuUkU/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/cantor_dust.avif" width="640" alt="Cantor Dust, animated">](https://drive.google.com/file/d/1qbB_FZnDUuwDzExSr1SlJGxH5_AEuUkU/view)
+
 **Formula.** Keep only the 8 corner cells of the $`3\times3\times3`$ split, and repeat. What a level keeps is exactly what the Mosely snowflake cuts. So with the same fold, the solid at level $`i`$ has the exact signed distance
 
 ```math

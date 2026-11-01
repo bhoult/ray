@@ -8,6 +8,10 @@
 
 Knighty's kaleidoscopic IFS in its Menger form: space is folded into one mirror wedge of the cube, turned, and scaled away from an offset, again and again. With no turn it is exactly the Menger sponge; the Add example's small turns (12° and 8°) twist it into crusty towers and alien machinery.
 
+**Animation.** Two walks of ten seconds inside it, in full 1080p on Google Drive: [the first](https://drive.google.com/file/d/1RgWPjDFXxIbAJxXbhcc3cV1A3DXGkp7C/view), previewed below, and [the second](https://drive.google.com/file/d/1dyfu1IgCUsxmgPu8c7jIaMxH5E93_iW6/view).
+
+[<img src="../images/fractals/anim/kifs.avif" width="640" alt="Kaleidoscopic IFS, animated">](https://drive.google.com/file/d/1RgWPjDFXxIbAJxXbhcc3cV1A3DXGkp7C/view)
+
 **Formula.** Start from $`q = p`$ and repeat `iterations` times:
 
 1. Fold into the cube's fundamental wedge: $`q \leftarrow (|q_x|, |q_y|, |q_z|)`$, then sort the components so that $`q_x \ge q_y \ge q_z`$.

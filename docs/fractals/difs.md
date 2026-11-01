@@ -8,6 +8,10 @@
 
 A Menger sponge copied smaller and folded outward ring after ring, so one big sponge stands on a twisting skirt of ever smaller ones that thins to a carpet. Every copy is a whole, crisp sponge, because the distance is measured to real copies rather than estimated from an escaping orbit.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1CRXA4SJlE0bfW26UnSWi5-VRpRAJRTDH/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/difs.avif" width="640" alt="Distance IFS, animated">](https://drive.google.com/file/d/1CRXA4SJlE0bfW26UnSWi5-VRpRAJRTDH/view)
+
 **Formula.** A DIFS ("distance IFS") turns the usual fractal recipe inside out. An ordinary iterated function system folds and scales space and then judges by how fast a point runs away. A DIFS instead places an ordinary shape (here a Menger sponge) in every frame the folds pass through, measures the exact distance to it there, and divides by the scale built up so far. The minimum over all the frames is the distance to the union of all the copies. Because folds, turns and uniform scalings never stretch distances unevenly, the result is exact to the copies; only the sponge's own distance is knighty's folded estimate, which stays on the safe side in its tunnels. Start from $`z = p`$ (with $`y`$ vertical), $`d = \infty`$, and for each ring $`i = 0, 1, \dots`$:
 
 ```math

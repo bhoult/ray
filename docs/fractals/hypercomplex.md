@@ -8,6 +8,10 @@
 
 Clyde Davenport's commutative quaternions, iterated as $`z^2 + c`$ and sliced through $`1`$, $`i`$ and $`k`$. They are the bicomplex numbers again, so the set is two Mandelbrot sets crossed, but this slice draws them out along the real axis instead of across it: a stepped arrowhead of stacked slabs with pyramid-like bulbs. Turning the slice toward $`j`$ morphs it into the Tetrabrot.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1Yef3mq5c0PMl1dsHHd4fy9Q4Kb-wBhjn/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/hypercomplex.avif" width="640" alt="Hypercomplex Mandelbrot, animated">](https://drive.google.com/file/d/1Yef3mq5c0PMl1dsHHd4fy9Q4Kb-wBhjn/view)
+
 **Formula.** Davenport's units have $`i^2 = j^2 = -1`$, $`k^2 = +1`$, $`ij = k`$, $`ik = -j`$ and $`jk = -i`$, so
 
 ```math

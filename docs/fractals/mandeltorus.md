@@ -8,6 +8,10 @@
 
 A Mandelbulb wrapped around a ring. The bulb's power map takes its radius from the distance to a circle instead of a point, so lobes run around a doughnut and ridges wrap its tube, with a fluted crater in the hole.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1aBirAtJnDvDx3t1vjASLPR6v_m_IBGAo/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/mandeltorus.avif" width="640" alt="Mandeltorus, animated">](https://drive.google.com/file/d/1aBirAtJnDvDx3t1vjASLPR6v_m_IBGAo/view)
+
 **Formula.** Start from $`z = p`$. With $`\rho = \sqrt{z_x^2 + z_z^2}`$, $`\varphi = \mathrm{atan2}(z_z, z_x)`$, $`\theta = \mathrm{atan2}(\rho, z_y)`$ and $`q = \sqrt{(\rho - R)^2 + z_y^2}`$, the distance to the ring of radius $`R`$, repeat:
 
 ```math

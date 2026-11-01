@@ -8,6 +8,10 @@
 
 A sea anemone's crown of feathery tentacles, streaming out to one side: dozens of fine, curling tendrils from a tufted base, the longest swept out as if by a current. Above: palette `nebula`, over a lake just after sunset.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1PNJ8z-oaA9VuFrtgt0dqrm9Yw2ReV7Wt/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_anemone.avif" width="640" alt="Anemone, animated">](https://drive.google.com/file/d/1PNJ8z-oaA9VuFrtgt0dqrm9Yw2ReV7Wt/view)
+
 **Maps.** Two maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward.
 
 | map | weight | color | variations |

@@ -8,6 +8,10 @@
 
 A round, quilted ball caged in a curved lattice of ribs, with a star of ribbed lobes around one pole. It is a Mandelbulb that turns its angles with no trigonometry at all: points on the Riemann sphere are moved by squaring points on two circles. The Add example is turned to show both the cage and the star.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1GUR252tyTeI3d0_lEnRfBpdvQOFs4NF6/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/riemann_hobold.avif" width="640" alt="Hobold Riemann Bulb, animated">](https://drive.google.com/file/d/1GUR252tyTeI3d0_lEnRfBpdvQOFs4NF6/view)
+
 **Formula.** Start from $`z = p`$ and repeat: put the direction on a sphere of radius $`\rho`$, $`u = \rho\,z/|z|`$, and with $`v = 1 - u_y`$ project it from the pole $`(0, 1, 0)`$ onto the unit circle in the $`xy`$ plane:
 
 ```math

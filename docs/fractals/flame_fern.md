@@ -8,6 +8,10 @@
 
 A fern frond, its leaflets in tufts up a leaning stem: the frond rises from a narrow foot and leans to one side, leafy tufts all the way up. Above: palette `rainbow`, over a lake just after sunset.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1R2y0QTh_IV3WcWGj2Q9nHt8s3JX6rDHV/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_fern.avif" width="640" alt="Fern, animated">](https://drive.google.com/file/d/1R2y0QTh_IV3WcWGj2Q9nHt8s3JX6rDHV/view)
+
 **Maps.** Four maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward.
 
 | map | weight | color | variations |

@@ -8,6 +8,10 @@
 
 A ball grows two horns that curl toward each other. Where they nearly meet, each horn forks into two smaller horns, and the left pair clasps the right pair like two hooks caught through each other. Every smaller horn forks and clasps again, so the tips crowd into knots of hooks within hooks, and a loop around one of the first horns could never be slipped off. This is the wild sphere of topology: its surface is a sphere, but the space outside it is not simply connected. Left: the whole, as Add makes it. Right: a close-up of the clasps, several generations deep.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1MRK_5II47uZZKlQO-ZAI5kjbvEDWg9xn/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/horned_sphere.avif" width="640" alt="Alexander's Horned Sphere, animated">](https://drive.google.com/file/d/1MRK_5II47uZZKlQO-ZAI5kjbvEDWg9xn/view)
+
 **Formula.** The construction is Alexander's: cut a slice out of a torus, hang a smaller torus on each cut face so that the two are linked, then cut each of those open and repeat. Here every generation is a copy of one unit ring, a circle of radius 1 in the $`xy`$ plane cut open across the $`+x`$ axis by the half angle $`g`$. Its two cut ends are $`T_\pm = (\cos g, \pm\sin g, 0)`$. On each hangs a child ring $`s`$ times smaller (`shrink`), placed by a similarity: its back sits on the tip, so the horn arriving there forks into the child's two halves; its center is $`T_\pm \mp s\,\hat y`$, so it opens toward the other tip; and its plane contains the line between the two children's centers and is turned by $`\beta`$ (`turn`) from the parent's for one child and by $`\beta + 90°`$ for the other. The gap is set by
 
 ```math

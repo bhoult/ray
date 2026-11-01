@@ -8,6 +8,10 @@
 
 A power-9 bulb built axis by axis: each coordinate's angle to its own axis is multiplied, instead of the Mandelbulb's two spherical angles, so the result has a cube's symmetry rather than a pole. It is a ball of nested, pinched lobes, with star-shaped seams where they meet and a porthole on each axis.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1s8ryFy8sNLnkss_TsW2YS3yMB25s9-ed/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/mandelnest.avif" width="640" alt="Mandelnest, animated">](https://drive.google.com/file/d/1s8ryFy8sNLnkss_TsW2YS3yMB25s9-ed/view)
+
 **Formula.** Start from $`z = p`$ and repeat, with $`r = |z|`$ and power $`n`$:
 
 ```math

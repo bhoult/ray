@@ -8,6 +8,10 @@
 
 A six-pointed star of feathered ice, seen from above: six broad, feathery points around a bright center. Its two maps alone draw only a sparse, lopsided spray; the preset's own symmetry, 6, adds five more maps, pure turns about the flame's y axis by multiples of 60°, so the spray repeats six-fold around it. Above: palette `ice`, over a lake just after sunset, turned 80° about x so that its symmetry axis points nearly at the camera.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1aGxqkifsW2Ej5_sI_yC6OQ_njPVFcXlW/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_snowflake.avif" width="640" alt="Snowflake, animated">](https://drive.google.com/file/d/1aGxqkifsW2Ej5_sI_yC6OQ_njPVFcXlW/view)
+
 **Maps.** Two maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward. Then the preset's own symmetry, 6.
 
 | map | weight | color | variations |

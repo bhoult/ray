@@ -8,6 +8,10 @@
 
 Dominic Rochon's bicomplex Mandelbrot set, sliced through $`1`$, $`i_1`$ and $`i_2`$. A bicomplex number is two complex numbers squared independently, so the shape is two Mandelbrot sets drawn out along the diagonals and intersected: a faceted, cubist Mandelbrot set with diamond cross-sections and box-like bulbs.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/18AN_fo7eaaUO5QhdJCypdjmAXRZvss1u/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/tetrabrot.avif" width="640" alt="Tetrabrot, animated">](https://drive.google.com/file/d/18AN_fo7eaaUO5QhdJCypdjmAXRZvss1u/view)
+
 **Formula.** The point $`c = x + y\,i_1 + z\,i_2 + w\,j`$ (with $`x = p_x - 0.75`$ for power 2, $`p_x`$ otherwise, $`y = p_y`$, $`z = p_z`$ and $`j = i_1 i_2`$) has the idempotent components
 
 ```math

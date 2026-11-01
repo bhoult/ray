@@ -8,6 +8,10 @@
 
 A slice through the four-dimensional Mandelbox (pictured at `w` = 1.2). At `w` = 0 it is exactly the ordinary Mandelbox. Other slices keep its cube, about 4 across at negative `fold_scale` and up to 12 at 2, but swap its round pits for square studs and back.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1zjRw6gn5oolkNl8NcDSsrNAyVVvnLkuP/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/mandelbox4d.avif" width="640" alt="Mandelbox 4D, animated">](https://drive.google.com/file/d/1zjRw6gn5oolkNl8NcDSsrNAyVVvnLkuP/view)
+
 **Formula.** Start from $`z = c = (x, y, z, w)`$, $`\mathrm{d}r = 1`$, and repeat:
 
 ```math

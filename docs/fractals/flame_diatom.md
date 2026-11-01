@@ -8,6 +8,10 @@
 
 A diatom, seen from above: a round glassy cell with six curved spines and gossamer between them, like the silica shell of the single-celled alga. Its two maps alone draw only a sparse, lopsided spray; the preset's own symmetry, 6, adds five more maps, pure turns about the flame's y axis by multiples of 60°, so the spray repeats six-fold around it. Above: palette `aurora`, over a lake just after sunset, turned 80° about x so that its symmetry axis points nearly at the camera.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/16ZPbSrqPQsmjkBIhR7fE-mKocSfx4cTr/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_diatom.avif" width="640" alt="Diatom, animated">](https://drive.google.com/file/d/16ZPbSrqPQsmjkBIhR7fE-mKocSfx4cTr/view)
+
 **Maps.** Two maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward. Then the preset's own symmetry, 6.
 
 | map | weight | color | variations |

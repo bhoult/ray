@@ -8,6 +8,10 @@
 
 A ring of knotted strands of every size, packed like the circles of an Apollonian gasket. Every strand is a torus knot (a trefoil by default), and any two strands are linked. Right: the ring cut open, showing the strands' cross-sections, which are the gasket's circles.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1s1p0MGCJDuBP04hh7Vo8HoF5Lf3HaWGu/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/seifert_gasket.avif" width="640" alt="Seifert Gasket, animated">](https://drive.google.com/file/d/1s1p0MGCJDuBP04hh7Vo8HoF5Lf3HaWGu/view)
+
 **Formula.** The 3-sphere $`S^3 \subset \mathbb{C}^2`$ is filled by the orbits of the circle action $`(z_1, z_2) \mapsto (e^{ipt} z_1, e^{iqt} z_2)`$: a Seifert fibration whose fibers are $`(p, q)`$ torus knots (for $`p = q = 1`$, the Hopf fibration). The function
 
 ```math

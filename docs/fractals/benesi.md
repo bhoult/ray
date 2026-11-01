@@ -8,6 +8,10 @@
 
 Matt Benesi's power-2 bulb, stood on end: a draped, fluted spire with a needle on top and a skirt of ridges below. It is the Mandelbrot set spun about its real axis, but the sign flip on one side and the squared cross-plane pull it into long folds rather than the smooth "whipped cream" of a plain power-2 bulb.
 
+**Animation.** Ten seconds circling it, in full 1080p [on Google Drive](https://drive.google.com/file/d/143B8zsCPOzLKUTdJv8mcQ8Spbhf-x8nf/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/benesi.avif" width="640" alt="Benesi, animated">](https://drive.google.com/file/d/143B8zsCPOzLKUTdJv8mcQ8Spbhf-x8nf/view)
+
 **Formula.** In Mandelbulber's axes (its $`x`$ is the spire's axis, pointing down here), start from $`z = p`$ and repeat:
 
 ```math

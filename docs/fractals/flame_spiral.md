@@ -8,6 +8,10 @@
 
 Ribbons winding up in a helix: flat ribbons stacked at the bottom, twisting as they rise. Above: palette `aurora`, over a lake just after sunset.
 
+**Animation.** Ten seconds swinging in among its threads, in full 1080p [on Google Drive](https://drive.google.com/file/d/1atK0N5hNlJkFr8aulN8Hybfl8JGyXD_7/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/flame_spiral.avif" width="640" alt="Spiral, animated">](https://drive.google.com/file/d/1atK0N5hNlJkFr8aulN8Hybfl8JGyXD_7/view)
+
 **Maps.** Three maps, chosen at random with the probability of their weights. Each is an affine map (written out in the JSON below) bent by its variations; its color is the place in the palette that it pulls its points toward.
 
 | map | weight | color | variations |

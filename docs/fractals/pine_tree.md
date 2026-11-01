@@ -8,6 +8,10 @@
 
 A quadratic Mandelbrot set spun about its needle: the angle around the needle doubles at every step, and the two cross axes swap. Stood on its needle, it becomes a tiered, drooping conifer topped by a spire of tiny minibrots.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1L5B0lFSKR7ul-9U-aX2wgfb8MW6X6xEe/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/pine_tree.avif" width="640" alt="Pine Tree, animated">](https://drive.google.com/file/d/1L5B0lFSKR7ul-9U-aX2wgfb8MW6X6xEe/view)
+
 **Formula.** In Mandelbulber's frame, where $`x`$ runs along the needle (here it points up), with $`\rho = \sqrt{y^2 + z^2}`$, start from $`z = p`$ and repeat:
 
 ```math

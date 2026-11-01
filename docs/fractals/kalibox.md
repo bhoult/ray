@@ -8,6 +8,10 @@
 
 Kali's Julia-set Mandelbox, where the box fold becomes an absolute value and a shift: every step mirrors space into one octant and moves it before the sphere fold and the scale. Its outside is usually a closed box with flat faces; these defaults open two sides of it into a gothic pillar of vaulted halls with ornamented walls, chambers stacked inside it.
 
+**Animation.** Ten seconds inside it, in full 1080p [on Google Drive](https://drive.google.com/file/d/1vFY5o-weW3gpH8ewOgQpHd4cC6vTDQIc/view); below, a small preview of it.
+
+[<img src="../images/fractals/anim/kalibox.avif" width="640" alt="Kalibox, animated">](https://drive.google.com/file/d/1vFY5o-weW3gpH8ewOgQpHd4cC6vTDQIc/view)
+
 **Formula.** Start from $`z = p`$ and repeat:
 
 ```math
