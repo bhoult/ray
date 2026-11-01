@@ -70,7 +70,7 @@ def title(clip):
 def main():
     clips, out = os.path.abspath(os.path.expanduser(sys.argv[1])), sys.argv[2]
     tmp = tempfile.mkdtemp()
-    card(f"{tmp}/title.png", 1600, "the best of its fractals")
+    card(f"{tmp}/title.png", 1600)
     card(f"{tmp}/end.png", 1200, "github.com/bhoult/ray")
     args, chains, n = ["nice", "ffmpeg", "-v", "error", "-y"], [], 0
     # (each piece runs a fade longer than it shows: the next fades in over its end)
