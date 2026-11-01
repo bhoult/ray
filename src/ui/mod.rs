@@ -638,7 +638,7 @@ pub struct App {
     charge: Option<Instant>,
     /// when the view or the scene last changed (fast-while-moving)
     last_change: Instant,
-    last_pose: [f32; 9],
+    last_pose: [f32; 18],
     last_version: u64,
     last: Instant,
     frame_ms: f32,
@@ -821,7 +821,7 @@ impl App {
             world: physics::World::default(),
             charge: None,
             last_change: Instant::now(),
-            last_pose: [0.0; 9],
+            last_pose: [0.0; 18],
             last_version: 0,
             last: Instant::now(),
             frame_ms: 0.0,
@@ -1186,10 +1186,12 @@ impl App {
         self.original_on_disk = !unsaved;
         self.doc.dirty = unsaved;
         self.game = None;
-        let walker = moment.get("game").and_then(|g| Some((serde_json::from_value::<[f64; 3]>(g.get("feet")?.clone()).ok()?, g.get("height")?.as_f64()?)));
-        if let Some((feet, height)) = walker {
+        let walker = moment.get("game").and_then(|g| Some((serde_json::from_value::<[f64; 3]>(g.get("feet")?.clone()).ok()?, g.get("height")?.as_f64()?, g.get("frame").and_then(|f| serde_json::from_value::<[[f64; 3]; 3]>(f.clone()).ok()))));
+        self.cam.frame = None;
+        if let Some((feet, height, frame)) = walker {
             let cam = self.view_cam();
-            let g = crate::render::view_query(&self.scene, &cam, &self.settings, |c, regs| game::Game::stand(&mut game::Probe::new(c, regs), feet, height));
+            let g = crate::render::view_query(&self.scene, &cam, &self.settings, |c, regs| game::Game::stand_in(&mut game::Probe::new(c, regs), feet, height, frame));
+            self.cam.frame = frame.map(frame_mat);
             self.gun = None;
             self.gun_armed = false;
             self.game_eye = self.cam.exact();
@@ -1399,7 +1401,7 @@ impl App {
             "taken": stamp,
             "size": size,
             "objects": self.doc.objects().len(),
-            "game": self.game.as_ref().map(|g| serde_json::json!({"feet": g.feet, "height": g.height})),
+            "game": self.game.as_ref().map(|g| serde_json::json!({"feet": g.feet_world(), "height": g.height, "frame": g.frame})),
             "version": version,
         });
         // (for people and picture viewers: where it was taken from)
@@ -1580,8 +1582,18 @@ impl App {
         c
     }
 
+    /// The camera upright again (out of a walker's frame), looking the way it
+    /// did.
+    fn level_view(&mut self) {
+        if let Some(m) = self.cam.frame.take() {
+            let to_f64 = |m: Mat3| m.m.map(|r| r.to_array().map(f64::from));
+            (self.cam.yaw, self.cam.pitch) = game::carry_look(Some(to_f64(m)), None, (self.cam.yaw, self.cam.pitch));
+        }
+    }
+
     /// Into game mode: a walker whose eye is where the camera is.
     fn enter_game(&mut self) {
+        self.level_view();
         let cam = self.view_cam();
         let eye = cam.exact();
         let g = crate::render::view_query(&self.scene, &cam, &self.settings, |c, regs| game::Game::enter(&mut game::Probe::new(c, regs), eye));
@@ -1629,6 +1641,14 @@ impl App {
             self.gun = Some(self.now());
         }
         self.gun_target = self.gun_aim().is_some_and(|(_, movable)| movable);
+        // the middle button: what the crosshair is on becomes the floor
+        if ctx.input(|i| i.pointer.button_pressed(egui::PointerButton::Middle))
+            && let Some(p) = self.pick_at(self.view_rect.center())
+            && let Some(g) = self.game.as_mut()
+        {
+            let f = |v: Vec3| v.to_array().map(f64::from);
+            g.new_floor(f(p.point), f(p.normal), self.scene.gravity as f64);
+        }
         // Shift held runs; tapped while moving, it runs on until the keys
         // stop
         let (shift, moving) = ctx.input(|i| (i.modifiers.shift, [egui::Key::W, egui::Key::A, egui::Key::S, egui::Key::D].iter().any(|k| i.key_down(*k))));
@@ -1674,7 +1694,14 @@ impl App {
         });
         let water = surface.as_ref().map(|f| f as &dyn Fn(f64, f64) -> f64);
         let Some(g) = self.game.as_mut() else { return };
+        let was = g.frame;
         crate::render::view_query(&self.scene, &cam, &self.settings, |c, regs| g.step(&mut game::Probe::new(c, regs), look, &input, dt as f64, gravity, water));
+        // (a new floor turning under it: the view looks where it did, level
+        // in the turned frame)
+        if g.frame != was {
+            (self.cam.yaw, self.cam.pitch) = game::carry_look(was, g.frame, look);
+        }
+        self.cam.frame = g.frame.map(frame_mat);
         self.cam.set_exact(g.eye());
         self.game_eye = self.cam.exact();
         self.game_hud(ui);
@@ -3507,7 +3534,11 @@ impl eframe::App for App {
             self.render_size = render_size(rect.width() * ppp * scale, rect.height() * ppp * scale);
             self.view_px = (rect.width() * ppp, rect.height() * ppp);
         });
-        // out of game mode: the pointer is free again
+        // out of game mode: the view upright again (from a floor of the
+        // walker's own) and the pointer free
+        if self.game.is_none() {
+            self.level_view();
+        }
         if self.game.is_none() && self.game_grab {
             ctx.send_viewport_cmd(egui::ViewportCommand::CursorGrab(egui::CursorGrab::None));
             ctx.send_viewport_cmd(egui::ViewportCommand::CursorVisible(true));
@@ -3805,4 +3836,9 @@ mod tests {
         let icon = super::icon().expect("assets/icon.png decodes to RGBA");
         assert_eq!(icon.rgba.len(), (icon.width * icon.height * 4) as usize);
     }
+}
+
+/// A walker's frame (f64 rows) as the camera's.
+fn frame_mat(m: [[f64; 3]; 3]) -> Mat3 {
+    Mat3 { m: m.map(|r| Vec3::new(r[0] as f32, r[1] as f32, r[2] as f32)) }
 }

@@ -2,7 +2,7 @@
 //! per-frame image-plane constants the ray generators use (fraktal256's
 //! Camera::setup).
 
-use crate::math::Vec3;
+use crate::math::{Mat3, Vec3};
 
 #[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct Camera {
@@ -28,6 +28,9 @@ pub struct Camera {
     pub by: f32,
     /// the angle one pixel covers (radians), for level of detail
     pub pixel_angle: f32,
+    /// game mode's walker on a floor of its own: its frame (rows: its x, up
+    /// and z in the world), which yaw and pitch are in (None: y is up)
+    pub frame: Option<Mat3>,
 }
 
 impl Camera {
@@ -42,6 +45,9 @@ impl Camera {
         self.f = Vec3::new(-sy * cp, sp, -cy * cp);
         self.r = Vec3::new(cy, 0.0, -sy);
         self.u = self.r.cross(self.f);
+        if let Some(m) = self.frame {
+            (self.f, self.r, self.u) = (m.apply(self.f), m.apply(self.r), m.apply(self.u));
+        }
         let tan_y = (self.fov.to_radians() * 0.5).tan();
         let (w, h) = (w as f32, h as f32);
         let tan_x = w / h * tan_y;
@@ -103,7 +109,8 @@ impl Camera {
     }
 
     /// The pose (what moving the camera changes), for "did the view change".
-    pub fn pose(&self) -> [f32; 9] {
-        [self.pos.x, self.pos.y, self.pos.z, self.fine.x, self.fine.y, self.fine.z, self.yaw, self.pitch, self.fov]
+    pub fn pose(&self) -> [f32; 18] {
+        let m = self.frame.unwrap_or(Mat3::IDENTITY).to_array();
+        [self.pos.x, self.pos.y, self.pos.z, self.fine.x, self.fine.y, self.fine.z, self.yaw, self.pitch, self.fov, m[0], m[1], m[2], m[3], m[4], m[5], m[6], m[7], m[8]]
     }
 }

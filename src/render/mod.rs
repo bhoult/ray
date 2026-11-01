@@ -418,7 +418,7 @@ pub struct FrameStats {
 
 #[derive(Clone, PartialEq)]
 struct Key {
-    pose: [f32; 9],
+    pose: [f32; 18],
     s: Settings,
     env: Env,
     w: usize,

@@ -308,7 +308,7 @@ impl App {
             "last_video": self.last_video.as_ref().map(|v| v.0.display().to_string()),
             "recording_error": self.record_error,
             // game mode's walker (null: editing)
-            "game": self.game.as_ref().map(|g| json!({ "height_m": g.height, "grounded": g.grounded, "feet": g.feet, "in_water": g.wet, "diving": g.diving })),
+            "game": self.game.as_ref().map(|g| json!({ "height_m": g.height, "grounded": g.grounded, "feet": g.feet_world(), "up": g.up(), "in_water": g.wet, "diving": g.diving })),
         })
     }
 
@@ -455,6 +455,9 @@ impl App {
 
     fn cmd_camera(&mut self, a: &Value) -> Result<Value, String> {
         let v3 = |k: &str| a.get(k).and_then(doc::as_vec3).map(|p| Vec3::new(p[0] as f32, p[1] as f32, p[2] as f32));
+        // (in the world's terms: upright, out of a walker's floor of its own,
+        // looking the way it did)
+        self.level_view();
         if let Some(p) = a.get("position").and_then(doc::as_vec3) {
             self.cam.set_exact(p);
         }

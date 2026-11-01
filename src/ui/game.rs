@@ -6,7 +6,11 @@
 //! water it walks the bottom as deep as it goes; with nothing under it, it
 //! floats (eyes above the surface, riding the waves) and swims; Space kicks
 //! up, Space looking down dives, and under water it swims where it looks
-//! until it comes up; swimming into a ledge climbs out. Its body is three spheres stacked into a
+//! until it comes up; swimming into a ledge climbs out. The middle button
+//! makes what the crosshair is on the floor: the walker's down turns to it,
+//! smoothly, as it falls there (it walks in a frame of its own, turned from
+//! the world's: the probe turns what it asks about into the world).
+//! Its body is three spheres stacked into a
 //! capsule, pushed out of whatever it overlaps by the scene's distance: the
 //! scene as the frame draws it (render::view_query: fractals at the frame's
 //! detail, anchored at the camera), so it can walk into a sponge's tunnels a
@@ -20,6 +24,8 @@ use crate::simd::{F8, M8, V8};
 use std::time::Instant;
 
 type D3 = [f64; 3];
+/// A rotation, rows: the walker's frame (its x, up and z) into the world.
+type M3 = [D3; 3];
 
 /// The eye's height and the body spheres' radius, as fractions of its height.
 pub const EYE: f64 = 0.92;
@@ -82,6 +88,10 @@ const STEP: f64 = 0.35;
 const GROW: f64 = 2.5;
 const GROW_FAST: f64 = 12.0;
 
+/// The fastest a new floor's arc carries the walker across, per person's
+/// height (m/s): a far floor is a long lob, not a shot.
+const ACROSS: f64 = 14.0;
+
 /// What the keys say this frame.
 #[derive(Clone, Copy, Debug, Default)]
 pub struct Input {
@@ -127,23 +137,57 @@ pub struct Game {
     climb_spent: bool,
     /// when it started (the hint shows for a while)
     pub since: Instant,
+    /// its frame (None: the world's, y up): set by a new floor
+    pub frame: Option<M3>,
+    turn: Option<Turn>,
+}
+
+/// A new floor (the middle button): the walker's frame turning from `from`
+/// by `angle` about `axis` (world) over `secs`, about its eye; and its eye
+/// flying an arc under the new gravity (`fall`, world m/s²) from `start`
+/// at `vel`, to stand on the point aimed at `land` seconds in. Something in
+/// the way, or the keys, end the arc there; the turn goes on.
+#[derive(Clone, Copy)]
+struct Turn {
+    from: M3,
+    axis: D3,
+    angle: f64,
+    secs: f64,
+    t: f64,
+    start: D3,
+    vel: D3,
+    fall: D3,
+    land: f64,
+    flying: bool,
 }
 
 /// The scene's distance near the camera, as the frame draws it.
 pub struct Probe<'a, 'c> {
     ctx: &'a Ctx<'c>,
     regs: &'a mut Regs,
+    /// the frame the points it is asked about are in (None: the world's)
+    frame: Option<M3>,
 }
 
 impl<'a, 'c> Probe<'a, 'c> {
     pub fn new(ctx: &'a Ctx<'c>, regs: &'a mut Regs) -> Self {
-        Probe { ctx, regs }
+        Probe { ctx, regs, frame: None }
     }
 
     /// The distance at up to eight points (at most `radius`): as world
     /// points, and as offsets from the frame's anchor, which f32 holds finely
     /// near the camera (anchored fractals use those).
     fn dist(&mut self, pts: &[D3], radius: f64) -> [f64; 8] {
+        let mut world = [[0.0; 3]; 8];
+        let pts = match self.frame {
+            Some(m) => {
+                for (w, &p) in world.iter_mut().zip(pts) {
+                    *w = turn(m, p);
+                }
+                &world[..pts.len()]
+            }
+            None => pts,
+        };
         let a = self.ctx.anchor;
         let anchor = [a.x as f64, a.y as f64, a.z as f64];
         let lanes = |c: usize, rel: bool| {
@@ -222,11 +266,130 @@ impl Game {
     pub fn stand(probe: &mut Probe, feet: D3, height: f64) -> Game {
         let height = height.clamp(MIN_HEIGHT, MAX_HEIGHT);
         let grounded = ground(probe, feet, height);
-        Game { feet, vel: [0.0; 3], height, grounded, jetting: false, power: 0.0, lift: 0.0, lean: 0.0, diving: false, wet: 0.0, climbing: false, climb_from: 0.0, climb_spent: false, since: Instant::now() }
+        Game { feet, vel: [0.0; 3], height, grounded, jetting: false, power: 0.0, lift: 0.0, lean: 0.0, diving: false, wet: 0.0, climbing: false, climb_from: 0.0, climb_spent: false, since: Instant::now(), frame: None, turn: None }
     }
 
+    /// One standing at `feet` (world) in `frame` (a screenshot's walker on a
+    /// floor of its own).
+    pub fn stand_in(probe: &mut Probe, feet: D3, height: f64, frame: Option<M3>) -> Game {
+        probe.frame = frame;
+        let local = frame.map_or(feet, |m| unturn(m, feet));
+        Game { frame, ..Game::stand(probe, local, height) }
+    }
+
+    /// The eye, in the world.
     pub fn eye(&self) -> D3 {
-        [self.feet[0], self.feet[1] + EYE * self.height, self.feet[2]]
+        self.world([self.feet[0], self.feet[1] + EYE * self.height, self.feet[2]])
+    }
+
+    /// The feet, in the world.
+    pub fn feet_world(&self) -> D3 {
+        self.world(self.feet)
+    }
+
+    /// Which way is up for it, in the world.
+    pub fn up(&self) -> D3 {
+        self.world([0.0, 1.0, 0.0])
+    }
+
+    fn world(&self, p: D3) -> D3 {
+        self.frame.map_or(p, |m| turn(m, p))
+    }
+
+    /// What is at `point` (world; its surface's `normal` there) becomes its
+    /// floor: its down turns to the normal and it falls there, under the
+    /// scene's `gravity` (a person's on Earth where there is none).
+    pub fn new_floor(&mut self, point: D3, normal: D3, gravity: f64) {
+        let n = unit(normal);
+        if len(n) == 0.0 {
+            return;
+        }
+        let from = self.frame.unwrap_or(IDENTITY);
+        let up = self.up();
+        let c = dot(up, n).clamp(-1.0, 1.0);
+        // (the shortest turn from up to the normal; straight over, about
+        // its x)
+        let mut axis = cross(up, n);
+        if len(axis) < 1e-9 {
+            axis = turn(from, [1.0, 0.0, 0.0]);
+        }
+        let angle = c.acos();
+        let s = self.height / HUMAN;
+        let g = if gravity > 0.0 { gravity } else { G } * s;
+        // the eye's arc: from where it is to over the point, standing, as
+        // long as falling that far from rest takes, at least as long as the
+        // turn, and no faster across than ACROSS
+        let eye = self.eye();
+        let end = add(point, scale(n, EYE * self.height));
+        let rel = sub(end, eye);
+        let drop = -dot(rel, n);
+        let across = len(sub(rel, scale(n, dot(rel, n))));
+        let secs = 0.35 + 0.45 * angle / std::f64::consts::PI;
+        let land = (2.0 * drop.max(0.0) / g).sqrt().max(across / (ACROSS * s)).max(secs).max(0.5);
+        let fall = scale(n, -g);
+        let vel = scale(sub(rel, scale(fall, 0.5 * land * land)), 1.0 / land);
+        self.turn = Some(Turn { from, axis: unit(axis), angle, secs, t: 0.0, start: eye, vel, fall, land, flying: true });
+        self.grounded = false;
+        self.climbing = false;
+        self.diving = false;
+    }
+
+    /// A step of a new floor's turn and arc: its frame turned on (the eye
+    /// where it was, or where the arc has it), what it has of a velocity
+    /// turned with it. Whether it flew the arc (nothing else moves it then).
+    fn turning(&mut self, probe: &mut Probe, input: &Input, dt: f64) -> bool {
+        let Some(mut tn) = self.turn else { return false };
+        tn.t += dt;
+        let k = (tn.t / tn.secs).min(1.0);
+        let frame = mul(rotation(tn.axis, tn.angle * k * k * (3.0 - 2.0 * k)), tn.from);
+        if input.forward != 0.0 || input.right != 0.0 || input.jump || input.jet {
+            tn.flying = false;
+        }
+        let flying = tn.flying;
+        let (eye, vel) = if flying {
+            let t = tn.t.min(tn.land);
+            (add(add(tn.start, scale(tn.vel, t)), scale(tn.fall, 0.5 * t * t)), add(tn.vel, scale(tn.fall, t)))
+        } else {
+            (self.eye(), self.world(self.vel))
+        };
+        if tn.t >= tn.land {
+            tn.flying = false;
+        }
+        let h = self.height;
+        self.frame = Some(frame);
+        probe.frame = self.frame;
+        let feet = sub(unturn(frame, eye), [0.0, EYE * h, 0.0]);
+        self.vel = unturn(frame, vel);
+        if flying {
+            // something in the way: it stops the arc, and the walker falls
+            // on from there
+            let mut met = Vec::new();
+            self.feet = resolve(probe, feet, h, &mut met);
+            if len(sub(self.feet, feet)) > 0.05 * RADIUS * h {
+                tn.flying = false;
+            }
+            // landed: it stops (the arc came down at an angle)
+            if !tn.flying {
+                self.vel = [0.0, self.vel[1].min(0.0), 0.0];
+            }
+        } else {
+            self.feet = feet;
+        }
+        self.turn = Some(tn);
+        if k >= 1.0 && !tn.flying {
+            // (straight again: the world's frame, where water and the rest
+            // know their way about)
+            let m = orthonormal(frame);
+            let upright = (m[1][1] - 1.0).abs() < 1e-9;
+            let to = if upright { IDENTITY } else { m };
+            let (eye, vel) = (self.eye(), self.world(self.vel));
+            self.frame = (!upright).then_some(to);
+            probe.frame = self.frame;
+            self.feet = sub(unturn(to, eye), [0.0, EYE * h, 0.0]);
+            self.vel = unturn(to, vel);
+            self.turn = None;
+        }
+        flying
     }
 
     /// Out of what it is stuck in (where `resolve` finds no way out: inside
@@ -236,13 +399,14 @@ impl Game {
     /// came into game mode inside a fractal is 10 nm tall, its way out
     /// perhaps a metre off.)
     pub fn get_out(&mut self, probe: &mut Probe) -> Option<f64> {
+        probe.frame = self.frame;
         let h = self.height;
         let feet = open_space(probe, self.feet, &centres([0.0; 3], h), 0.98 * RADIUS * h, (1e4 * h).max(1e3))?;
         let moved = len(sub(feet, self.feet));
         if moved > 0.0 {
-            let since = self.since;
+            let (since, frame) = (self.since, self.frame);
             *self = Game::stand(probe, feet, h);
-            self.since = since;
+            (self.since, self.frame) = (since, frame);
         }
         Some(moved)
     }
@@ -250,8 +414,15 @@ impl Game {
     /// `dt` seconds of the walker looking along `yaw` and `pitch` (radians,
     /// up positive), doing what `input` says, under `gravity` (m/s², down:
     /// the scene's; a body of another size feels it scaled with it), with
-    /// `water`'s surface height at (x, z) when the scene has water.
+    /// `water`'s surface height at (x, z) when the scene has water. Yaw and
+    /// pitch are in its frame, the keys walk in it, and gravity pulls down it.
     pub fn step(&mut self, probe: &mut Probe, (yaw, pitch): (f32, f32), input: &Input, dt: f64, gravity: f64, water: Option<&dyn Fn(f64, f64) -> f64>) {
+        probe.frame = self.frame;
+        if self.turning(probe, input, dt) {
+            return;
+        }
+        // (on a floor of its own the water's surface is not level for it)
+        let water = if self.frame.is_some() { None } else { water };
         self.resize(probe, input, dt);
         let (h, s) = (self.height, self.height / HUMAN);
         let r = RADIUS * h;
@@ -666,6 +837,58 @@ fn all_round() -> [D3; 128] {
     })
 }
 
+const IDENTITY: M3 = [[1.0, 0.0, 0.0], [0.0, 1.0, 0.0], [0.0, 0.0, 1.0]];
+
+/// `p` turned by `m` (from its frame into the world).
+fn turn(m: M3, p: D3) -> D3 {
+    [dot(m[0], p), dot(m[1], p), dot(m[2], p)]
+}
+
+/// `p` turned back by `m` (from the world into its frame).
+fn unturn(m: M3, p: D3) -> D3 {
+    [0, 1, 2].map(|c| m[0][c] * p[0] + m[1][c] * p[1] + m[2][c] * p[2])
+}
+
+fn mul(a: M3, b: M3) -> M3 {
+    a.map(|r| [0, 1, 2].map(|c| r[0] * b[0][c] + r[1] * b[1][c] + r[2] * b[2][c]))
+}
+
+/// A turn by `angle` (radians) about the unit `axis`.
+fn rotation(axis: D3, angle: f64) -> M3 {
+    let (s, c) = angle.sin_cos();
+    let [x, y, z] = axis;
+    let t = 1.0 - c;
+    [[t * x * x + c, t * x * y - s * z, t * x * z + s * y], [t * x * y + s * z, t * y * y + c, t * y * z - s * x], [t * x * z - s * y, t * y * z + s * x, t * z * z + c]]
+}
+
+/// `m` made a rotation again (the rounding of many turns taken out).
+fn orthonormal(m: M3) -> M3 {
+    let cols = |c: usize| [m[0][c], m[1][c], m[2][c]];
+    let y = unit(cols(1));
+    let x = unit(sub(cols(0), scale(y, dot(cols(0), y))));
+    let z = cross(x, y);
+    [[x[0], y[0], z[0]], [x[1], y[1], z[1]], [x[2], y[2], z[2]]]
+}
+
+/// The look (yaw, pitch: radians, in a frame) that sees the way the look
+/// in frame `from` does, in frame `to`: kept level in `to`.
+pub fn carry_look(from: Option<M3>, to: Option<M3>, (yaw, pitch): (f32, f32)) -> (f32, f32) {
+    let (sy, cy) = (yaw as f64).sin_cos();
+    let (sp, cp) = (pitch as f64).sin_cos();
+    let (from, to) = (from.unwrap_or(IDENTITY), to.unwrap_or(IDENTITY));
+    let f = unturn(to, turn(from, [-sy * cp, sp, -cy * cp]));
+    let r = unturn(to, turn(from, [cy, 0.0, -sy]));
+    let pitch = f[1].clamp(-1.0, 1.0).asin().clamp(-1.55, 1.55);
+    // (its heading from the look, or, looking nearly straight up or down,
+    // from its right)
+    let yaw = if f[0].hypot(f[2]) > 0.3 { (-f[0]).atan2(-f[2]) } else { (-r[2]).atan2(r[0]) };
+    (yaw as f32, pitch as f32)
+}
+
+fn cross(a: D3, b: D3) -> D3 {
+    [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]]
+}
+
 fn add(a: D3, b: D3) -> D3 {
     [a[0] + b[0], a[1] + b[1], a[2] + b[2]]
 }
@@ -736,6 +959,52 @@ mod tests {
     }
 
     const IDLE: Input = Input { forward: 0.0, right: 0.0, run: false, jet: false, jump: false, grow: 0.0, fast: false };
+
+    /// The middle button's new floor: from the ground onto a wall (it turns
+    /// and lands where it aimed, its up the wall's normal), walking up the
+    /// wall, and back down onto the ground (the world's frame again).
+    #[test]
+    fn a_wall_becomes_the_floor_and_back() {
+        let sc = scene(serde_json::json!([
+            { "type": "plane" },
+            { "type": "box", "size": [10, 6, 0.4], "position": [0, 3, -3] }
+        ]));
+        let mut g = spawn(&sc, [0.0, 1.656, 0.0]);
+        run(&sc, &mut g, 0.0, IDLE, 0.5);
+        g.new_floor([0.5, 2.0, -2.8], [0.0, 0.0, 1.0], G);
+        run(&sc, &mut g, 0.0, IDLE, 0.3);
+        let up = g.up();
+        assert!(!g.grounded && up[1] > 0.1 && up[2] > 0.1, "it should be turning in the air: up {up:?}");
+        run(&sc, &mut g, 0.0, IDLE, 2.5);
+        let (f, up) = (g.feet_world(), g.up());
+        assert!(len(sub(f, [0.5, 2.0, -2.8])) < 0.1, "should land where it aimed: {f:?}");
+        assert!(len(sub(up, [0.0, 0.0, 1.0])) < 1e-6 && g.grounded, "should stand on the wall: up {up:?}, grounded {}", g.grounded);
+        // (its forward, yaw 0, is up the wall: the turn was about x)
+        run(&sc, &mut g, 0.0, Input { forward: 1.0, ..IDLE }, 1.0);
+        let f = g.feet_world();
+        assert!(f[1] > 3.0 && (f[2] + 2.8).abs() < 0.05 && g.grounded, "should walk up the wall: {f:?}");
+        g.new_floor([0.0, 0.0, 1.0], [0.0, 1.0, 0.0], G);
+        run(&sc, &mut g, 0.0, IDLE, 4.0);
+        let f = g.feet_world();
+        assert!(g.frame.is_none() && g.grounded && len(sub(f, [0.0, 0.0, 1.0])) < 0.1, "should be back on the ground: {f:?}, frame {:?}", g.frame);
+    }
+
+    /// The look kept through a turn: what it looked at in one frame, it
+    /// looks at in the other, level there.
+    #[test]
+    fn the_look_carries_through_a_turn() {
+        let tilt = Some(rotation([1.0, 0.0, 0.0], 0.5 * std::f64::consts::PI));
+        let look = |m: Option<M3>, (y, p): (f32, f32)| {
+            let (sy, cy, sp, cp) = ((y as f64).sin(), (y as f64).cos(), (p as f64).sin(), (p as f64).cos());
+            turn(m.unwrap_or(IDENTITY), [-sy * cp, sp, -cy * cp])
+        };
+        for from in [(0.3f32, 0.2f32), (2.0, -0.7), (-1.0, 0.0)] {
+            let to = carry_look(None, tilt, from);
+            assert!(len(sub(look(None, from), look(tilt, to))) < 1e-5, "{from:?} -> {to:?}");
+            let back = carry_look(tilt, None, to);
+            assert!(len(sub(look(None, from), look(None, back))) < 1e-5, "{to:?} -> {back:?}");
+        }
+    }
 
     /// On a floor in front of a wall: it stands a person's height with its
     /// eye where the camera was, walks to the wall and stops, rockets up,
