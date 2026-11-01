@@ -33,13 +33,14 @@ shot sponge-corridors 64 saves/fractals.json --camera -6.4375,2.2410,-1.4767,-49
 shot kleinian 64 saves/fractals.json --camera 4.9766,1.7750,-4.2966,-117.78,56.44 --set '{"headlight": 1.0}'
 # every fractal type, a family to a row (docs/images/fractals/ are each one's own, from docs/FRACTALS.md's entries)
 shot fractal-catalog 64 saves/fractal-catalog.json --camera -6,6.5,6,-25,-24
-# the fractal flames: the lake at sunset, the presets, and the wildfire up close
-# for its page in docs/fractals/
+# the fractal flames: the lake at sunset, the presets, the wildfire up close
+# for its page in docs/fractals/, and each preset for its own page
 shot flames 64 saves/flames.json
 shot flame-presets 48 assets/flame-presets.json
 ./target/release/ray saves/flames.json --size 960x600 --frames 64 --camera 0.3,2.5,5.4,0,-2 -o "$tmp/flame.png" > /dev/null
 jpg "$tmp/flame.png" "$out/fractals/flame.jpg"
 echo "$out/fractals/flame.jpg"
+python3 tools/flame-images.py
 for s in bonsai night-city clouds island nurbs nurbs-booleans water materials; do
   shot "$s" 64 "saves/$s.json"
 done
