@@ -38,7 +38,7 @@ The variations, for $`t = (x, y, z)`$ and $`r = |t|`$:
 | `eyefish` | $`2t / (r + 1)`$ |
 | `cylinder` | $`(\sin x,\ y,\ \cos x)`$ |
 | `bent` | $`x`$ and $`z`$ doubled where negative, $`y`$ halved where negative |
-| `julia3d` | with power $`P`$: $`\theta = (\operatorname{atan2}(y, x) + 2\pi k) / P`$ for a random $`k \in \{0, \dots, \lvert P \rvert - 1\}`$, $`z' = z / \lvert P \rvert`$, $`s = (x^2 + y^2 + z'^2)^{(1/P - 1)/2}`$: $`\bigl(s\sqrt{x^2 + y^2} \cos\theta,\ s\sqrt{x^2 + y^2} \sin\theta,\ s z'\bigr)`$ |
+| `julia3d` | with power $`P`$: $`\theta = (\mathrm{atan2}(y, x) + 2\pi k) / P`$ for a random $`k \in \{0, \dots, \lvert P \rvert - 1\}`$, $`z' = z / \lvert P \rvert`$, $`s = (x^2 + y^2 + z'^2)^{(1/P - 1)/2}`$: $`\bigl(s\sqrt{x^2 + y^2} \cos\theta,\ s\sqrt{x^2 + y^2} \sin\theta,\ s z'\bigr)`$ |
 | `blur` | a random point in the unit ball |
 
 **Drawing.** A first sample of 131,072 points sets the box: between the 0.1st and the 99.9th percentile on each axis (so stray points do not stretch it), with a margin of 8% on every side. Its longest side gets `resolution` voxels, the others as many as their length needs, plus an empty voxel all round. Then `points` million points are drawn on all cores, each counted into its voxel with the palette's color at its $`c`$. A voxel hit $`N`$ times gets the density
