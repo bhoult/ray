@@ -1,6 +1,6 @@
 # GPU performance: what to try, in order
 
-A plan, not a measurement. It comes from reading `src/gpu/` and the numbers in the README; none of it has been built or timed yet. Each step says how to tell whether it worked, and the later steps depend on what the earlier ones show.
+A plan, from reading `src/gpu/` and the numbers in the README. Steps 1 and 2 are built and measured ([below](#measured)); steps 3 and 4 are not yet: the profile needs Nsight Graphics, which the machine they were measured on does not have. Each step says how to tell whether it worked, and the later steps depend on what the earlier ones show.
 
 In short: two cheap changes first (wgpu's runtime checks off, per-mode kernels built in the background), then a profile, and only then a wavefront renderer, split at bounces, if the profile says the time goes where a wavefront design helps. The ray-tracing hardware and CUDA are left out, for the reasons at the end.
 
@@ -12,7 +12,7 @@ The GPU renderer is one compute kernel with one thread a pixel (`main` in `src/g
 - **Different code paths.** Rays in a group run different shapes' distance functions, different materials or different branches of the integrator, and the group runs each path in turn. This is most of the cost after the first bounce in path-traced mode, in glass and chrome, and in `fractal-catalog`. A wavefront design fixes this.
 - **Registers.** One large kernel reserves registers for its most demanding path, so fewer groups fit on the GPU at once and it hides memory latency less well. The README has measured this: building the kernel per mode and lighting flags was 12-15% faster.
 
-## 1. wgpu's runtime checks off (an afternoon)
+## 1. wgpu's runtime checks off (done: the loop counters)
 
 `src/gpu/mod.rs` builds the shader with `create_shader_module`, which in wgpu 27 means `ShaderRuntimeChecks::checked()`:
 
@@ -23,11 +23,40 @@ The GPU renderer is one compute kernel with one thread a pixel (`main` in `src/g
 
 How to tell: `--bench --device gpu` on `showcase`, `fractals`, `stress-1600` and `nurbs` before and after (medians), and `tools/parity.sh` unchanged.
 
-## 2. Per-mode kernels, built in the background
+**Done.** The loop counters are off (`CHECKS` in `src/gpu/mod.rs`); the bounds checks stay. On the RTX 5080 the driver bounds buffer reads itself (Vulkan's robust buffer access 2), so wgpu adds no clamps to them anyway, and turning off the ones it still adds (to indexes into local arrays) measured no faster; on a platform that does not bound buffer reads, wgpu's clamps keep doing it. Every `for` loop in `lib.wgsl` counts up to a bound, and the five BVH walks, which end because a walk over a tree pops each node once at most, also stop after `MAX_VISITS` nodes, so every loop has a hard bound. The counters cost most where loops nest deepest: `nurbs-booleans`, whose NURBS leaves run a Newton solve inside every distance evaluation, takes a third to a half less time without them, and the path-traced `showcase` a fifth less. `nurbs` is about 9% slower in Direct mode.
+
+## 2. Per-mode kernels, built in the background (done)
 
 The 12-15% per-mode kernels were left out because a new combination took a 6-second build. The viewer already has the pattern to avoid that: at startup the CPU draws while the GPU's shader builds. Do the same here: keep the general kernel drawing, build the variant for the current mode and lighting flags on a thread, and swap when it is ready. The driver's cache (`~/.cache/nvidia`) makes a combination it has seen cost milliseconds.
 
 How to tell: the same benches, and no frame held up while a variant builds.
+
+**Done.** The kernel reads its mode and lighting flags through two pipeline-overridable constants, `SPEC_MODE` and `SPEC_FLAGS` (`lib.wgsl`). Left at their defaults, the general kernel reads them from the frame; set, the driver drops the code they turn off. The viewer builds the general kernel and the one for the current mode and flags at the same time, each on its own thread. It draws with whichever is ready first and switches to the one for the mode when it arrives; its stderr says which was built when. A new mode or flag is drawn by the general kernel at once while its own kernel builds, and the kernels built stay until the scene's structures change. A headless render builds only the kernel for its mode. `RAY_GENERAL_KERNEL=1` keeps the general kernel, to compare the two. The two draw the same picture: `tools/parity.sh` matched main's images exactly in 22 of 23 scenes with either kernel, and the 23rd to within a millionth on average.
+
+With the kernels, several scenes draw 5-55% faster, the others about as before, and `nurbs` about 10% slower, in both modes. Building it with the mode alone or the flags alone did not help path tracing. Why is open; the profile in step 3 would show whether the driver needs more registers for it once the mode is known.
+
+### Measured
+
+2026-11-06, RTX 5080, 1280 x 720, `--bench --device gpu`: the GPU's time per frame, the median of three runs of 25 frames, with main and the two kernels interleaved. Other programs used 5-20% of the GPU, and runs of one build differ by up to about 10%, so differences that small are noise.
+
+| scene | mode | main | loop counters off, general kernel | and per-mode kernels |
+| --- | --- | --- | --- | --- |
+| `showcase` | Direct | 16.6 ms | 15.4 ms (-7%) | 11.4 ms (-31%) |
+| `showcase` | path traced | 33.5 ms | 26.8 ms (-20%) | 16.1 ms (-52%) |
+| `stress-1600` | Direct | 11.8 ms | 11.6 ms | 8.7 ms (-26%) |
+| `stress-1600` | path traced | 5.6 ms | 5.5 ms | 5.3 ms (-5%) |
+| `fractals` | Direct | 33.1 ms | 33.5 ms | 30.2 ms (-9%) |
+| `fractals` | path traced | 31.3 ms | 31.3 ms | 31.0 ms |
+| `glass` | Direct | 38.8 ms | 36.1 ms | 40.5 ms (+4%) |
+| `glass` | path traced | 27.8 ms | 27.6 ms | 28.4 ms (+2%) |
+| `bonsai` | Direct | 69.6 ms | 71.8 ms | 67.6 ms (-3%) |
+| `bonsai` | path traced | 64.4 ms | 60.7 ms (-6%) | 57.3 ms (-11%) |
+| `nurbs` | Direct | 21.4 ms | 23.3 ms (+9%) | 23.6 ms (+10%) |
+| `nurbs` | path traced | 32.6 ms | 32.1 ms | 36.4 ms (+12%) |
+| `nurbs-booleans`* | Direct | 1,662 ms | 926 ms (-44%) | 900 ms (-46%) |
+| `nurbs-booleans`* | path traced | 2,911 ms | 1,942 ms (-33%) | 1,316 ms (-55%) |
+
+\* From an earlier run of two repeats, in which this branch's general kernel with wgpu's checks all on stood in for main.
 
 ## 3. Profile before restructuring anything
 

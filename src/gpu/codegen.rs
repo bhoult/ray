@@ -60,10 +60,9 @@ pub struct Upload {
     pub grids: Vec<Arc<crate::scene::flame::FlameGrid>>,
 }
 
-impl Upload {
-    pub fn shader(&self) -> String {
-        LIBRARY.replace("//GENERATED", &self.generated)
-    }
+/// The whole shader for a scene's generated part (Upload::generated).
+pub fn shader(generated: &str) -> String {
+    LIBRARY.replace("//GENERATED", generated)
 }
 
 fn f(v: f32) -> u32 {

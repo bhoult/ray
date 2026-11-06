@@ -79,6 +79,22 @@ const M_DEPTH: u32 = 4u;
 const M_STEPS: u32 = 5u;
 const M_COST: u32 = 6u;
 
+// The mode and flags a kernel is built for (gpu/mod.rs Spec), so that the
+// driver drops the code they turn off; ANY, the general kernel's, reads
+// them from the frame instead
+const ANY: u32 = 0xFFFFFFFFu;
+override SPEC_MODE: u32 = 0xFFFFFFFFu;
+override SPEC_FLAGS: u32 = 0xFFFFFFFFu;
+
+fn mode() -> u32 {
+    return select(F.mode, SPEC_MODE, SPEC_MODE != ANY);
+}
+
+// The most nodes a BVH walk pops: a tree's walk pops each node once at most,
+// and this makes that a hard bound for the compiler (wgpu's loop counters
+// are off: gpu/mod.rs)
+const MAX_VISITS: u32 = 1048576u;
+
 // object kinds
 const K_SPHERE: u32 = 0u;
 const K_BOX: u32 = 1u;
@@ -149,7 +165,7 @@ const TAU: f32 = 6.28318531;
 const WATER_ABSORB: vec3f = vec3f(1.0, 0.40, 0.28);
 
 fn on(f: u32) -> bool {
-    return (F.flags & f) != 0u;
+    return (select(F.flags, SPEC_FLAGS, SPEC_FLAGS != ANY) & f) != 0u;
 }
 
 fn v3(i: u32) -> vec3f {
@@ -847,7 +863,9 @@ fn nb_hit(i: u32, r: Ray, limit: f32, near: f32, want_normal: bool, any: bool) -
     var stack: array<u32, 48>;
     var sp = 1u;
     stack[0] = 0u;
-    while (sp > 0u) {
+    var visits = 0u;
+    while (sp > 0u && visits < MAX_VISITS) {
+        visits += 1u;
         sp -= 1u;
         let nb = off_n + stack[sp] * 8u;
         let sl = slab(lr, v3(nb), v3(nb + 4u));
@@ -989,7 +1007,9 @@ fn nb_dist_at(off_p: u32, off_pc: u32, off_n: u32, fl: u32, q: vec3f, radius: f3
     var stack: array<u32, 48>;
     var sp = 1u;
     stack[0] = 0u;
-    while (sp > 0u) {
+    var visits = 0u;
+    while (sp > 0u && visits < MAX_VISITS) {
+        visits += 1u;
         sp -= 1u;
         let nb = off_n + stack[sp] * 8u;
         if (!nb_near(q, v3(nb), v3(nb + 4u), &best, &sd, coarse)) {
@@ -1281,7 +1301,9 @@ fn intersect(r: Ray, tmax: f32, cone: f32) -> Hit {
     var stack: array<u32, 64>;
     var sp = 1u;
     stack[0] = 0u;
-    while (sp > 0u) {
+    var visits = 0u;
+    while (sp > 0u && visits < MAX_VISITS) {
+        visits += 1u;
         sp -= 1u;
         let n = stack[sp];
         if (!reach(slab(r, node_min(n), node_max(n)), hit.t)) {
@@ -1414,7 +1436,9 @@ fn shadow(o: vec3f, od: vec3f, d: vec3f, tmax: f32, soft: bool, k: f32, skip: i3
         var stack: array<u32, 64>;
         var sp = 1u;
         stack[0] = 0u;
-        while (sp > 0u) {
+        var visits = 0u;
+        while (sp > 0u && visits < MAX_VISITS) {
+            visits += 1u;
             sp -= 1u;
             let n = stack[sp];
             if (!reach(slab(r, node_min(n), node_max(n)), tmax)) {
@@ -1805,7 +1829,9 @@ fn scene_dist(p: vec3f, dp: vec3f, radius: f32, skip_terrain: bool) -> f32 {
     var stack: array<u32, 64>;
     var sp = 1u;
     stack[0] = 0u;
-    while (sp > 0u) {
+    var visits = 0u;
+    while (sp > 0u && visits < MAX_VISITS) {
+        visits += 1u;
         sp -= 1u;
         let n = stack[sp];
         if (!inside_grown(p, node_min(n), node_max(n), radius)) {
@@ -2986,8 +3012,8 @@ fn render_sample(o: vec3f, d: vec3f, cone: f32) -> Sample {
     var pend_od = vec3f(0.0);
     var pend_d = vec3f(0.0);
     var pend_w = vec3f(0.0);
-    let pt = F.mode == M_PATH;
-    let dbg = F.mode >= M_NORMALS;
+    let pt = mode() == M_PATH;
+    let dbg = mode() >= M_NORMALS;
     // what the path had gathered before this bounce, and whether it had
     // bounced diffusely by then (shade.rs clamp_indirect)
     var before = col;
@@ -3013,17 +3039,17 @@ fn render_sample(o: vec3f, d: vec3f, cone: f32) -> Sample {
             out.t = hit.t;
         }
         var sf: Surf;
-        let need_surface = hit.obj >= 0 && !(dbg && (F.mode == M_STEPS || F.mode == M_DEPTH));
+        let need_surface = hit.obj >= 0 && !(dbg && (mode() == M_STEPS || mode() == M_DEPTH));
         if (need_surface) {
             sf = surface(ray, hit, cone);
         }
         if (dbg) {
-            if (F.mode == M_STEPS) {
+            if (mode() == M_STEPS) {
                 out.col = ramp(f32(hit.steps) * (2.5 / f32(F.max_steps)));
-            } else if (F.mode == M_DEPTH) {
+            } else if (mode() == M_DEPTH) {
                 let v = 1.0 - log(hit.t + 1.0) * (1.0 / log(F.max_dist + 1.0));
                 out.col = select(vec3f(0.0), vec3f(v), hit.obj >= 0);
-            } else if (F.mode == M_COST) {
+            } else if (mode() == M_COST) {
                 // its price on the ramp (render/mod.rs prices: word 11), shaded
                 // by how it faces the camera
                 if (hit.obj >= 0) {
@@ -3032,9 +3058,9 @@ fn render_sample(o: vec3f, d: vec3f, cone: f32) -> Sample {
                     out.col = sky(d, true) * 0.15;
                 }
             } else if (hit.obj >= 0) {
-                out.col = select(sf.albedo, sf.n * 0.5 + vec3f(0.5), F.mode == M_NORMALS);
+                out.col = select(sf.albedo, sf.n * 0.5 + vec3f(0.5), mode() == M_NORMALS);
             } else {
-                out.col = select(sky(d, true) * 0.5, vec3f(0.0), F.mode == M_NORMALS);
+                out.col = select(sky(d, true) * 0.5, vec3f(0.0), mode() == M_NORMALS);
             }
             return out;
         }
