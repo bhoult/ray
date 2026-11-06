@@ -520,7 +520,7 @@ A light is any object whose material has emission. The scene panel's **+ Light**
 
 - **GPU:**
   - The shader is one large kernel for every mode. Building it per mode and lighting flags measured 12-15% faster, but a new combination took a 6-second build, so it is left as a single kernel.
-  - A wavefront design, which sorts rays by what they hit, would be the larger win.
+  - A wavefront design, which sorts rays by what they hit, would be the larger win. [docs/GPU_PERFORMANCE.md](docs/GPU_PERFORMANCE.md) has a plan for it, and what to try first.
   - A shader build (a new kind of shape tree) blocks the render thread for about a second.
 - **NURBS:** surfaces are top-level objects only (not inside a `union`), untrimmed, of degree 3 at most. Newton can still miss a ray that only grazes a silhouette, which leaves an odd pixel along the edge until the image accumulates. The GPU's share of a NURBS scene is costlier than for the other shapes (each piece a ray reaches is a Newton solve); the GPU's NURBS code is compiled only into scenes that have a surface.
 - Per-object profiling (on by default in the viewer) slows rendering by about 10-15%; untick it in Stats for clean speed numbers.
