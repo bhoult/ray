@@ -472,6 +472,33 @@ fn split_bands(n: usize, g: usize) -> (Vec<u32>, Vec<u32>) {
     (gv, cv)
 }
 
+/// The GPU frame's mode and flags (lib.wgsl's Frame `mode` and `flags`): what
+/// its kernel is built for.
+fn gpu_spec(scene: &Scene, s: &Settings) -> gpu::Spec {
+    let mode = match s.mode {
+        Mode::Direct => 0,
+        Mode::PathTrace => 1,
+        Mode::Normals => 2,
+        Mode::Albedo => 3,
+        Mode::Depth => 4,
+        Mode::Steps => 5,
+        Mode::Cost => 6,
+    };
+    let flags = s.shadows as u32
+        | (s.soft_shadows as u32) << 1
+        | (s.ao as u32) << 2
+        | (s.lights as u32) << 3
+        | (s.light_shadows as u32) << 4
+        | (s.fog as u32) << 5
+        | (s.clouds as u32) << 6
+        | (scene.water.is_some() as u32) << 7
+        | ((scene.env.sky == crate::scene::Sky::Stars) as u32) << 8
+        | ((scene.env.sky == crate::scene::Sky::Off) as u32) << 9
+        | (!s.fractal_detail as u32) << 10
+        | (s.headlight_shadows as u32) << 11;
+    gpu::Spec { mode, flags }
+}
+
 /// The uniform block of the GPU shader (lib.wgsl's Frame) for this frame.
 fn gpu_params(ctx: &Ctx, lay: &gpu::codegen::Layout, tables: &[u32], base: u32, spp: u32, width: usize, rows: usize) -> gpu::FrameParams {
     let c = ctx.cam;
@@ -491,28 +518,8 @@ fn gpu_params(ctx: &Ctx, lay: &gpu::codegen::Layout, tables: &[u32], base: u32, 
     v4(e.fog_col, s.ao_radius.to_bits());
     let (wl, wc) = ctx.scene.water.unwrap_or((0.0, Vec3::ZERO));
     v4(wc, wl.to_bits());
-    let mode = match s.mode {
-        Mode::Direct => 0,
-        Mode::PathTrace => 1,
-        Mode::Normals => 2,
-        Mode::Albedo => 3,
-        Mode::Depth => 4,
-        Mode::Steps => 5,
-        Mode::Cost => 6,
-    };
-    let flags = s.shadows as u32
-        | (s.soft_shadows as u32) << 1
-        | (s.ao as u32) << 2
-        | (s.lights as u32) << 3
-        | (s.light_shadows as u32) << 4
-        | (s.fog as u32) << 5
-        | (s.clouds as u32) << 6
-        | (ctx.scene.water.is_some() as u32) << 7
-        | ((e.sky == crate::scene::Sky::Stars) as u32) << 8
-        | ((e.sky == crate::scene::Sky::Off) as u32) << 9
-        | (!s.fractal_detail as u32) << 10
-        | (s.headlight_shadows as u32) << 11;
-    w.extend([mode, s.bounces, s.max_steps, flags]);
+    let spec = gpu_spec(ctx.scene, s);
+    w.extend([spec.mode, s.bounces, s.max_steps, spec.flags]);
     w.extend([s.shadow_hardness.to_bits(), spp, base, width as u32]);
     w.extend([lay.n_objects, lay.off_objects, lay.n_nodes, lay.off_nodes]);
     w.extend([lay.off_items, lay.n_unbounded, lay.off_unbounded, lay.off_mats]);
@@ -559,7 +566,7 @@ fn gpu_params(ctx: &Ctx, lay: &gpu::codegen::Layout, tables: &[u32], base: u32, 
             patches.push((at, run));
         }
     }
-    gpu::FrameParams { words: w, width: width as u32, patches }
+    gpu::FrameParams { words: w, width: width as u32, patches, spec }
 }
 
 /// Adds the GPU's samples for its bands into the frame's accumulation.
@@ -678,7 +685,7 @@ impl Renderer {
             // who traces which bands (the heat map measures CPU cycles: CPU only)
             let n_bands = frame.ph / TILE;
             let gpu_ok = match (&mut self.gpu, s.device) {
-                (Some(g), Device::Gpu | Device::Both) => !view.heat && g.prepare(scene, scene_id),
+                (Some(g), Device::Gpu | Device::Both) => !view.heat && g.prepare(scene, scene_id, gpu_spec(scene, s)),
                 _ => false,
             };
             let gpu = if gpu_ok { self.gpu.as_ref() } else { None };
@@ -1158,6 +1165,58 @@ mod tests {
             let px = a.len() / 4;
             let visible = (0..px).filter(|&i| (0..3).any(|c| (a[i * 4 + c] as i32 - b[i * 4 + c] as i32).abs() > 25)).count();
             assert!(visible * 100 <= px, "{name}: {visible} of {px} pixels differ visibly between CPU and GPU");
+        }
+    }
+
+    /// The viewer's kernels: the general one draws at once, whatever the
+    /// mode, and the one built for the frame's mode and lighting takes over
+    /// when it is ready, drawing the same picture. Without a GPU it says so
+    /// and passes.
+    #[test]
+    fn the_kernel_for_the_mode_takes_over() {
+        let (Ok(mut bg), Ok(mut plain)) = (Gpu::headless(), Gpu::headless()) else {
+            eprintln!("no GPU: the kernels are not tested");
+            return;
+        };
+        bg.background = true;
+        plain.specialize = false;
+        let sc = scene(serde_json::json!({ "environment": { "preset": "golden" }, "objects": [
+            { "type": "plane", "material": { "color": [0.7, 0.7, 0.7], "color2": [0.3, 0.3, 0.3], "texture": "checker", "space": "world" } },
+            { "type": "sphere", "radius": 0.6, "position": [-1, 0.6, 0], "material": { "color": [0.8, 0.3, 0.2], "roughness": 0.3 } },
+            { "type": "union", "smooth": 0.3, "position": [1, 0.4, 0], "children": [{ "type": "box", "size": [0.8, 0.8, 0.8] }, { "type": "sphere", "radius": 0.35, "position": [0.4, 0.3, 0] }] }
+        ] }));
+        let cam = Camera::new(Vec3::new(0.0, 1.5, 4.0), 0.0, -0.25, 55.0);
+        let still = Waves::default();
+        let (mut r, mut general) = (Renderer::new(), Renderer::new());
+        r.gpu = Some(bg);
+        general.gpu = Some(plain);
+        for (k, mode) in [Mode::Direct, Mode::PathTrace].into_iter().enumerate() {
+            let s = Settings { device: Device::Gpu, mode, ..Settings::default() };
+            let t0 = Instant::now();
+            for frame in 0.. {
+                r.render(&sc, &cam, &s, 96, 54, 1, &View::default(), &still);
+                if r.gpu.as_ref().unwrap().special_ready() {
+                    break;
+                }
+                // (the first mode waits for a kernel; then a new one is drawn
+                // by the general kernel while its own builds)
+                assert!(k == 0 || r.stats.gpu_share > 0.99, "{mode:?}, frame {frame}: the general kernel should draw it");
+                assert!(t0.elapsed().as_secs() < 120, "{mode:?}: its kernel was not built");
+                std::thread::sleep(std::time::Duration::from_millis(20));
+            }
+            // (a new scene id: both start the picture afresh)
+            let image = |r: &mut Renderer| {
+                for _ in 0..4 {
+                    r.render(&sc, &cam, &s, 96, 54, 10 + k as u64, &View::default(), &still);
+                }
+                assert!(r.stats.gpu_share > 0.99, "{mode:?}: the GPU should draw it all");
+                r.frame.as_ref().unwrap().rgba()
+            };
+            let (a, b) = (image(&mut r), image(&mut general));
+            assert!(r.gpu.as_ref().unwrap().special_ready(), "{mode:?}: the kernel for the mode should still draw");
+            let px = a.len() / 4;
+            let visible = (0..px).filter(|&i| (0..3).any(|c| (a[i * 4 + c] as i32 - b[i * 4 + c] as i32).abs() > 25)).count();
+            assert!(visible * 100 <= px, "{mode:?}: {visible} of {px} pixels differ visibly between the two kernels");
         }
     }
 
