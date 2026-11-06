@@ -185,10 +185,11 @@ fn star_layer(cone: f32, d: V8, grid: f32, seed: i32, band: F8, twinkle: Option<
 /// in-scattered light (the fog colour plus a sun-coloured lobe).
 pub fn fog(ctx: &Ctx, dist: F8, dir: V8) -> (F8, V8) {
     let env = &ctx.env;
-    if !ctx.s.fog || env.fog <= 0.0 {
+    let density = env.fog * ctx.s.fog_strength.max(0.0);
+    if !ctx.s.fog || density <= 0.0 {
         return (F8::one(), V8::zero());
     }
-    let trans = (dist * -env.fog).exp2();
+    let trans = (dist * -density).exp2();
     let lobe = dir.dot3(env.sun_dir).max(F8::zero());
     let lobe = lobe * lobe;
     let lobe = lobe * lobe;

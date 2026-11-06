@@ -510,7 +510,7 @@ fn gpu_params(ctx: &Ctx, lay: &gpu::codegen::Layout, tables: &[u32], base: u32, 
     v4(c.f, c.bx.to_bits());
     v4(c.r, c.ky.to_bits());
     v4(c.u, c.by.to_bits());
-    v4(e.sun_dir, e.fog.to_bits());
+    v4(e.sun_dir, (e.fog * s.fog_strength.max(0.0)).to_bits());
     v4(e.sun_col, e.clouds.to_bits());
     v4(e.amb_col, e.ambient.to_bits());
     v4(e.sky_zen, ctx.cone.to_bits());
