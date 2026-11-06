@@ -300,9 +300,16 @@ impl Game {
     /// floor: its down turns to the normal and it falls there, under the
     /// scene's `gravity` (a person's on Earth where there is none).
     pub fn new_floor(&mut self, point: D3, normal: D3, gravity: f64) {
-        let n = unit(normal);
+        let mut n = unit(normal);
         if len(n) == 0.0 {
             return;
+        }
+        // (the side it was aimed from: a sheet's or a plane's normal seen
+        // from behind, or a fractal's thin wall's, can face away, and then
+        // it fell away from the point instead of onto it)
+        let eye = self.eye();
+        if dot(n, sub(eye, point)) < 0.0 {
+            n = scale(n, -1.0);
         }
         let from = self.frame.unwrap_or(IDENTITY);
         let up = self.up();
@@ -319,7 +326,6 @@ impl Game {
         // the eye's arc: from where it is to over the point, standing, as
         // long as falling that far from rest takes, at least as long as the
         // turn, and no faster across than ACROSS
-        let eye = self.eye();
         let end = add(point, scale(n, EYE * self.height));
         let rel = sub(end, eye);
         let drop = -dot(rel, n);
@@ -987,6 +993,24 @@ mod tests {
         run(&sc, &mut g, 0.0, IDLE, 4.0);
         let f = g.feet_world();
         assert!(g.frame.is_none() && g.grounded && len(sub(f, [0.0, 0.0, 1.0])) < 0.1, "should be back on the ground: {f:?}, frame {:?}", g.frame);
+    }
+
+    /// A normal that faces away from the eye (a sheet or a plane seen from
+    /// behind, a fractal's thin wall): the new floor is still the side it
+    /// was aimed from, and it falls onto it.
+    #[test]
+    fn the_floor_is_the_side_aimed_from() {
+        let sc = scene(serde_json::json!([
+            { "type": "plane" },
+            { "type": "box", "size": [10, 6, 0.4], "position": [0, 3, -3] }
+        ]));
+        let mut g = spawn(&sc, [0.0, 1.656, 0.0]);
+        run(&sc, &mut g, 0.0, IDLE, 0.5);
+        g.new_floor([0.5, 2.0, -2.8], [0.0, 0.0, -1.0], G);
+        run(&sc, &mut g, 0.0, IDLE, 2.8);
+        let (f, up) = (g.feet_world(), g.up());
+        assert!(len(sub(f, [0.5, 2.0, -2.8])) < 0.1, "should land where it aimed: {f:?}");
+        assert!(len(sub(up, [0.0, 0.0, 1.0])) < 1e-6 && g.grounded, "should stand on the wall's near side: up {up:?}, grounded {}", g.grounded);
     }
 
     /// The look kept through a turn: what it looked at in one frame, it
