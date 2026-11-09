@@ -100,7 +100,7 @@ fn tools() -> Vec<(&'static str, &'static str, Value, &'static str)> {
         ),
         (
             "set_render_settings",
-            "Change the viewer's render settings (the right panel): mode (direct, path_trace, normals, albedo, depth, steps, cost), bounces, spp, device (both, gpu, cpu), scale (resolution), shadows, ao, bloom, exposure, headlight, animate_water, haze_strength (times the environment's haze density, 0 none), haze_detail (points lit along each ray a sample, 1 to 16), haze_contrast (1 as lit; more: sharper beams, darker shadowed haze)... get_scene shows them all.",
+            "Change the viewer's render settings (the right panel): mode (direct, path_trace, normals, albedo, depth, steps, cost), bounces, spp, device (both, gpu, cpu), scale (resolution), shadows, ao, fog, fog_strength (times the environment's fog density), bloom, bloom_strength, bloom_threshold, exposure, headlight, animate_water, haze_strength (times the environment's haze density, 0 none), haze_detail (points lit along each ray a sample, 1 to 16), haze_contrast (1 as lit; more: sharper beams, darker shadowed haze)... get_scene shows them all.",
             json!({"type": "object", "properties": {"set": set("the settings")}, "required": ["set"]}),
             "settings",
         ),

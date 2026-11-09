@@ -92,6 +92,9 @@ pub struct Settings {
     pub lights: bool,
     pub light_shadows: bool,
     pub fog: bool,
+    /// the environment's fog as a multiple of its density (1: as the scene
+    /// has it)
+    pub fog_strength: f32,
     /// the environment's haze, as a multiple of its density (0: none), and
     /// the points along each ray its light shafts are found at a sample
     /// (more: smoother sooner, slower)
@@ -116,6 +119,10 @@ pub struct Settings {
     // ---- post: no accumulation restart
     pub exposure: f32,
     pub bloom: bool,
+    /// the bloom's glow as a multiple (1: as it was made), and the HDR
+    /// brightness above which light glows (lower: more of the picture)
+    pub bloom_strength: f32,
+    pub bloom_threshold: f32,
     pub edge_aa: bool,
     pub vignette: bool,
     /// ACES filmic tone map (off: clamp)
@@ -153,6 +160,7 @@ impl Default for Settings {
             lights: true,
             light_shadows: true,
             fog: true,
+            fog_strength: 1.0,
             haze_strength: 1.0,
             haze_detail: 2,
             haze_contrast: 1.0,
@@ -165,6 +173,8 @@ impl Default for Settings {
             animate_water: false,
             exposure: 1.0,
             bloom: true,
+            bloom_strength: 1.0,
+            bloom_threshold: 3.5,
             edge_aa: true,
             vignette: true,
             tonemap: true,
@@ -186,6 +196,8 @@ impl Settings {
             spp: 1,
             exposure: 1.0,
             bloom: true,
+            bloom_strength: 1.0,
+            bloom_threshold: 3.5,
             edge_aa: true,
             vignette: true,
             tonemap: true,

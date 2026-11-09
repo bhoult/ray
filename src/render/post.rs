@@ -14,11 +14,10 @@ use rayon::prelude::*;
 /// Zero floats on both sides of every bloom row (the blurs and the upsample
 /// read past the row ends and must see black).
 const PAD: usize = 8;
-/// Bloom threshold: only light above this (HDR luminance) blooms.
-const THRESHOLD: f32 = 3.5;
 /// 9-tap gaussian, centre first.
 const G: [f32; 5] = [0.2270, 0.1945, 0.1216, 0.0540, 0.0162];
-/// Weights of the two bloom levels in the composite.
+/// Weights of the two bloom levels in the composite (times the settings'
+/// bloom_strength).
 const BLOOM_WEIGHT: [f32; 2] = [0.10, 0.16];
 const VIGNETTE: f32 = 0.55;
 const AA_THRESHOLD: f32 = 0.18;
@@ -70,7 +69,7 @@ pub(crate) fn run(s: &Settings, frame: &mut Frame, edge_aa: bool, tw: Option<&Tw
     let Frame { hdr, out, bloom, ids, .. } = frame;
     let hdr = [&hdr[0][..], &hdr[1][..], &hdr[2][..]];
     if s.bloom {
-        downsample4(&hdr, w, &mut bloom.l0);
+        downsample4(&hdr, w, s.bloom_threshold.max(0.0), &mut bloom.l0);
         blur(&mut bloom.l0);
         downsample2(&mut bloom.l0, &mut bloom.l1);
         blur(&mut bloom.l1);
@@ -94,8 +93,9 @@ pub(crate) fn plain(frame: &mut Frame, gamma: bool) {
     });
 }
 
-/// Level 0: the 4 x 4 average of the HDR image, soft-thresholded.
-fn downsample4(hdr: &[&[f32]; 3], w: usize, l: &mut Level) {
+/// Level 0: the 4 x 4 average of the HDR image, soft-thresholded: what is
+/// brighter than `threshold` (HDR luminance) blooms.
+fn downsample4(hdr: &[&[f32]; 3], w: usize, threshold: f32, l: &mut Level) {
     let (stride, lw) = (l.stride, l.w);
     let [c0, c1, c2] = &mut l.c;
     let out = [Shared::new(c0), Shared::new(c1), Shared::new(c2)];
@@ -122,7 +122,7 @@ fn downsample4(hdr: &[&[f32]; 3], w: usize, l: &mut Level) {
                 *a = h1.hadd(h2).permute(perm) * 0.0625;
             }
             let lum = avg[0].max(avg[1]).max(avg[2]);
-            let excess = (lum - THRESHOLD).max(F8::zero());
+            let excess = (lum - threshold).max(F8::zero());
             let scale = excess / lum.max(F8::splat(0.001));
             for ch in 0..3 {
                 (avg[ch] * scale).store(&mut dst[ch][oct * 8..]);
@@ -234,6 +234,7 @@ fn composite(s: &Settings, hdr: &[&[f32]; 3], bloom: &Bloom, w: usize, h: usize,
     let inv_w = 1.0 / w as f32;
     let expo = EXPOSURE * s.exposure;
     let vignette = if s.vignette { VIGNETTE } else { 0.0 };
+    let strength = s.bloom_strength.max(0.0);
     // the bloom rows of an output row, in buffers each job keeps for its rows
     // (eight rows at least: rayon would otherwise split down to single rows)
     let bufs = || (vec![0.0f32; 3 * l0.stride], vec![0.0f32; 3 * l1.stride]);
@@ -300,7 +301,7 @@ fn composite(s: &Settings, hdr: &[&[f32]; 3], bloom: &Bloom, w: usize, h: usize,
                     let v1 = F8::load(&buf1[base1..]);
                     let (lo1, hi1) = (v1.permute(i8_), v1.permute(j8));
                     let s1 = (hi1 - lo1).mul_add(f8_, lo1);
-                    col[ch] += s1.mul_add(F8::splat(BLOOM_WEIGHT[1]), s0 * BLOOM_WEIGHT[0]);
+                    col[ch] += s1.mul_add(F8::splat(BLOOM_WEIGHT[1] * strength), s0 * (BLOOM_WEIGHT[0] * strength));
                 }
             }
             // ---- exposure * vignette

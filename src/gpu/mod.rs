@@ -19,12 +19,35 @@ pub struct FrameParams {
     /// runs of the scene buffer that change every frame (a fractal's detail,
     /// the anchor tables): (first word, words)
     pub patches: Vec<(u32, Vec<u32>)>,
+    /// the frame's mode and flags (the kernel built for them draws it)
+    pub spec: Spec,
 }
 
-/// A pipeline being built on a thread: for which generated shader text,
-/// since when, and where it arrives.
+/// A mode and lighting flags (lib.wgsl's Frame `mode` and `flags`) that a
+/// kernel is built for: lib.wgsl's SPEC_MODE and SPEC_FLAGS, so that the
+/// driver drops the code they turn off. The general kernel reads them from
+/// the frame and draws any; it has to reserve registers for the costliest
+/// path whatever the mode.
+#[derive(Clone, Copy, PartialEq, Eq, Hash, Debug)]
+pub struct Spec {
+    pub mode: u32,
+    pub flags: u32,
+}
+
+/// wgpu's runtime checks, but for its loop counters: it would add one to
+/// every loop, so that a loop that never ends cannot hang the driver, and
+/// they cost (a fifth of a path-traced showcase's time, nearly half of
+/// nurbs-booleans': docs/GPU_PERFORMANCE.md).
+/// lib.wgsl's loops all have hard bounds: a count, or MAX_VISITS for the
+/// BVH walks. Its bounds checks stay: off, they measured no faster, and
+/// where the platform does not bound buffer reads itself they are wgpu's.
+const CHECKS: wgpu::ShaderRuntimeChecks = wgpu::ShaderRuntimeChecks { bounds_checks: true, force_loop_bounding: false };
+
+/// A pipeline being built on a thread: for which generated shader text and
+/// mode (None: the general kernel), since when, and where it arrives.
 struct Compile {
     generated: String,
+    spec: Option<Spec>,
     started: Instant,
     rx: std::sync::Mutex<std::sync::mpsc::Receiver<Result<wgpu::ComputePipeline, String>>>,
 }
@@ -45,16 +68,24 @@ pub struct Gpu {
     pub name: String,
     layout: wgpu::BindGroupLayout,
     pipeline_layout: wgpu::PipelineLayout,
+    /// the general kernel, and the ones built for a mode (None: its build
+    /// failed, and the general one draws it)
     pipeline: Option<wgpu::ComputePipeline>,
-    /// a shader being built in the background (`background`), and the
-    /// generated text the current scene needs
-    compiling: Option<Compile>,
+    special: std::collections::HashMap<Spec, Option<wgpu::ComputePipeline>>,
+    /// the kernels being built (at most one general and one for a mode),
+    /// the generated text the current scene needs, and the last frame's mode
+    compiling: Vec<Compile>,
     want: String,
+    spec: Option<Spec>,
     /// build shaders on a thread and report not ready meanwhile (the viewer
-    /// renders on the CPU until then: a cold build takes seconds); off, the
-    /// build blocks (headless renders)
+    /// renders on the CPU until then: a cold build takes seconds), then the
+    /// kernel for the mode, while the general one draws; off, the build
+    /// blocks, and is only of the kernel for the mode (headless renders)
     pub background: bool,
-    /// the generated part of the current shader
+    /// build kernels for the mode (off: the general kernel draws every mode;
+    /// RAY_GENERAL_KERNEL in the environment, for comparing the two)
+    pub specialize: bool,
+    /// the generated part of the current kernels' shader
     generated: String,
     scene_buf: Option<wgpu::Buffer>,
     terrain_buf: Option<wgpu::Buffer>,
@@ -128,9 +159,12 @@ impl Gpu {
             layout,
             pipeline_layout,
             pipeline: None,
-            compiling: None,
+            special: Default::default(),
+            compiling: Vec::new(),
             want: String::new(),
+            spec: None,
             background: false,
+            specialize: std::env::var_os("RAY_GENERAL_KERNEL").is_none(),
             generated: String::new(),
             scene_buf: None,
             terrain_buf: None,
@@ -181,14 +215,16 @@ impl Gpu {
         b
     }
 
-    /// Uploads `scene` if it changed and rebuilds the shader if its program
-    /// structures changed. False when the GPU cannot render it (see `error`),
-    /// or not yet: its shader is still being built (`compiling`).
-    pub fn prepare(&mut self, scene: &Scene, scene_id: u64) -> bool {
+    /// Uploads `scene` if it changed, and builds the kernels its program
+    /// structures and `spec` need. False when the GPU cannot render it (see
+    /// `error`), or not yet: its shader is still being built (`compiling`).
+    pub fn prepare(&mut self, scene: &Scene, scene_id: u64, spec: Spec) -> bool {
         self.poll();
+        self.spec = Some(spec);
         if scene_id == self.scene_id {
+            self.kernels(spec);
             // (the bind group comes with the first dispatch)
-            return self.pipeline.is_some() && self.scene_buf.is_some() && self.error.is_none();
+            return self.kernel(spec).is_some() && self.scene_buf.is_some() && self.error.is_none();
         }
         self.scene_id = scene_id;
         let up = codegen::build(scene, &self.terrains, &self.grids);
@@ -198,21 +234,17 @@ impl Gpu {
             let mb = (up.terrain.len().max(up.scene.len()) * 4) >> 20;
             self.error = Some(format!("scene too large for one GPU buffer ({mb} MB, at most {} MB)", max >> 20));
             self.pipeline = None;
+            self.special.clear();
             return false;
         }
         self.want = up.generated.clone();
-        if up.generated != self.generated || self.pipeline.is_none() {
-            // these structures need their own pipeline: none until it is built
+        if up.generated != self.generated || self.pipeline.is_none() && self.special.is_empty() {
+            // these structures need kernels of their own: none until one is built
             self.pipeline = None;
-            if self.compiling.as_ref().is_none_or(|c| c.generated != up.generated) {
-                self.compiling = Some(self.compile(&up));
-            }
-            if !self.background {
-                let c = self.compiling.take().unwrap();
-                let r = c.rx.lock().unwrap().recv().unwrap_or_else(|_| Err("shader build failed".into()));
-                self.install(c, r);
-            }
+            self.special.clear();
+            self.error = None;
         }
+        self.kernels(spec);
         let storage = wgpu::BufferUsages::STORAGE;
         self.scene_buf = Some(self.buffer("ray scene", &up.scene, storage));
         if !up.terrain_same || self.terrain_buf.is_none() {
@@ -223,26 +255,67 @@ impl Gpu {
         self.layout_info = up.layout;
         self.tables = up.tables.clone();
         self.bind = None;
-        if self.pipeline.is_some() {
-            self.error = None;
-        }
-        self.pipeline.is_some() && self.error.is_none()
+        self.kernel(spec).is_some() && self.error.is_none()
     }
 
-    /// Starts building the pipeline for `up`'s shader on a thread.
-    fn compile(&self, up: &codegen::Upload) -> Compile {
-        let (device, layout, source) = (self.device.clone(), self.pipeline_layout.clone(), up.shader());
+    /// The kernel that draws `spec`: its own, else the general one.
+    fn kernel(&self, spec: Spec) -> Option<&wgpu::ComputePipeline> {
+        self.special.get(&spec).and_then(Option::as_ref).or(self.pipeline.as_ref())
+    }
+
+    /// Builds what `spec` needs and has not got: in the background the
+    /// general kernel first (it draws whatever the mode) and the one for
+    /// `spec` beside it; headless, the one for `spec` now, or the general one
+    /// if that cannot be built.
+    fn kernels(&mut self, spec: Spec) {
+        if self.error.is_some() {
+            return;
+        }
+        let missing = self.specialize && !self.special.contains_key(&spec);
+        if self.background {
+            if self.pipeline.is_none() {
+                self.start(None);
+            }
+            if missing {
+                self.start(Some(spec));
+            }
+            return;
+        }
+        if missing {
+            self.build_now(Some(spec));
+        }
+        if self.kernel(spec).is_none() {
+            self.build_now(None);
+        }
+    }
+
+    /// Starts building the kernel for `spec` (None: the general one) on a
+    /// thread, unless one of its sort is being built already: then the next
+    /// frame asks again.
+    fn start(&mut self, spec: Option<Spec>) {
+        // (a build for structures no longer wanted cannot be stopped: its
+        // result is dropped)
+        let want = &self.want;
+        self.compiling.retain(|c| c.generated == *want);
+        if self.compiling.iter().any(|c| c.spec.is_some() == spec.is_some()) {
+            return;
+        }
+        let (device, layout, generated) = (self.device.clone(), self.pipeline_layout.clone(), self.want.clone());
         let (tx, rx) = std::sync::mpsc::channel();
         let started = Instant::now();
         let _ = std::thread::Builder::new().name("shader".into()).spawn(move || {
             device.push_error_scope(wgpu::ErrorFilter::Validation);
-            let module = device.create_shader_module(wgpu::ShaderModuleDescriptor { label: Some("ray"), source: wgpu::ShaderSource::Wgsl(source.into()) });
+            let source = codegen::shader(&generated);
+            let desc = wgpu::ShaderModuleDescriptor { label: Some("ray"), source: wgpu::ShaderSource::Wgsl(source.into()) };
+            // SAFETY: every loop in lib.wgsl ends (CHECKS)
+            let module = unsafe { device.create_shader_module_trusted(desc, CHECKS) };
+            let constants = spec.map_or(Vec::new(), |s| vec![("SPEC_MODE", s.mode as f64), ("SPEC_FLAGS", s.flags as f64)]);
             let pipeline = device.create_compute_pipeline(&wgpu::ComputePipelineDescriptor {
                 label: Some("ray"),
                 layout: Some(&layout),
                 module: &module,
                 entry_point: Some("main"),
-                compilation_options: Default::default(),
+                compilation_options: wgpu::PipelineCompilationOptions { constants: &constants, ..Default::default() },
                 cache: None,
             });
             let r = match pollster::block_on(device.pop_error_scope()) {
@@ -251,47 +324,81 @@ impl Gpu {
             };
             let _ = tx.send(r);
         });
-        Compile { generated: up.generated.clone(), started, rx: std::sync::Mutex::new(rx) }
+        self.compiling.push(Compile { generated: self.want.clone(), spec, started, rx: std::sync::Mutex::new(rx) });
     }
 
-    /// Takes a finished background build, if it is the one the scene needs.
+    /// Builds the kernel for `spec` (None: the general one) and waits for it.
+    fn build_now(&mut self, spec: Option<Spec>) {
+        self.start(spec);
+        if let Some(i) = self.compiling.iter().position(|c| c.spec == spec) {
+            let c = self.compiling.swap_remove(i);
+            let r = c.rx.lock().unwrap().recv().unwrap_or_else(|_| Err("shader build failed".into()));
+            self.install(c, r);
+        }
+    }
+
+    /// Takes the finished background builds the scene still needs.
     fn poll(&mut self) {
-        let Some(c) = &self.compiling else { return };
-        let r = c.rx.lock().unwrap().try_recv();
-        match r {
-            Err(std::sync::mpsc::TryRecvError::Empty) => {}
-            r => {
-                let c = self.compiling.take().unwrap();
-                if c.generated == self.want {
-                    self.install(c, r.unwrap_or_else(|_| Err("shader build failed".into())));
+        let mut i = 0;
+        while i < self.compiling.len() {
+            let r = self.compiling[i].rx.lock().unwrap().try_recv();
+            match r {
+                Err(std::sync::mpsc::TryRecvError::Empty) => i += 1,
+                r => {
+                    let c = self.compiling.swap_remove(i);
+                    if c.generated == self.want {
+                        self.install(c, r.unwrap_or_else(|_| Err("shader build failed".into())));
+                    }
                 }
             }
         }
     }
 
     fn install(&mut self, c: Compile, r: Result<wgpu::ComputePipeline, String>) {
-        match r {
-            Ok(p) => {
-                self.pipeline = Some(p);
-                self.compile_ms = c.started.elapsed().as_secs_f32() * 1000.0;
+        let ms = c.started.elapsed().as_secs_f32() * 1000.0;
+        match (r, c.spec) {
+            (Ok(p), spec) => {
+                let first = self.pipeline.is_none() && self.special.values().all(Option::is_none);
+                match spec {
+                    None => self.pipeline = Some(p),
+                    Some(s) => _ = self.special.insert(s, Some(p)),
+                }
+                self.compile_ms = ms;
                 self.structures = c.generated.matches("_t(p0").count();
                 self.generated = c.generated;
                 self.error = None;
-                if self.background {
-                    eprintln!("ray: GPU shader built in {:.0} ms ({} structures); the GPU joins in", self.compile_ms, self.structures);
+                let which = if spec.is_some() { "the kernel for this mode and lighting" } else { "the general kernel" };
+                if self.background && first {
+                    eprintln!("ray: GPU shader built in {ms:.0} ms ({} structures, {which}); the GPU joins in", self.structures);
+                } else if self.background && spec.is_some() && spec == self.spec {
+                    eprintln!("ray: GPU kernel for this mode and lighting built in {ms:.0} ms; it takes over");
                 }
             }
-            Err(e) => {
+            (Err(e), Some(s)) => {
+                // (the general kernel draws it)
+                eprintln!("ray: GPU kernel for this mode and lighting not built ({e}); the general one draws it");
+                self.special.insert(s, None);
+            }
+            (Err(e), None) => {
                 self.error = Some(e);
                 self.pipeline = None;
+                self.special.clear();
                 self.generated.clear();
             }
         }
     }
 
-    /// Whether a shader is being built in the background.
+    /// Whether the kernel built for the last frame's mode and flags draws it
+    /// (else the general one does).
+    #[cfg(test)]
+    pub fn special_ready(&self) -> bool {
+        self.spec.is_some_and(|s| self.special.get(&s).is_some_and(Option::is_some))
+    }
+
+    /// Whether the GPU is waiting for a shader built in the background: it
+    /// has no kernel yet that draws the scene.
     pub fn compiling(&self) -> bool {
-        self.compiling.is_some()
+        self.spec.is_some_and(|s| self.kernel(s).is_none()) && self.compiling.iter().any(|c| c.generated == self.want)
     }
 
     /// Makes sure the band, output and staging buffers hold `bands` bands of
@@ -344,7 +451,7 @@ impl Gpu {
 
     /// Traces `bands` (band indices, 16 rows each) and starts the readback.
     pub fn dispatch(&mut self, params: &FrameParams, bands: &[u32]) -> Option<Pending> {
-        if self.pipeline.is_none() || self.scene_buf.is_none() {
+        if self.kernel(params.spec).is_none() || self.scene_buf.is_none() {
             return None;
         }
         self.reserve(bands.len(), params.width);
@@ -359,7 +466,7 @@ impl Gpu {
         let mut enc = self.device.create_command_encoder(&wgpu::CommandEncoderDescriptor { label: Some("ray") });
         {
             let mut pass = enc.begin_compute_pass(&wgpu::ComputePassDescriptor { label: Some("ray"), timestamp_writes: None });
-            pass.set_pipeline(self.pipeline.as_ref()?);
+            pass.set_pipeline(self.kernel(params.spec)?);
             pass.set_bind_group(0, self.bind.as_ref(), &[]);
             pass.dispatch_workgroups(params.width.div_ceil(8), rows.div_ceil(8), 1);
         }

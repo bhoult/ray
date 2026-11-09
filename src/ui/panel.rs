@@ -138,6 +138,7 @@ impl App {
                 style::check(ui, "glowing objects", "Light from glowing objects: every object whose material has emission lights its surroundings (each glowing part acts as a sphere light of its size).", &mut s.lights);
                 style::check_if(ui, s.lights, "their shadows", "Trace a shadow ray toward every glowing object in range (one more ray per light per point).", &mut s.light_shadows);
                 style::check(ui, "fog", "Distance haze with a sun-coloured glow toward the sun.", &mut s.fog);
+                style::slider_if(ui, s.fog, "fog strength", "The scene's fog (Environment > fog density) as a multiple of its density: 1 as the scene has it, more for thicker fog. Most scenes have a little, which shows only far off.", &mut s.fog_strength, 0.1..=100.0, true);
                 style::slider(ui, "haze strength", "The environment's haze (Environment > Haze: air the light shows in, in shafts where it gets through) as a multiple of its density, for every scene's render settings alike: 0 = none, 2 = twice as thick.", &mut s.haze_strength, 0.0..=8.0, false);
                 style::slider_if(ui, s.haze_strength > 0.0, "haze detail", "How many points along each ray the haze's light is found at, each sample: more gives smooth beams sooner (each is a shadow ray toward the sun, the sky and every lamp), fewer is faster and grainier at first.", &mut s.haze_detail, 1..=crate::render::shade::HAZE_DETAIL_MAX, false);
                 style::slider_if(ui, s.haze_strength > 0.0, "haze contrast", "Bends the haze's light along a curve: 1 is as the light makes it; more keeps the haze where the sun reaches as it is, makes it stronger where it is brighter still (near a lamp) and weaker where it is dimmer (in shadow, half shade): more defined beams. Below 1, flatter.", &mut s.haze_contrast, 0.25..=6.0, true);
@@ -170,6 +171,8 @@ impl App {
                 style::slider(ui, "exposure", "Overall brightness, like a camera's exposure.", &mut s.exposure, 0.05..=16.0, true);
                 style::check(ui, "tone map (ACES)", "Film-like compression of bright light into the screen's range; off clips it.", &mut s.tonemap);
                 style::check(ui, "bloom", "Glow around very bright light (the sun, glints, emissive surfaces).", &mut s.bloom);
+                style::slider_if(ui, s.bloom, "bloom strength", "How strongly bright light glows: 1 as made, 0 none.", &mut s.bloom_strength, 0.0..=8.0, false);
+                style::slider_if(ui, s.bloom, "bloom threshold", "How bright light must be to glow (its brightness before exposure and tone mapping). Lower: more of the picture glows.", &mut s.bloom_threshold, 0.25..=32.0, true);
                 style::check(ui, "edge smoothing", "Smooth jagged edges in a single frame; accumulation takes over once 4 samples are in.", &mut s.edge_aa);
                 style::check(ui, "vignette", "Darken the corners slightly.", &mut s.vignette);
             });
