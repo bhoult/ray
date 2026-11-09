@@ -21,7 +21,7 @@ gen() {
   fi
 }
 # the ones that write a scene of their own (bonsai with another seed too)
-for g in bonsai city clouds fractals glass night nurbs; do
+for g in bonsai city clouds fractals glass night nurbs sunbeams; do
   gen "$g" "$g.py" "$tmp"
 done
 mkdir -p "$tmp/seed3"

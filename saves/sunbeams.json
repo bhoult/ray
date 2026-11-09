@@ -1,0 +1,25 @@
+{
+  "description": "Volumetric light: a stone hall full of hazy air, the low sun falling through its tall windows. The haze is lit only where the sunlight reaches it, so each window's light shows as a beam, crossed by the shadows of its tracery and the columns. The Menger sponge hanging in one of the beams is turned so that its tunnels run along the light, which goes on through them as a lattice of small beams. Environment > Haze sets the air's density; the Render panel's haze strength, detail and contrast change how it looks.",
+  "camera": {"position": [4.0, 1.6, -2.5], "look_at": [-1.5, 5.5, -12], "fov": 70, "speed": 3},
+  "environment": {"preset": "golden", "sun_direction": [-0.74, 0.5, -0.45], "ambient_level": 0.2, "fog_density": 0, "haze_density": 0.1, "haze_top": 14.0},
+  "render": {"haze_detail": 4, "haze_contrast": 1.6},
+  "materials": {
+    "limestone": {"color": [0.7, 0.64, 0.55], "color2": [0.6, 0.55, 0.47], "texture": "bricks", "texture_scale": 0.9, "roughness": 0.9, "bump_pattern": "bricks", "bump": 0.6, "space": "world"},
+    "column stone": {"color": [0.74, 0.69, 0.6], "color2": [0.62, 0.57, 0.5], "texture": "noise", "texture_scale": 2, "roughness": 0.8},
+    "marble": {"color": [0.78, 0.75, 0.69], "color2": [0.2, 0.19, 0.18], "texture": "checker", "texture_scale": 1, "roughness": 0.3, "space": "world"},
+    "iron": {"color": [0.06, 0.06, 0.06], "metallic": 0.8, "roughness": 0.5},
+    "bronze": {"color": [0.8, 0.55, 0.3], "metallic": 1, "roughness": 0.35}
+  },
+  "objects": [
+    {"name": "floor", "type": "plane", "material": "marble", "locked": true},
+    {"name": "window wall", "type": "difference", "position": [-7.5, 0, -14.0], "material": "limestone", "locked": true, "children": [{"type": "box", "size": [1, 14.0, 40.0], "position": [0, 7.0, 0]}, {"type": "repeat", "period": [0, 0, 6], "count": [0, 0, 2], "position": [0, 0, -1.0], "child": {"type": "union", "children": [{"type": "box", "size": [3, 7.0, 3.0], "position": [0, 6.5, 0]}, {"type": "cylinder", "radius": 1.5, "height": 3, "position": [0, 10.0, 0], "rotation": [0, 0, 90]}]}}]},
+    {"name": "tracery", "type": "repeat", "period": [0, 0, 6], "count": [0, 0, 2], "position": [-7.5, 0, -15], "material": "iron", "locked": true, "child": {"type": "union", "children": [{"type": "box", "size": [0.22, 7.9, 0.14], "position": [0, 6.95, 0]}, {"type": "box", "size": [0.22, 0.12, 3.0], "position": [0, 6.8500000000000005, 0]}, {"type": "torus", "radius": 0.62, "thickness": 0.07, "position": [0, 10.25, 0], "rotation": [0, 0, 90]}]}},
+    {"name": "wall", "type": "box", "size": [1, 14.0, 40.0], "position": [7.5, 7.0, -14.0], "material": "limestone", "locked": true},
+    {"name": "back wall", "type": "box", "size": [16.0, 14.0, 1], "position": [0, 7.0, -33.5], "material": "limestone", "locked": true},
+    {"name": "front wall", "type": "box", "size": [16.0, 14.0, 1], "position": [0, 7.0, 5.5], "material": "limestone", "locked": true},
+    {"name": "ceiling", "type": "box", "size": [16.0, 1, 40.0], "position": [0, 14.5, -14.0], "material": "limestone", "locked": true},
+    {"name": "columns", "type": "mirror", "axes": "x", "position": [0, 0, -18], "material": "column stone", "locked": true, "child": {"type": "repeat", "period": [0, 0, 6], "count": [0, 0, 2], "position": [4.5, 0, 0], "child": {"type": "union", "children": [{"type": "box", "size": [1.5, 0.5, 1.5], "position": [0, 0.25, 0]}, {"type": "cylinder", "radius": 0.55, "height": 12.9, "position": [0, 7.0, 0]}, {"type": "box", "size": [1.5, 0.6, 1.5], "position": [0, 13.7, 0]}]}}},
+    {"name": "sponge", "type": "menger", "iterations": 4, "scale": 1.4, "position": [0.3, 4.368, -10.561], "rotation": [20.0, -26.74, -34.05], "material": "bronze", "locked": true},
+    {"name": "rod", "type": "capsule", "a": [0.581, 6.344, -11.938], "b": [0.581, 14.0, -11.938], "radius": 0.04, "material": "iron", "locked": true}
+  ]
+}
