@@ -507,3 +507,46 @@ def test_hopf_tree_at_psi_pi_is_the_horned_sphere_with_hopf_clasp():
         B = np.vstack([r.curve for r in rr if r.gen == g])
         D = cdist(A, B)
         assert max(D.min(1).max(), D.min(0).max()) < 1e-9
+
+
+def _three_spheres(s, kap):
+    sg = kap * s
+    cg, off = np.sqrt(1 - sg ** 2), sg - s
+    return [(np.zeros(3), 1.0), (np.array([cg, off, 0.0]), s), (np.array([cg, -off, 0.0]), s)]
+
+
+def _cosang(S, i, j):
+    (c1, r1), (c2, r2) = S[i], S[j]
+    return (r1 * r1 + r2 * r2 - np.sum((c1 - c2) ** 2)) / (2 * r1 * r2)
+
+
+def test_equatorial_spheres_of_a_ring_and_its_children_meet_at_the_stated_angles():
+    for s, kap in [(0.4, 1.35), (0.45, 1.7), (0.3, 1.9)]:
+        S = _three_spheres(s, kap)
+        assert abs(_cosang(S, 0, 1) - kap * s) < 1e-12 and abs(_cosang(S, 0, 2) - kap * s) < 1e-12
+        assert abs(_cosang(S, 1, 2) - (1 - 2 * (kap - 1) ** 2)) < 1e-12
+        # and the child/child cosine is the Moebius invariant s1 up to sign
+        a, b = _child_circles(fk.HornedSphere(shrink=s, clasp=kap, turn=45.0, iters=2))
+        assert abs(fk.circle_moebius_invariants(a, b)[0] - abs(_cosang(S, 1, 2))) < 1e-9
+
+
+def test_inversions_in_ring_and_children_satisfy_the_coxeter_relations_at_kappa_n():
+    def inv(x, S, i):
+        c, r = S[i]
+        v = x - c
+        return c + r * r * v / (v @ v)
+
+    def power(S, word, order, x):
+        y = x.copy()
+        for _ in range(order):
+            for i in reversed(word):
+                y = inv(y, S, i)
+        return np.linalg.norm(y - x)
+
+    x = np.array([0.31, -0.17, 0.23])
+    for m, n in [(5, 2), (4, 3), (4, 4)]:
+        kap = 1 + np.cos(np.pi / (2 * n))
+        S = _three_spheres(np.cos(np.pi / m) / kap, kap)
+        assert power(S, (0, 1), m, x) < 1e-10 and power(S, (0, 2), m, x) < 1e-10 and power(S, (1, 2), n, x) < 1e-10
+    S = _three_spheres(0.46, 1 + np.cos(np.pi / 4))
+    assert power(S, (0, 1), 5, x) > 0.1
