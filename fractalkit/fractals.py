@@ -264,51 +264,170 @@ class QuaternionJulia(Field):
         return np.sqrt(mz2 / md2) * np.log(mz2) * 0.25, np.clip(np.sqrt(trap), 0, 1)
 
 
-class Hopfbrot(Field):
+class Hopfbrot(IterMap):
     """The Mandelbulb power map in 4D with Hopf coordinates, cut to 3D.
 
     c = (x + shift, y, z cos t - slice sin t, z sin t + slice cos t);
     w <- |w|^n U(n a1, n a2, n phi) + c with
     U = (cos phi e^{i a1}, sin phi e^{i a2}).  ``tilt`` is in degrees.
+
+    The orbit lives in four dimensions but ``State.z`` holds three, so the
+    fourth coordinate rides along in ``state.extra["w4"]``.  The orbit's
+    norm for the escape test and the distance estimate is the 4D one.
+
+    Run on its own it matches the original standalone kernel exactly,
+    including the ``TAIL`` extra steps for orbits still beyond radius 2.
+
+    Inside a ``Hybrid`` the other maps' steps act on the first three
+    coordinates only and leave ``w4`` alone (a fold lifted to 4D by the
+    identity on the last axis).  If Hopfbrot is not the finisher, its first
+    step starts ``w4`` from the sample point's 4th coordinate, and the
+    ``+c`` it adds is the 4D sliced point, not the raw sample point.  In a
+    hybrid there is no tail, and the 3D ``bail`` of the hybrid applies on
+    top of the 4D escape this map applies itself.
     """
 
     bound = 2.0
+    TAIL = 4
 
     def __init__(self, power: float = 3.0, tilt: float = 90.0, slice: float = 0.0, iters: int = 10):
         self.power, self.tilt, self.slice, self.iters = float(power), float(tilt), float(slice), int(iters)
         self.shift = max(3.0 - self.power, 0.0) * -0.5
         self.escape = float(np.exp(np.log(1e8) / self.power))
 
-    def _de(self, P):
-        n = self.power
+    def point4(self, P):
+        """The 4D point c for sample points ``P`` (N,3) -> (N,4)."""
         t = np.radians(self.tilt)
         ct, st_ = np.cos(t), np.sin(t)
         x, y, z = P[:, 0], P[:, 1], P[:, 2]
-        c = np.stack([x + self.shift, y, z * ct - self.slice * st_, z * st_ + self.slice * ct], -1)
-        w = c.copy()
-        r = np.linalg.norm(w, axis=-1)
-        dr = np.ones(len(P))
-        trap = np.full(len(P), 1e9)
-        act = r < self.escape
-        for i in range(self.iters + 4):
-            if i >= self.iters:
-                act &= r > 2.0
-            if not act.any():
+        return np.stack([x + self.shift, y, z * ct - self.slice * st_, z * st_ + self.slice * ct], -1)
+
+    @staticmethod
+    def orbit4(st: State):
+        """The orbit as (N,4): ``z`` plus the hidden fourth coordinate."""
+        return np.concatenate([st.z, st.extra["w4"][:, None]], -1)
+
+    def start(self, P):
+        c = self.point4(P)
+        st = State(c=P, z=c[:, :3].copy(), dr=np.ones(len(P)), trap=np.full(len(P), 1e9),
+                   active=np.linalg.norm(c, axis=-1) < self.escape)
+        st.extra["w4"] = c[:, 3].copy()
+        return st
+
+    def run(self, P, iters=None):
+        n = self.iters if iters is None else iters
+        st = self.start(P)
+        for i in range(n + self.TAIL):
+            if i >= n:
+                st.active &= np.linalg.norm(self.orbit4(st), axis=-1) > 2.0
+            if not st.active.any():
                 break
-            r1 = np.hypot(w[:, 0], w[:, 1])
-            r2 = np.hypot(w[:, 2], w[:, 3])
-            a1 = np.arctan2(w[:, 1], w[:, 0]) * n
-            a2 = np.arctan2(w[:, 3], w[:, 2]) * n
-            ph = np.arctan2(r2, r1) * n
-            rs = np.maximum(r, 1e-12)
-            rp = rs ** n
-            cp, sp = np.cos(ph) * rp, np.sin(ph) * rp
-            nw = np.stack([cp * np.cos(a1), cp * np.sin(a1), sp * np.cos(a2), sp * np.sin(a2)], -1) + c
-            ndr = np.minimum(rp / rs * n * dr + 1.0, 1e30)
-            w = np.where(act[:, None], nw, w)
-            dr = np.where(act, ndr, dr)
-            r = np.where(act, np.linalg.norm(w, axis=-1), r)
-            trap = np.where(act & (r < 2.0), np.minimum(trap, np.hypot(w[:, 2], w[:, 3])), trap)
-            act &= r < self.escape
-        r = np.maximum(r, 1e-6)
-        return r * np.log(r) * 0.5 / np.maximum(dr, 1e-12), np.clip(trap, 0, 1)
+            self.step(st, i)
+        return st
+
+    def step(self, st: State, i: int) -> None:
+        n = self.power
+        c = self.point4(st.c)
+        if "w4" not in st.extra:              # first step inside a hybrid
+            st.extra["w4"] = c[:, 3].copy()
+        w = self.orbit4(st)
+        a = st.active
+        r = np.linalg.norm(w, axis=-1)
+        r1 = np.hypot(w[:, 0], w[:, 1])
+        r2 = np.hypot(w[:, 2], w[:, 3])
+        a1 = np.arctan2(w[:, 1], w[:, 0]) * n
+        a2 = np.arctan2(w[:, 3], w[:, 2]) * n
+        ph = np.arctan2(r2, r1) * n
+        rs = np.maximum(r, 1e-12)
+        rp = rs ** n
+        cp, sp = np.cos(ph) * rp, np.sin(ph) * rp
+        nw = np.stack([cp * np.cos(a1), cp * np.sin(a1), sp * np.cos(a2), sp * np.sin(a2)], -1) + c
+        ndr = np.minimum(rp / rs * n * st.dr + 1.0, 1e30)
+        st.commit(a, nw[:, :3], ndr)
+        st.extra["w4"] = np.where(a, nw[:, 3], st.extra["w4"])
+        w = self.orbit4(st)
+        r = np.linalg.norm(w, axis=-1)
+        st.trap = np.where(a & (r < 2.0), np.minimum(st.trap, np.hypot(w[:, 2], w[:, 3])), st.trap)
+        st.active = a & (r < self.escape)
+
+    def finish(self, st: State):
+        r = np.maximum(np.linalg.norm(self.orbit4(st), axis=-1), 1e-6)
+        return r * np.log(r) * 0.5 / np.maximum(st.dr, 1e-12), np.clip(st.trap, 0, 1)
+
+
+class RiemannSphere(IterMap):
+    """msltoe's Riemann sphere fractal (ray's ``riemann_sphere``).
+
+    Each step puts the orbit's direction on a sphere of ``radius``, projects
+    it stereographically from the pole +y to (s, t), folds the plane with
+    |sin(pi s + a)|, |sin(pi t + b)|, projects back, and sets the radius to
+    r^(2k) - 1/4 with k = min(1 + s^2 + t^2, 36), the projection's own
+    stretch.  Then adds ``c`` and ``mandel`` times the sample point.
+
+    Like the Rust kernel it keeps ``ln|z|`` and ``dr/|z|`` separately so the
+    last step's huge radius cannot overflow, escapes at 1000, and runs
+    ``TAIL`` extra steps for orbits still beyond radius 2 at the end (only
+    when run on its own; inside a ``Hybrid`` there is no tail).
+    """
+
+    bail = 1e3
+    bound = 1.7
+    TAIL, NEAR, HUGE, HOLD = 4, 2.0, 27.6, np.pi / 8.0
+
+    def __init__(self, radius: float = 1.0, offset=(0.0, 0.0), c=(0.0, 1.0, 0.0),
+                 mandel: float = 0.0, iters: int = 8):
+        self.radius, self.offset = float(radius), tuple(float(v) for v in offset)
+        self.c, self.mandel, self.iters = np.asarray(c, float), float(mandel), int(iters)
+
+    def start(self, P):
+        st = super().start(P)
+        r = np.maximum(st.r, 1e-6)
+        st.extra["l"] = np.log(r)
+        st.extra["rel"] = st.dr / r
+        return st
+
+    def run(self, P, iters=None):
+        n = self.iters if iters is None else iters
+        st = self.start(P)
+        for i in range(n + self.TAIL):
+            if i >= n:
+                st.active &= st.r > self.NEAR
+            if not st.active.any():
+                break
+            self.step(st, i)
+        return st
+
+    def step(self, st: State, i: int) -> None:
+        if "l" not in st.extra:                   # first step inside a hybrid it doesn't finish
+            r0 = np.maximum(st.r, 1e-6)
+            st.extra["l"], st.extra["rel"] = np.log(r0), st.dr / r0
+        a, z = st.active, st.z
+        r = st.r
+        rs = np.maximum(r, 1e-12)
+        u = z * (self.radius / rs)[:, None]
+        q = 1.0 / np.maximum(1.0 - u[:, 1], 1e-4)
+        s0, t0 = u[:, 0] * q, u[:, 2] * q
+        pw = np.minimum(s0 * s0 + t0 * t0 + 1.0, 36.0)
+        ss = np.abs(np.sin(s0 * np.pi + self.offset[0]))
+        tt = np.abs(np.sin(t0 * np.pi + self.offset[1]))
+        lp = pw * np.log(rs * rs)                       # r^(2p) in log space
+        huge = lp > self.HUGE
+        rp = np.exp(np.minimum(lp, self.HUGE))
+        s2 = ss * ss + tt * tt
+        f = (rp - 0.25) / (s2 + 1.0)
+        w = self.mandel
+        nz = np.stack([2 * ss * f, (s2 - 1.0) * f, 2 * tt * f], -1) + st.c * w + self.c
+        g = pw * 2.0 / rs
+        hrel = g * st.dr
+        ndr = np.minimum(g * (rp + self.HOLD) * st.dr + w, 1e30)
+        st.commit(a, nz, ndr)
+        rl = np.maximum(st.r, 1e-6)
+        ex = st.extra
+        ex["l"] = np.where(a, np.where(huge, lp, np.log(rl)), ex["l"])
+        ex["rel"] = np.where(a, np.where(huge, hrel, st.dr / rl), ex["rel"])
+        st.trap = np.where(a & (st.r < self.NEAR), np.minimum(st.trap, np.abs(st.z[:, 1])), st.trap)
+        st.active = a & (st.r < self.bail) & ~huge
+
+    def finish(self, st: State):
+        d = st.extra["l"] * 0.5 / np.maximum(st.extra["rel"], 1e-12)
+        return d, np.clip(st.trap, 0, 1)

@@ -82,14 +82,17 @@ def _chunked_min(P: np.ndarray, K: int, fn: Callable[[np.ndarray], np.ndarray], 
 class FiberNetwork(Field):
     """A graph of straight capsules (segments with round caps).
 
-    ``segments`` is ``(M, 2, 3)``.  The trap is the index of the nearest
-    segment mapped to 0..1, so colouring by trap shows the individual fibres.
+    ``segments`` is ``(M, 2, 3)``; ``radius`` one number or one per segment
+    (tapered tubes).  The trap is the nearest segment's ``labels`` entry
+    (default: its index, mapped to 0..1), so colouring by trap shows the
+    individual fibres, or whatever the labels say (e.g. the generation).
     """
 
-    def __init__(self, segments: np.ndarray, radius: float = 0.03):
+    def __init__(self, segments: np.ndarray, radius=0.03, labels=None):
         self.seg = np.asarray(segments, float).reshape(-1, 2, 3)
-        self.radius = float(radius)
-        self.bound = float(np.abs(self.seg).max() * np.sqrt(3) + radius)
+        self.radius = np.broadcast_to(np.asarray(radius, float), (len(self.seg),)).copy()   # scalar or per segment
+        self.labels = None if labels is None else np.asarray(labels, float)
+        self.bound = float(np.abs(self.seg).max() * np.sqrt(3) + self.radius.max())
 
     # -- constructors -----------------------------------------------------
     @classmethod
@@ -99,6 +102,24 @@ class FiberNetwork(Field):
         if closed:
             a, b = np.vstack([a, pts[-1:]]), np.vstack([b, pts[:1]])
         return cls(np.stack([a, b], 1), radius)
+
+    @classmethod
+    def from_curves(cls, curves, radii=0.03, closed=True, labels=None):
+        """One network from several polylines.  ``radii`` and ``labels`` are
+        per curve (a number each) or per curve a per-segment array."""
+        segs, rad, lab = [], [], []
+        for i, c in enumerate(curves):
+            c = np.asarray(c, float)
+            a, b = (np.vstack([c, c[:1]])[:-1], np.vstack([c, c[:1]])[1:]) if closed else (c[:-1], c[1:])
+            segs.append(np.stack([a, b], 1))
+            r = radii[i] if hasattr(radii, "__len__") else radii
+            rad.append(np.broadcast_to(np.asarray(r, float), (len(a),)))
+            lv = (labels[i] if labels is not None else i)
+            lab.append(np.broadcast_to(np.asarray(lv, float), (len(a),)))
+        lab = np.concatenate(lab)
+        if labels is None:
+            lab = lab / max(len(curves) - 1, 1)
+        return cls(np.concatenate(segs), np.concatenate(rad), lab)
 
     @classmethod
     def from_curve(cls, fn: Callable[[np.ndarray], np.ndarray], n: int = 400,
@@ -141,9 +162,11 @@ class FiberNetwork(Field):
         def chunk(Q):
             ap = Q[:, None, :] - a[None]
             t = np.clip((ap * ab[None]).sum(-1) / L2[None], 0, 1)
-            return np.linalg.norm(ap - t[..., None] * ab[None], axis=-1) - self.radius
+            return np.linalg.norm(ap - t[..., None] * ab[None], axis=-1) - self.radius[None]
 
         d, idx = _chunked_min(P, len(self.seg), chunk)
+        if self.labels is not None:
+            return d, self.labels[idx]
         return d, idx / max(len(self.seg) - 1, 1)
 
 
@@ -156,6 +179,13 @@ def stereographic(x4: np.ndarray) -> np.ndarray:
     """S^3 -> R^3 stereographic projection from the pole (0,0,0,1)."""
     x4 = np.asarray(x4, float)
     return x4[..., :3] / (1.0 - x4[..., 3:4])
+
+
+def inverse_stereographic(u: np.ndarray) -> np.ndarray:
+    """R^3 -> S^3, the inverse of ``stereographic`` (pole (0,0,0,1) is infinity)."""
+    u = np.asarray(u, float)
+    r2 = (u * u).sum(-1, keepdims=True)
+    return np.concatenate([2 * u, r2 - 1.0], -1) / (r2 + 1.0)
 
 
 def hopf_fiber_points(eta: float, phi: float, t: np.ndarray) -> np.ndarray:
@@ -234,6 +264,18 @@ class HopfFibers(Field):
         self.keep = np.array(keep)
         self.bound = float(np.max(np.linalg.norm(self.C, axis=1) + self.R) + radius) if len(self.R) else 1.0
 
+    def circles(self, spacing: float = 0.05, min_pts: int = 24):
+        """The fibres as closed polylines, one ``(n,3)`` array each, with
+        about ``spacing`` between points (more points on bigger circles)."""
+        out = []
+        for c, r, n in zip(self.C, self.R, self.N):
+            u = np.cross(n, [1.0, 0, 0]) if abs(n[0]) < 0.9 else np.cross(n, [0, 1.0, 0])
+            u /= np.linalg.norm(u); v = np.cross(n, u)
+            m = max(min_pts, int(np.ceil(2 * np.pi * r / spacing)))
+            a = np.linspace(0, 2 * np.pi, m, endpoint=False)
+            out.append(c + r * (np.cos(a)[:, None] * u + np.sin(a)[:, None] * v))
+        return out
+
     def _de(self, P):
         def chunk(Q):
             v = Q[:, None, :] - self.C[None]
@@ -243,6 +285,81 @@ class HopfFibers(Field):
 
         d, idx = _chunked_min(P, len(self.R), chunk)
         return d, self.keep[idx] / max(len(self.base) - 1, 1)
+
+
+def densify(curve: np.ndarray, m: int, closed: bool = True) -> np.ndarray:
+    """Subdivide every segment of a polyline into ``m`` equal pieces."""
+    c = np.asarray(curve, float)
+    nxt = np.roll(c, -1, 0) if closed else c[1:]
+    base = c if closed else c[:-1]
+    t = (np.arange(m) / m)[None, :, None]
+    out = (base[:, None, :] * (1 - t) + nxt[:, None, :] * t).reshape(-1, 3)
+    return out if closed else np.vstack([out, c[-1:]])
+
+
+def linking_number(A: np.ndarray, B: np.ndarray, chunk: int = 400) -> float:
+    """Gauss linking number of two closed polylines ``(n,3)``, ``(m,3)``
+    (a float: close to an integer when the curves are well separated
+    compared with their segment length; ``linking_matrix`` takes care of that)."""
+    A, B = np.asarray(A, float), np.asarray(B, float)
+    dA, dB = np.roll(A, -1, 0) - A, np.roll(B, -1, 0) - B
+    mA, mB = A + dA / 2, B + dB / 2
+    total = 0.0
+    for s in range(0, len(A), chunk):
+        r = mA[s:s + chunk, None] - mB[None]
+        num = np.einsum("ijk,ijk->ij", np.cross(dA[s:s + chunk, None], dB[None]), r)
+        total += (num / np.linalg.norm(r, axis=-1) ** 3).sum()
+    return float(total / (4 * np.pi))
+
+
+def curve_distance(A: np.ndarray, B: np.ndarray, rounds: int = 4, sub: int = 40) -> float:
+    """Smallest distance between two closed polylines, refined: the nearest
+    sample pair is re-sampled ``sub`` times finer in a window, ``rounds`` times
+    (plain sample-to-sample distance overestimates by up to half a spacing)."""
+    from scipy.spatial.distance import cdist
+
+    A, B = (np.vstack([np.asarray(c, float), np.asarray(c, float)[:1]]) for c in (A, B))
+
+    def window(P, k):
+        seg = P[max(k - 2, 0):min(k + 3, len(P))]
+        t = np.linspace(0, len(seg) - 1, (len(seg) - 1) * sub + 1)
+        return np.stack([np.interp(t, np.arange(len(seg)), seg[:, c]) for c in range(3)], -1)
+
+    for _ in range(rounds):
+        D = cdist(A, B)
+        i, j = np.unravel_index(D.argmin(), D.shape)
+        A, B = window(A, i), window(B, j)
+    return float(cdist(A, B).min())
+
+
+def linking_matrix(curves, touch_tol: float = 0.05, max_densify: int = 8):
+    """Pairwise Gauss linking numbers of closed polylines.
+
+    Returns ``(L, touching)``.  A pair *touches* when the refined distance
+    between the curves is below ``touch_tol`` times the longer of their longest
+    segments (their chord error is far smaller than that, so a true contact
+    always passes): the linking number of curves that share a point is
+    undefined, and ``L`` holds ``nan`` there.  For every other pair the curves
+    are densified until their segments are at most half the gap, up to
+    ``max_densify`` times, and the Gauss integral is taken: the values are
+    integers up to discretisation error (check ``|L - round(L)|``).
+    """
+    n = len(curves)
+    seglen = [float(np.linalg.norm(np.roll(c, -1, 0) - c, axis=1).max()) for c in curves]
+    L = np.zeros((n, n))
+    touching = np.zeros((n, n), bool)
+    for i in range(n):
+        for j in range(i + 1, n):
+            lmax = max(seglen[i], seglen[j])
+            gap = curve_distance(curves[i], curves[j])
+            if gap < touch_tol * lmax:
+                touching[i, j] = touching[j, i] = True
+                L[i, j] = L[j, i] = np.nan
+                continue
+            m = int(np.clip(np.ceil(2 * lmax / gap), 1, max_densify))
+            A, B = (densify(curves[i], m), densify(curves[j], m)) if m > 1 else (curves[i], curves[j])
+            L[i, j] = L[j, i] = linking_number(A, B)
+    return L, touching
 
 
 def hopf_map(x4: np.ndarray) -> np.ndarray:
