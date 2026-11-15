@@ -186,8 +186,17 @@ class ClaspTree(Field):
     def linking(self, depth: int = 3, spacing: float = 0.02):
         """Linking numbers of the completed rings: ``(L, touching, rings)``,
         see ``linking_matrix``.  Parent and child rings touch (a child's back
-        sits on its parent's cut tip), so only the other pairs get a number."""
+        sits on its parent's cut tip), so only the other pairs get a number; the
+        parent-child pairs are marked touching by construction."""
         from .geometry import linking_matrix
         rings = self.ring_tree(depth, spacing, closed=True, world=False)
         L, touch = linking_matrix([r.curve for r in rings])
+        # A child's back sits exactly on its parent's cut tip, so those pairs touch
+        # by construction.  Measured on the polylines the gap can be a few chord
+        # errors, above ``linking_matrix``'s tolerance for the smallest rings, and
+        # the Gauss integral of curves that share a point is not an integer.
+        for i, r in enumerate(rings):
+            if r.parent >= 0:
+                touch[i, r.parent] = touch[r.parent, i] = True
+                L[i, r.parent] = L[r.parent, i] = np.nan
         return L, touch, rings
