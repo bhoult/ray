@@ -467,3 +467,43 @@ def test_riemann_sphere_can_step_inside_a_hybrid_it_does_not_finish():
     hy = fk.Hybrid([fk.RiemannSphere(1.0, iters=8), fk.Hopfbrot(3, 90.0, 0.0)], schedule=[0, 1], iters=8,
                    finisher=1, bail=30.0)
     assert np.isfinite(hy(P)).all()
+
+
+def _fit_circle(c):
+    k = len(c)
+    return fk.geometry.circle_through(c[0], c[k // 3], c[2 * k // 3])
+
+
+def _child_circles(h):
+    return [_fit_circle(r.curve) for r in h.ring_tree(1, 0.03, closed=True, world=True) if r.gen == 1]
+
+
+def test_moebius_invariants_of_two_hopf_fibres_are_equal():
+    t = np.linspace(0, 2 * np.pi, 400, endpoint=False)
+    cs = [_fit_circle(fk.geometry.stereographic(fk.geometry.hopf_fiber_points(e, p, t)))
+          for e, p in [(0.5, 0.2), (0.9, 2.0), (0.7, 4.0)]]
+    for i in range(3):
+        for j in range(i + 1, 3):
+            s = fk.circle_moebius_invariants(cs[i], cs[j])
+            assert abs(s[0] - s[1]) < 1e-9
+
+
+def test_horned_clasp_moebius_invariants_have_the_closed_form():
+    for kap in (1.2, 1.35, 1.5, 1 + 1 / np.sqrt(2), 1.9):
+        for turn in (45.0, -45.0, 100.0):
+            a, b = _child_circles(fk.HornedSphere(shrink=0.4, clasp=kap, turn=turn, iters=2))
+            s = fk.circle_moebius_invariants(a, b)
+            assert abs(s[0] - abs(1 - 2 * (kap - 1) ** 2)) < 1e-9 and s[1] < 1e-9
+
+
+def test_hopf_tree_at_psi_pi_is_the_horned_sphere_with_hopf_clasp():
+    from scipy.spatial.distance import cdist
+    kap = 1 + 1 / np.sqrt(2)
+    H = fk.HopfTree(shrink=0.4, psi=np.pi, hang=1, hand=1)
+    h = fk.HornedSphere(shrink=0.4, clasp=kap, turn=-45.0, iters=3)
+    rh, rr = H.ring_tree(3, 0.04, closed=True, world=True), h.ring_tree(3, 0.04, closed=True, world=True)
+    for g in (1, 2, 3):
+        A = np.vstack([r.curve for r in rh if r.gen == g])
+        B = np.vstack([r.curve for r in rr if r.gen == g])
+        D = cdist(A, B)
+        assert max(D.min(1).max(), D.min(0).max()) < 1e-9
