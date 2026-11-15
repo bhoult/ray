@@ -417,3 +417,25 @@ def clifford_torus() -> Torus:
     numerically in the tests).  The Hopf fibres over a latitude of S^2 lie
     on nested tori of this kind."""
     return Torus(R=np.sqrt(2.0), r=1.0)
+
+
+def _circle_frame(centre, radius, normal) -> np.ndarray:
+    """The 2-plane of R^{4,1} spanned by (a plane through the circle, a sphere with it
+    as equator): Lorentz model of a round circle, as in the HopfFibration notes."""
+    c = np.asarray(centre, float)
+    n = np.asarray(normal, float)
+    n = n / np.linalg.norm(n)
+    P = c @ c - radius ** 2
+    plane = np.r_[n, n @ c, n @ c]
+    sphere = np.r_[c / radius, (P - 1) / (2 * radius), (P + 1) / (2 * radius)]
+    return np.array([plane, sphere])
+
+
+def circle_moebius_invariants(c1, c2) -> np.ndarray:
+    """Moebius invariants (s1 >= s2) of a pair of round circles, each given as
+    ``(centre, radius, unit normal)``: the singular values of the Lorentz Gram matrix of
+    their frames.  When both are below 1 the pair is Moebius-equivalent to two great
+    circles of S^3 with principal angles arccos(s_i); it is a pair of Hopf fibres exactly
+    when s1 = s2 (Clifford parallel)."""
+    eta = np.diag([1.0, 1.0, 1.0, 1.0, -1.0])
+    return np.linalg.svd(_circle_frame(*c1) @ eta @ _circle_frame(*c2).T, compute_uv=False)
