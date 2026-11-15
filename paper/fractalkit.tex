@@ -48,7 +48,7 @@ pruned breadth-first search we prove equal to the full minimum over all rings.  
 tree and the Hopf fibres as two families of circles, we compute Gauss linking numbers over whole networks.  Hopf
 fibres form a complete linking graph; the horned tree links only sibling pairs.  A horned-style tree whose clasped
 pairs are Hopf pairs has the same sibling-only graph for most placements, but in a window of placements with
-thick, non-overlapping tubes every ring that has grandchildren is also linked to two of them, with signs $-1$ and $+1$, at depths 3 and 4.
+thick, non-overlapping tubes every ring that has grandchildren is also linked to two of them, with signs $-1$ and $+1$, at depths 3 and 4.  Finally, using the M\"obius invariants of circle pairs from a companion study of the Hopf fibration, we show that the horned sphere's clasp has invariants $(|1-2(\kappa-1)^2|,0)$, a Hopf pair exactly at $\kappa=1+1/\sqrt2$ and the oloid's pair at $\kappa=3/2$, that the Hopf tree at $\psi=180^\circ$ is the horned sphere at that clasp, and that the exact Hopf clasp is not distinguished by the number of links.
 \end{abstract}
 
 \section{Introduction}
@@ -72,6 +72,7 @@ Porting three of ray's formulas turned up structure that we found worth writing 
 \item If the clasped pair in each recursion step is a Hopf pair, the linking graph depends on one placement
   parameter.  In a window of that parameter the tubes can be thick and the graph is richer than the horned
   sphere's, and it follows a simple rule that repeats generation by generation (\cref{sec:hopftree}).
+\item The clasp of the horned sphere has a closed-form M\"obius invariant; the exact Hopf clasp is one value of its \code{clasp} parameter, shared with the two-circle roller of a companion study of the Hopf fibration, and a Hopf tree is a horned sphere at that value (\cref{sec:clasp}).
 \end{enumerate}
 
 We also document two numerical pitfalls met on the way: a Gauss-integral artifact for touching curves, and
@@ -447,7 +448,7 @@ Three regimes appear (\cref{tab:regimes}, \cref{fig:phase}).
 
 \begin{enumerate}[leftmargin=*,itemsep=2pt]
 \item \emph{Sibling-only} (for $\psi\lesssim130^\circ$ and $\psi\gtrsim222^\circ$): the linking graph is that of the horned sphere, a perfect matching of siblings, here with sign $+1$ in our convention.  Tubes with $t\ge0.2$ are possible for $\psi$ from about $20^\circ$ to $100^\circ$ and from about $222^\circ$ to $340^\circ$.
-\item \emph{Thin and rich} ($130^\circ<\psi<202^\circ$): many more links (up to 31 of the 91 non-touching pairs at depth 3), but $t_{\max}\le0.05$, so the tubes are wire-like.  At $\psi=180^\circ$ and depth 4, 123 of the 421 non-touching pairs are linked, but 14 pairs beyond the parent--child ones touch, so the centre-lines intersect and this is no longer an embedded tree.
+\item \emph{Thin and rich} ($130^\circ<\psi<202^\circ$): many more links (up to 31 of the 91 non-touching pairs at depth 3), but $t_{\max}\le0.05$, so the tubes are wire-like.  At $\psi=180^\circ$, which is a horned sphere with a Hopf clasp (\cref{sec:clasp}), and depth 4, 123 of the 421 non-touching pairs are linked, but 14 pairs beyond the parent--child ones touch, so the centre-lines intersect and this is no longer an embedded tree.
 \item \emph{Thick and rich} ($202^\circ\le\psi\le221^\circ$, checked at $1^\circ$ steps): the tubes can be thick ($t_{\max}=0.10$ at $205^\circ$, $0.21$ at $215^\circ$, $0.25$ at $220^\circ$) and there are links beyond the siblings, following a rule.
 \end{enumerate}
 
@@ -480,6 +481,93 @@ It is an observation, not a theorem: \cref{prop:selfsim} says that the links of 
 \label{fig:gallery_hopf}
 \end{figure}
 
+\section{The clasp as a M\"obius object: horned spheres, the oloid and the Hopf fibration}
+\label{sec:clasp}
+
+The companion repository \code{HopfFibration}~\cite{hopffibration} studies chains of round circles, the cores of Antoine's necklace~\cite{wiki_antoine,schwartz2022}, against Hopf fibres, and compares the two-circle clasp with the oloid~\cite{wiki_oloid}.  Its tools apply directly to the clasp of the horned sphere of \cref{sec:horned}, and give a one-parameter picture of what \code{clasp} does.  We reproduce its Lorentz-model invariant in \code{fractalkit} (\code{circle\_moebius\_invariants}) and check the results below against the companion's own implementation.
+
+\subsection{Invariants of a pair of circles}
+
+A round circle in $\R^3\cup\{\infty\}$ is, in the Lorentz model $\R^{4,1}$ with metric $\eta=\operatorname{diag}(1,1,1,1,-1)$, the 2-plane $W$ of the spheres through it: it is spanned by a plane through the circle and a sphere having it as equator, both unit spacelike.  For circles with frames $W_1,W_2$ the singular values $s_1\ge s_2$ of the Gram matrix $W_1\eta W_2^{\top}$ are invariant under M\"obius maps.  When both are below 1 the pair is M\"obius-equivalent to two great circles of $\Sph^3$ with principal angles $\theta_i=\arccos s_i$, and it is a pair of Hopf fibres exactly when the great circles are Clifford parallel, $s_1=s_2$~\cite{hopffibration}.
+
+\begin{proposition}\label{prop:clasp}
+Let two circles of radius $r$ lie in perpendicular planes, with the line joining their centres, at distance $d$, lying in both planes.  Then $(s_1,s_2)=(|1-d^2/2r^2|,\,0)$.
+\end{proposition}
+\begin{proof}
+Scale to $r=1$ and place $A$ in $z=0$ with centre $0$ and $B$ in $y=0$ with centre $(d,0,0)$.  Writing frames as (plane, sphere),
+\begin{align*}
+W_A&=\{(0,0,1,0,0),\ (0,0,0,-1,0)\},\\
+W_B&=\{(0,1,0,0,0),\ (d,0,0,\tfrac{d^2-2}{2},\tfrac{d^2}{2})\}.
+\end{align*}
+The Gram matrix has one nonzero entry, $(0,0,0,-1,0)\,\eta\,(d,0,0,\tfrac{d^2-2}{2},\tfrac{d^2}{2})^{\top}=1-\tfrac{d^2}{2}$.
+\end{proof}
+
+For the two children of a ring in the horned sphere, the radius is $s$ and the centres are $2\,\mathrm{off}=2s(\kappa-1)$ apart, so $d/r=2(\kappa-1)$ and the first invariant is
+\begin{equation}
+s_1(\kappa)=\bigl|1-2(\kappa-1)^2\bigr|,\qquad s_2=0,
+\label{eq:clasp_s1}
+\end{equation}
+where $\kappa$ is the \code{clasp} parameter.  The children's planes are perpendicular, and the centre line lies in both, for every $\kappa$ and every \code{turn} we tried; we checked this numerically, and checked \cref{eq:clasp_s1} against the companion's implementation at six values of $\kappa$ and two turns, to $10^{-15}$ (\cref{fig:clasp}, left).  Three consequences:
+
+\begin{itemize}[leftmargin=*,itemsep=2pt]
+\item $s_1=0$ exactly at $\kappa=1+1/\sqrt2\approx1.7071$.  The clasp is then a Hopf pair over antipodal base points, the same pair as in \cref{sec:hopftree}, and the \code{turn} parameter drops out of the invariants.
+\item $s_1=\tfrac12$ at $\kappa=\tfrac32$ (and again at $\kappa=1+\sqrt3/2\approx1.866$): the clasp is then M\"obius-equivalent to the pair of circles of the oloid, whose principal angles are $60^\circ$ and $90^\circ$, so it is $30^\circ$ from a Hopf pair on the second sphere factor~\cite{hopffibration,wiki_oloid}.
+\item The default $\kappa=1.35$ has $s_1=0.755$, a clasp that is neither.
+\end{itemize}
+In the language of the companion, the straight chain of circles at $d=\sqrt2\,r$ is the two-circle roller~\cite{wiki_oloid}, and $\kappa=1+1/\sqrt2$ is the value at which the horned sphere's clasp becomes that pair.
+
+\begin{observation}\label{obs:hopf_is_horned}
+For $s=0.4$ and $\psi=180^\circ$, the Hopf tree of \cref{sec:hopftree} has the same circles at each generation as the horned sphere with $\kappa=1+1/\sqrt2$ and \code{turn}$=-45^\circ$ or $135^\circ$: with hang and hand both $+1$ the Hausdorff distance between the sampled circles of generations $1,\dots,4$ is $4.5\times10^{-16}$ (all four hang/hand choices agree to $4\times10^{-16}$ through generation 2).
+\end{observation}
+Both have 31 linked pairs at depth 3.  The ``thin and rich'' member at $\psi=180^\circ$ of \cref{sec:hopftree} is therefore a point of the horned sphere's two-parameter family, reached at the one $\kappa$ where its clasp is a Hopf pair; the Hopf tree for other $\psi$ is not of that form.  This is a numerical equality, not a proof, although at $\psi=\pi$ the back point is the farthest one, so that $\rho=1+1/\sqrt2$ in \cref{eq:hopf_gap} and $\sin g=\kappa s$ with $\kappa=1+1/\sqrt2$, as for the horned sphere.
+
+\subsection{Is the Hopf clasp special for linking?}
+
+One might expect the exact Hopf clasp to be distinguished.  It is not.  \Cref{fig:clasp} (right) counts the linked pairs of the depth-3 horned tree at $s=0.4$, $\text{turn}=45^\circ$ over a range of $\kappa$; \cref{tab:clasp} lists the values.  Sibling pairs link at every $\kappa$ from $1.1$ to $1.9$ (7 pairs); for $\kappa\ge2$ the clasp is open ($d\ge2r$) and the children no longer link.  The default $\kappa=1.35$ and $\kappa=1.5$ have \emph{only} those; the other values have more, in broad bands, from $19$ at $1.2$ to $39$ at $1.8$ and $13$ at $1.9$, with $31$ at the Hopf value.  The clasp invariant $s_1$ does not predict the count: $\kappa=1.1$ ($s_1=0.98$) has $31$ links and $\kappa=1.7$ ($s_1=0.02$) has $33$.  At $\kappa=1.65$ four extra pairs touch, and at $\kappa=2.0$ seven, so those trees are not embedded; the table is silent about whether the tubes at the other $\kappa$ can be made disjoint (we did not compute $t_{\max}$ here).
+
+\begin{table}[t]
+\centering\small
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+$\kappa$ & $s_1$ & linked & sibling & extra touching \\ \midrule
+1.10 & 0.980 & 31 & 7 & 0 \\
+1.20 & 0.920 & 19 & 7 & 0 \\
+1.35 (default) & 0.755 & 7 & 7 & 0 \\
+1.50 (oloid) & 0.500 & 7 & 7 & 0 \\
+1.60 & 0.280 & 15 & 7 & 0 \\
+1.65 & 0.155 & 25 & 7 & 4 \\
+1.70 & 0.020 & 33 & 7 & 0 \\
+$1+1/\sqrt2$ (Hopf) & 0.000 & 31 & 7 & 0 \\
+1.75 & 0.125 & 33 & 7 & 0 \\
+1.80 & 0.280 & 39 & 7 & 0 \\
+1.90 & 0.620 & 13 & 7 & 0 \\
+2.00 & 1.000 & 0 & 0 & 7 \\
+2.20 & 1.880 & 0 & 0 & 0 \\ \bottomrule
+\end{tabular}
+\caption{The clasp invariant and the linked pairs of the depth-3 horned tree, $s=0.4$, $\text{turn}=45^\circ$.  ``Extra touching'' counts touching pairs other than parent--child.  The 24 values of \code{turn} in steps of $15^\circ$ at $\kappa=1+1/\sqrt2$ give 27 to 39 linked pairs, always with 7 siblings.}
+\label{tab:clasp}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{hopf_clasp.png}
+\caption{Left: the first M\"obius invariant of the clasped children against $\kappa$, closed form \cref{eq:clasp_s1} and values computed from the rings ($s_2$ is zero to $10^{-15}$).  The oloid pair is at $\kappa=3/2$ and the Hopf pair at $1+1/\sqrt2$.  Right: linked pairs of the depth-3 tree, with the sibling pairs in grey.}
+\label{fig:clasp}
+\end{figure}
+
+\subsection{Fibres, necklaces and trees}
+
+The companion reports two contrasting graphs: Hopf fibres link pairwise and so form a complete graph, while a necklace of round circles links only neighbours, a cycle~\cite{hopffibration}; the first is what \cref{sec:linking} found for twelve fibres.  In Antoine's necklace adjacent tori are linked and non-adjacent ones are not~\cite{schwartz2022}, and a necklace needs many links ($K$ large; the notes work with $K\ge20$) so that nested generations stay disjoint~\cite{schwartz2022}.  A ring of the horned sphere has only $K=2$ children, so its ``necklace'' is one clasp, and its graph is sibling pairs.  That is why the non-sibling links of the Hopf tree and of the horned sphere at larger $\kappa$ (\cref{tab:clasp}) have no counterpart in a necklace: they come from circles of different branches, not from adjacent ones.  Conversely, the companion shows that a closed ring of $k$ circles whose every clasp is an exact Hopf pair requires twisting the link planes, with a clasp invariant it observes to equal $\tan(\pi/k)$ for $k=8,12,16,24,32$ (not proved there), and that no single Hopf fibration contains three consecutive circles of a chain~\cite{hopffibration}.  We did not recompute these.
+
+\subsection{Open questions}
+
+The following are questions raised by the companion notes or by this comparison; none is tested here.
+\begin{enumerate}[leftmargin=*,itemsep=2pt]
+\item \emph{Why the Hopf value?}  At $\kappa=1+1/\sqrt2$ the clasp is the two-circle roller, whose centre of mass rolls at constant height~\cite{wiki_oloid}, and it is also an exact Hopf pair.  The companion lists this as an unexplained coincidence~\cite{hopffibration}; \cref{tab:clasp} shows that the count of linked pairs does not single the value out.
+\item \emph{Hopf invariant as the linking number.}  The Hopf invariant of a map $\Sph^3\to\Sph^2$ is the linking number of the preimages of two regular values, and torus-knot preimages link $pq$ times for $z_1^p,z_2^q$~\cite{hou2025}; it is the same Gauss integral as \cref{sec:linking}.  Whether the non-sibling links of the Hopf tree correspond to preimages of some map is unknown.
+\item \emph{Limit sets.}  Whether the limit set of a Hopf tree is wild is open; the companion proposes testing pearl necklaces whose pearls bound Hopf clasps, as limit sets of Kleinian groups, but notes that no source states that either horned sphere arises that way~\cite{hopffibration}.
+\end{enumerate}
+
 \section{Numerical notes}
 \label{sec:numerics}
 
@@ -497,6 +585,7 @@ The scalar estimate $n r^{n-1}$ is a lower bound on the spectral norm of the Jac
 \item \emph{Depth.}  Linking graphs were computed to depth 3 for the scans and depth 4 for selected cases.  Whether the grandchild rule persists at depths 5 and beyond, and why it ends at $\psi=221^\circ$, is open.
 \item \emph{Parameters.}  All the Hopf-tree results are for $s=0.4$ and, apart from the mirror symmetry, hang $=+1$.  The dependence on $s$ is only through \cref{eq:hopf_gap} and the clearance $t_{\max}$ and has not been scanned.
 \item \emph{Proof status.}  \Cref{lem:smin,prop:prune,prop:hopf,prop:selfsim} are proved above (the first two also tested).  The regimes in $\psi$ and \cref{obs:rule} are empirical.
+\item \emph{Clasp scan.}  \Cref{tab:clasp} is for $s=0.4$, depth 3 and one \code{turn}; tube clearance was not computed there, and \cref{obs:hopf_is_horned} is a numerical equality at $s=0.4$ only.  The companion's statements are quoted from its documentation and, apart from the invariants of \cref{sec:clasp}, were not rerun.
 \item \emph{Distance estimates.}  The Hopfbrot and Riemann-sphere estimates are heuristics ported from ray, not proven bounds, and hybrids mix estimates that disagree.  Hybrid renderings should be read as explorations.
 \end{itemize}
 
@@ -508,6 +597,7 @@ The package is in \code{fractalkit/} of the \code{ray} repository~\cite{ray}; fi
 pip install -r requirements.txt
 python -m pytest tests -q
 cd examples && python riemann_horned.py && python hopf_tree.py
+cd examples && python hopf_clasp.py
 cd ../paper && latexmk -pdf fractalkit.tex
 \end{verbatim}
 
