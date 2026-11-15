@@ -72,7 +72,7 @@ axs[0].set_xlabel("psi (degrees)"); axs[0].set_ylabel("linked ring pairs, depth 
 axs[0].set_title("linking graph size vs where the back point sits (hang=+1)", fontsize=9)
 axs[1].semilogy(psis, tmax, "o-"); axs[1].axhline(0.2, color="r", ls=":", label="tube = 0.2 (gallery)")
 axs[1].set_xlabel("psi (degrees)"); axs[1].set_ylabel("largest tube without overlap"); axs[1].legend()
-axs[1].set_title("thick tubes (>= 0.2) for psi up to ~100 and from ~215 (hang=+1)", fontsize=9)
+axs[1].set_title("thick tubes (>= 0.2) for psi in ~[20,100] and ~[215,340] (hang=+1)", fontsize=9)
 fig.tight_layout(); fig.savefig(OUT / "hopf_tree_phase.png", dpi=130); print("wrote", OUT / "hopf_tree_phase.png")
 
 # ---- 4. linking structure: horned vs Hopf tree in the window vs rich regimes ----------
@@ -111,7 +111,7 @@ for i in range(15):
 for i, r in enumerate(rings):
     ax.scatter(*pos[i], s=150 - 30 * r.gen, c=[plt.cm.plasma(r.gen / 4)], zorder=3, edgecolors="k")
 ax.axis("off")
-ax.set_title("psi=215: red = linking +1, blue = -1, grey = touching tree\nthick = siblings; curved = links between non-siblings", fontsize=9)
+ax.set_title("psi=215: red = linking +1, blue = -1, grey = touching tree\nthick = siblings; curved = ring X with the b-child of each of its children", fontsize=9)
 fig.tight_layout(); fig.savefig(OUT / "hopf_tree_graph.png", dpi=130); print("wrote", OUT / "hopf_tree_graph.png")
 
 # ---- 5. the rich regime as a wire network ------------------------------------------------
