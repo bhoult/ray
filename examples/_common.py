@@ -31,3 +31,14 @@ def grid(items, ncols=3, size=(240, 180), name="out", **kw):
     plt.close(fig)
     print("wrote", p)
     return p
+
+
+def linking_plot(ax, L, touch, title, xlabel=None):
+    """Heat map of a linking matrix: colour = linking number, grey = touching (undefined)."""
+    n = len(L)
+    M = np.where(touch, np.nan, np.round(L))
+    cmap = plt.get_cmap("RdBu_r").copy(); cmap.set_bad("0.82")
+    ax.imshow(M, cmap=cmap, vmin=-1.5, vmax=1.5, interpolation="nearest")
+    ax.set_title(title, fontsize=9); ax.set_xticks([]); ax.set_yticks([])
+    if xlabel:
+        ax.set_xlabel(xlabel, fontsize=8)
