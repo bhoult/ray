@@ -1,5 +1,11 @@
 # fractalkit
 
+![fig](figures/gallery.png)
+
+![fig](figures/mix_morph.png)
+
+![fig](figures/slices.png)
+
 Modular numpy model of the fractals in ray, for exploring and plotting from Python
 (numpy, scipy, sympy, matplotlib). Needs no Rust.
 
