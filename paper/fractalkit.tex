@@ -14,6 +14,7 @@
 \usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
 \usepackage[capitalise,noabbrev]{cleveref}
 \usepackage{xurl}
+\usepackage{orcidlink}
 
 \graphicspath{{../figures/}}
 
@@ -32,7 +33,7 @@
 \DeclareMathOperator{\atan}{atan2}
 
 \title{From Horned Spheres to Hopf Trees: Linking Graphs, M\"obius Invariants, and Coxeter Reflection Families}
-\author{Brent Hartshorn}
+\author{Brent Hartshorn \orcidlink{0009-0004-2853-655X}}
 
 \begin{document}
 \maketitle
@@ -53,8 +54,21 @@ that the Hopf tree at $\psi=180^\circ$ is the horned sphere at that clasp, and t
 
 \section{Introduction}
 
-\code{fractalkit}, written
-for exploration: every fractal is a \emph{field}, a function from points of $\R^3$ to a distance estimate and an
+\begin{footnotesize}
+\begin{equation}
+\underbrace{s_1(\kappa)}_{\substack{\text{M\"obius clasp}\\\text{invariant (Sec.~9)}}}
+= \overbrace{\bigl|\cos \theta_{cc}\bigr|}^{\substack{\text{child sphere}\\\text{angle (Sec.~10)}}}
+= \underbrace{\bigl|1 - 2(\kappa - 1)^2\bigr|}_{\substack{\text{horned-sphere gap}\\\sin g = \kappa s \text{ (Sec.~6)}}}
+= \begin{cases}
+  0, & \kappa = 1 + \frac{1}{\sqrt{2}} \quad \text{(Hopf pair / }\psi = 180^\circ\text{ Hopf tree)}, \\[6pt]
+  \frac{1}{2}, & \kappa = \frac{3}{2} \text{ or } 1 + \frac{\sqrt{3}}{2} \quad \text{(oloid two-circle roller)}, \\[6pt]
+  \cos\!\left(\frac{\pi}{n}\right), & \kappa_n = 1 + \cos\!\left(\frac{\pi}{2n}\right) \quad \underbrace{\text{(Coxeter reflection group)}}_{s_m = \frac{\cos(\pi/m)}{\kappa_n}}.
+\end{cases}
+\end{equation}
+\end{footnotesize}
+
+\code{fractalkit}, written for exploration: 
+where every fractal is a \emph{field}, a function from points of $\R^3$ to a distance estimate and an
 orbit-trap value, and fields compose.  The aim is to be able to mix fractals, slice them, measure them and
 combine them with other geometry, such as fibre networks and the Hopf fibration, in a few lines of Python.
 This turned up structure that we found worth writing down:
