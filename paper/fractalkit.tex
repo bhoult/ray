@@ -31,35 +31,33 @@
 \newcommand{\Lk}{\operatorname{Lk}}
 \DeclareMathOperator{\atan}{atan2}
 
-\title{Linked Circles Within Circles:\\
-A Modular Distance-Field Toolkit for Bulbs, Folds and Hopf-Paired Horned Trees}
+\title{From Horned Spheres to Hopf Trees: Linking Graphs, M\"obius Invariants, and Coxeter Reflection Families}
 \author{Brent Hartshorn}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-We describe \code{fractalkit}, a small Python package (numpy, scipy, sympy, matplotlib) that models the
-distance-estimated 3D fractals of the \code{ray} renderer as composable fields, and we report what we found
-while porting three of them.  The Hopfbrot is recast as an iterated map whose power map is fibre-preserving for
-the Hopf fibration, so it can be mixed with folding maps in hybrids.  The Riemann-sphere fractal is ported with
-its log-space distance estimate.  Alexander's horned sphere becomes an exact recursive distance field, whose
-pruned breadth-first search we prove equal to the full minimum over all rings.  Treating the horned sphere's ring
-tree and the Hopf fibres as two families of circles, we compute Gauss linking numbers over whole networks.  Hopf
-fibres form a complete linking graph; the horned tree links only sibling pairs.  A horned-style tree whose clasped
-pairs are Hopf pairs has the same sibling-only graph for most placements, but in a window of placements with
-thick, non-overlapping tubes every ring that has grandchildren is also linked to two of them, with signs $-1$ and $+1$, at depths 3 and 4.  Finally, using the M\"obius invariants of circle pairs from a companion study of the Hopf fibration, we show that the horned sphere's clasp has invariants $(|1-2(\kappa-1)^2|,0)$, a Hopf pair exactly at $\kappa=1+1/\sqrt2$ and the oloid's pair at $\kappa=3/2$, that the Hopf tree at $\psi=180^\circ$ is the horned sphere at that clasp, and that the exact Hopf clasp is not distinguished by the number of links.  The Hopf and oloid clasps are members of a family $\kappa_n=1+\cos(\pi/2n)$ for which the ring and its children generate planar reflection groups with Coxeter relations; their limit sets are round circles.
+We model Alexander's horned sphere as an exact recursive distance field, whose
+pruned breadth-first search we prove equal to the full minimum over all rings.  
+Treating the horned sphere's ring tree and the Hopf fibres as two families of circles, 
+we compute Gauss linking numbers over whole networks.  
+Hopf fibres form a complete linking graph; the horned tree links only sibling pairs.  
+A horned-style tree whose clasped pairs are Hopf pairs has the same sibling-only graph for most placements, 
+but in a window of placements with thick, 
+non-overlapping tubes every ring that has grandchildren is also linked to two of them, with signs $-1$ and $+1$, at depths 3 and 4.  
+
+Finally, using the M\"obius invariants of circle pairs, we show that the horned sphere's clasp has invariants $(|1-2(\kappa-1)^2|,0)$, a Hopf pair exactly at $\kappa=1+1/\sqrt2$ and the oloid's pair at $\kappa=3/2$, 
+that the Hopf tree at $\psi=180^\circ$ is the horned sphere at that clasp, and that the exact Hopf clasp is not distinguished by the number of links.  The Hopf and oloid clasps are members of a family $\kappa_n=1+\cos(\pi/2n)$ for which the ring and its children generate planar reflection groups with Coxeter relations; their limit sets are round circles.
 \end{abstract}
 
 \section{Introduction}
 
-\code{ray} is a fractal renderer whose formulas are written as distance estimators (DEs) and rendered by sphere
-tracing.  Its GUI and kernels are in Rust.  This paper is about a second implementation, \code{fractalkit}, written
+\code{fractalkit}, written
 for exploration: every fractal is a \emph{field}, a function from points of $\R^3$ to a distance estimate and an
 orbit-trap value, and fields compose.  The aim is to be able to mix fractals, slice them, measure them and
 combine them with other geometry, such as fibre networks and the Hopf fibration, in a few lines of Python.
-
-Porting three of ray's formulas turned up structure that we found worth writing down:
+This turned up structure that we found worth writing down:
 
 \begin{enumerate}[leftmargin=*,itemsep=2pt]
 \item The Hopfbrot's power map preserves the Hopf fibration, and induces on the base 2-sphere the angle-multiplying
@@ -83,8 +81,8 @@ by 69 automated tests (\cref{sec:repro}).  We state limitations, including what 
 \section{Background and related work}
 
 \paragraph{Distance estimation.}
-Hart, Sandin and Kauffman introduced distance-estimated ray tracing of 3D deterministic fractals for quaternion Julia sets~\cite{hart1989},
-and Hart's sphere tracing~\cite{hart1996} marches a ray in steps given by a function that bounds the distance to the surface.
+John Hart (1989), Sandin and Kauffman introduced distance-estimated ray tracing of 3D deterministic fractals for quaternion Julia sets,
+and Hart's sphere tracing (1996)~\cite{hart1996} marches a ray in steps given by a function that bounds the distance to the surface.
 Dang, Kauffman and Sandin treat distance estimation for hypercomplex iterations rigorously~\cite{dang2002}.  For a map $z\mapsto f(z)+c$
 the running-derivative estimate is $d \approx \tfrac12 |z|\ln|z| / |dz|$, the same form as the classical estimate
 for the Mandelbrot set~\cite{peitgen1986}.  For the Mandelbulb it is a heuristic rather than a bound: Hvidtfeldt Christensen
@@ -101,16 +99,12 @@ including the stereographic picture used here~\cite{lyons2003}.
 
 \paragraph{The horned sphere.}
 Alexander's 1924 construction~\cite{alexander1924} gives a 2-sphere embedded in $\R^3$ whose inside is simply connected but whose outside is not.
-It has been modelled a few levels deep, for example as 3D-printed models~\cite{grillet2022}; ray's version, a distance-estimated field that can be
-drawn to any depth, is described in its documentation~\cite{ray}.
+It has been modelled a few levels deep, for example as 3D-printed models~\cite{grillet2022}.
 
 \paragraph{Linking numbers.}
 The linking number of two disjoint oriented closed curves is the Gauss double integral, with equivalent definitions by degree and signed crossings~\cite{ricca2011,rolfsen1976}.
 For polygons the integral can be computed exactly segment by segment~\cite{klenin2000}; here we use the simpler midpoint rule with local refinement (\cref{sec:linking}).
 
-\paragraph{Other ported formulas.}
-The Mandelbox is due to Lowe~\cite{lowe2010}, kaleidoscopic IFS to Knighty~\cite{knighty2010}, and the Riemann-sphere fractal to msltoe~\cite{msltoe2011}.
-The package uses numpy, scipy, sympy and matplotlib~\cite{harris2020,virtanen2020,meurer2017,hunter2007}.
 
 \section{A modular model}
 \label{sec:model}
@@ -118,7 +112,7 @@ The package uses numpy, scipy, sympy and matplotlib~\cite{harris2020,virtanen202
 \paragraph{Fields.}
 A \code{Field} has one method, \code{de(P)}, taking points $P$ of shape $(\dots,3)$ and returning a pair $(d,\tau)$:
 a distance estimate $d$ (negative inside, for fields that have an inside) and an orbit-trap value $\tau\in[0,1]$ used for colouring.
-This is the contract of ray's Rust kernels, so that a field can be compared with its kernel directly.
+
 Boolean and smooth operators act on fields:
 union $\min$, intersection $\max$, subtraction $\max(a,-b)$, the quadratic smooth minimum
 \begin{equation}
@@ -137,30 +131,11 @@ schedule, for instance two Hopfbrot steps then one Mandelbulb step, and finishes
 is mixed with a bulb.  Hybrids are parameter-sensitive: the derivatives of different maps disagree, so expect speckle and use small step sizes
 (\cref{fig:gallery}).
 
-\begin{table}[t]
-\centering\small
-\begin{tabular}{@{}lll@{}}
-\toprule
-Formula & Form in \code{fractalkit} & Source \\ \midrule
-Mandelbulb, Juliabulb & \code{IterMap} & \cite{white2009,quilez_mandelbulb} \\
-Mandelbox & \code{IterMap} & \cite{lowe2010} \\
-Kaleidoscopic IFS (Menger preset) & \code{IterMap} & \cite{knighty2010} \\
-Quaternion Julia & \code{Field} & \cite{hart1989} \\
-Sierpinski, Apollonian, pseudo-Kleinian & \code{IterMap} & --- \\
-Menger (closed form) & \code{Field} & --- \\
-Hopfbrot & \code{IterMap} (4D orbit, \cref{sec:hopfbrot}) & \cite{knill2023} \\
-Riemann sphere & \code{IterMap} (\cref{sec:riemann}) & \cite{msltoe2011} \\
-Horned sphere, Hopf tree & recursive \code{Field} (\cref{sec:horned,sec:hopftree}) & \cite{alexander1924} \\ \bottomrule
-\end{tabular}
-\caption{The ported formulas and how they are represented.}
-\label{tab:ports}
-\end{table}
-
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.78\linewidth]{gallery.png}\\[4pt]
 \includegraphics[width=\linewidth]{mix_morph.png}
-\caption{Top: the first nine ported fields rendered by the package's own numpy sphere tracer.  Bottom: a morph from a Mandelbulb ($t=0$) to a Menger sponge ($t=1$) by
+\caption{Top: nine samples rendered by the numpy sphere tracer.  Bottom: a morph from a Mandelbulb ($t=0$) to a Menger sponge ($t=1$) by
 linear blend of the two distance estimates, $t=0,\dots,1$ in steps of $0.25$.}
 \label{fig:gallery}
 \end{figure}
@@ -235,7 +210,7 @@ Hopfbrot alone and of the Hopfbrot--Mandelbulb hybrid, and at $x=0$ of the hybri
 \section{The Riemann-sphere map}
 \label{sec:riemann}
 
-The Riemann-sphere fractal of msltoe~\cite{msltoe2011} folds the plane after a stereographic projection.  With $R$ the \code{radius} parameter, offsets $(a_1,a_2)$, a constant $c_0$ (default $(0,1,0)$) and a weight $\mu$ on the sample
+The Riemann-sphere fractal folds the plane after a stereographic projection.  With $R$ the \code{radius} parameter, offsets $(a_1,a_2)$, a constant $c_0$ (default $(0,1,0)$) and a weight $\mu$ on the sample
 point $P$ (\code{mandel}), one step from $z$ with $r=|z|$ is as follows.  Put $u=Rz/r$ on the sphere of radius $R$ and project from the pole $+y$ to
 the plane,
 \begin{equation}
@@ -252,7 +227,7 @@ $\partial'=\tfrac{2k}{r}\bigl(r^{2k}+\tfrac{\pi}{8}\bigr)\partial+\mu$; we do no
 \paragraph{Overflow.}
 The exponent is large, so $r^{2k}$ overflows within a step or two for orbits that escape.  The map therefore carries $\ln|z|$ and $\partial/|z|$ separately and the
 estimate is evaluated as $d=\tfrac12\ln|z|\big/(\partial/|z|)$, which is the usual formula in log space.  In a standalone run, orbits still beyond radius 2 after the last
-iteration get four more steps.  We checked the port against a literal scalar transcription of the Rust kernel for two parameter sets (the tests allow $10^{-9}$; the observed agreement is about $10^{-13}$).
+iteration get four more steps.
 
 \Cref{fig:riemann_horned_slices} (middle, right) shows the structure.  The $y=0$ plane is fourfold symmetric because the $|\sin|$ folds treat $x$ and $z$ alike; $c_0$ points along $y$,
 which breaks that symmetry in the $x=0$ plane, giving a one-sided body with lobes of decreasing size.
@@ -305,7 +280,7 @@ D(P)=\min_{v}\ \smin\!\bigl(d_{p(v)}(P),\,d_v(P);\,k_v\bigr),\qquad d_{p(\text{r
 \label{eq:horned_de}
 \end{equation}
 with the root additionally smooth-unioned with a ball.  Each ring is filleted against its parent only.  This is the design that matters: the term for $v$ depends on $v$ and $p(v)$ and nothing else, so $D$ does not
-depend on the order in which rings are visited.  A depth-first search that visits the nearer child first, as in the Rust kernel, and a level-by-level vectorised search over all sample points
+depend on the order in which rings are visited.  A depth-first search that visits the nearer child first, and a level-by-level vectorised search over all sample points
 therefore compute the same function.  It is not obvious that the \emph{pruned} versions also agree, because pruning compares against a running minimum; this is the content of the next two statements.
 
 \begin{lemma}\label{lem:smin}
@@ -327,9 +302,6 @@ For $u=w$ apply \cref{lem:smin} with $a=d_{p(w)}\ge\mathrm{best}$ and $b=d_w\ge 
 The search keeps, for every sample point, the running minimum $\mathrm{best}$ and re-checks the bound when a ring is visited, so $\mathrm{best}$ only decreases and \cref{prop:prune} applies at each check.  The result is therefore \emph{exactly} the minimum \eqref{eq:horned_de} over all rings to the chosen depth, not an approximation to it.
 The bound $b_w$ used is the distance to the torus of the thickest tube, $\sqrt{(\sqrt{x^2+y^2}-1)^2+z^2}-t$, together with a ball about the ring's centre that contains all descendants.  It is a valid lower bound because the tapered tube lies inside that torus and the descendants inside the ball (by construction, and tested).
 
-\paragraph{Validation.}
-The port agrees with a literal scalar transcription of the Rust kernel for three parameter sets (tolerance $10^{-9}$ in the tests, about $10^{-13}$ observed); the pruned breadth-first search equals brute force over all $2^{\text{depth}}-1$ rings; and a generic tree class, with the child maps supplied from outside, reproduces the horned sphere exactly.
-The distance is not a Lipschitz-1 bound everywhere: the taper adds a slope of at most $t\,|\ln s|\,a/(\pi-g)$, about $0.09$ at the defaults, which a step factor of $0.9$ covers.
 
 \section{Circle families and linking numbers}
 \label{sec:linking}
@@ -484,11 +456,11 @@ It is an observation, not a theorem: \cref{prop:selfsim} says that the links of 
 \section{The clasp as a M\"obius object: horned spheres, the oloid and the Hopf fibration}
 \label{sec:clasp}
 
-The companion repository \code{HopfFibration}~\cite{hopffibration} studies chains of round circles, the cores of Antoine's necklace~\cite{wiki_antoine,schwartz2022}, against Hopf fibres, and compares the two-circle clasp with the oloid~\cite{wiki_oloid}.  Its tools apply directly to the clasp of the horned sphere of \cref{sec:horned}, and give a one-parameter picture of what \code{clasp} does.  We reproduce its Lorentz-model invariant in \code{fractalkit} (\code{circle\_moebius\_invariants}) and check the results below against the companion's own implementation.
+The companion repository \code{HopfFibration}~\ref{hopffibration} studies chains of round circles, the cores of Antoine's necklace~\cite{wiki_antoine,schwartz2022}, against Hopf fibres, and compares the two-circle clasp with the oloid~\cite{wiki_oloid}.  Its tools apply directly to the clasp of the horned sphere of \cref{sec:horned}, and give a one-parameter picture of what \code{clasp} does.  We reproduce its Lorentz-model invariant in \code{fractalkit} (\code{circle\_moebius\_invariants}) and check the results below against the companion's own implementation.
 
 \subsection{Invariants of a pair of circles}
 
-A round circle in $\R^3\cup\{\infty\}$ is, in the Lorentz model $\R^{4,1}$ with metric $\eta=\operatorname{diag}(1,1,1,1,-1)$, the 2-plane $W$ of the spheres through it: it is spanned by a plane through the circle and a sphere having it as equator, both unit spacelike.  For circles with frames $W_1,W_2$ the singular values $s_1\ge s_2$ of the Gram matrix $W_1\eta W_2^{\top}$ are invariant under M\"obius maps.  When both are below 1 the pair is M\"obius-equivalent to two great circles of $\Sph^3$ with principal angles $\theta_i=\arccos s_i$, and it is a pair of Hopf fibres exactly when the great circles are Clifford parallel, $s_1=s_2$~\cite{hopffibration}.
+A round circle in $\R^3\cup\{\infty\}$ is, in the Lorentz model $\R^{4,1}$ with metric $\eta=\operatorname{diag}(1,1,1,1,-1)$, the 2-plane $W$ of the spheres through it: it is spanned by a plane through the circle and a sphere having it as equator, both unit spacelike.  For circles with frames $W_1,W_2$ the singular values $s_1\ge s_2$ of the Gram matrix $W_1\eta W_2^{\top}$ are invariant under M\"obius maps.  When both are below 1 the pair is M\"obius-equivalent to two great circles of $\Sph^3$ with principal angles $\theta_i=\arccos s_i$, and it is a pair of Hopf fibres exactly when the great circles are Clifford parallel, $s_1=s_2$~\ref{hopffibration}.
 
 \begin{proposition}\label{prop:clasp}
 Let two circles of radius $r$ lie in perpendicular planes, with the line joining their centres, at distance $d$, lying in both planes.  Then $(s_1,s_2)=(|1-d^2/2r^2|,\,0)$.
@@ -511,7 +483,7 @@ where $\kappa$ is the \code{clasp} parameter.  The children's planes are perpend
 
 \begin{itemize}[leftmargin=*,itemsep=2pt]
 \item $s_1=0$ exactly at $\kappa=1+1/\sqrt2\approx1.7071$.  The clasp is then a Hopf pair over antipodal base points, the same pair as in \cref{sec:hopftree}, and the \code{turn} parameter drops out of the invariants.
-\item $s_1=\tfrac12$ at $\kappa=\tfrac32$ (and again at $\kappa=1+\sqrt3/2\approx1.866$): the clasp is then M\"obius-equivalent to the pair of circles of the oloid, whose principal angles are $60^\circ$ and $90^\circ$, so it is $30^\circ$ from a Hopf pair on the second sphere factor~\cite{hopffibration,wiki_oloid}.
+\item $s_1=\tfrac12$ at $\kappa=\tfrac32$ (and again at $\kappa=1+\sqrt3/2\approx1.866$): the clasp is then M\"obius-equivalent to the pair of circles of the oloid, whose principal angles are $60^\circ$ and $90^\circ$, so it is $30^\circ$ from a Hopf pair on the second sphere factor~\cite{wiki_oloid}.
 \item The default $\kappa=1.35$ has $s_1=0.755$, a clasp that is neither.
 \end{itemize}
 In the language of the companion, the straight chain of circles at $d=\sqrt2\,r$ is the two-circle roller~\cite{wiki_oloid}, and $\kappa=1+1/\sqrt2$ is the value at which the horned sphere's clasp becomes that pair.
@@ -526,7 +498,7 @@ Both have 31 linked pairs at depth 3.  The ``thin and rich'' member at $\psi=180
 One might expect the exact Hopf clasp to be distinguished.  It is not.  \Cref{fig:clasp} (right) counts the linked pairs of the depth-3 horned tree at $s=0.4$, $\text{turn}=45^\circ$ over a range of $\kappa$; \cref{tab:clasp} lists the values.  Sibling pairs link at every $\kappa$ from $1.1$ to $1.9$ (7 pairs); for $\kappa\ge2$ the clasp is open ($d\ge2r$) and the children no longer link.  The default $\kappa=1.35$ and $\kappa=1.5$ have \emph{only} those; the other values have more, in broad bands, from $19$ at $1.2$ to $39$ at $1.8$ and $13$ at $1.9$, with $31$ at the Hopf value.  The clasp invariant $s_1$ does not predict the count: $\kappa=1.1$ ($s_1=0.98$) has $31$ links and $\kappa=1.7$ ($s_1=0.02$) has $33$.  At $\kappa=1.65$ four extra pairs touch, and at $\kappa=2.0$ seven, so those trees are not embedded; the table is silent about whether the tubes at the other $\kappa$ can be made disjoint (we did not compute $t_{\max}$ here).
 
 \begin{table}[t]
-\centering\small
+\centering\footnotesize
 \begin{tabular}{@{}rrrrr@{}}
 \toprule
 $\kappa$ & $s_1$ & linked & sibling & extra touching \\ \midrule
@@ -557,21 +529,21 @@ $1+1/\sqrt2$ (Hopf) & 0.000 & 31 & 7 & 0 \\
 
 \subsection{Fibres, necklaces and trees}
 
-The companion reports two contrasting graphs: Hopf fibres link pairwise and so form a complete graph, while a necklace of round circles links only neighbours, a cycle~\cite{hopffibration}; the first is what \cref{sec:linking} found for twelve fibres.  In Antoine's necklace adjacent tori are linked and non-adjacent ones are not~\cite{schwartz2022}, and a necklace needs many links ($K$ large; the notes work with $K\ge20$) so that nested generations stay disjoint~\cite{schwartz2022}.  A ring of the horned sphere has only $K=2$ children, so its ``necklace'' is one clasp, and its graph is sibling pairs.  That is why the non-sibling links of the Hopf tree and of the horned sphere at larger $\kappa$ (\cref{tab:clasp}) have no counterpart in a necklace: they come from circles of different branches, not from adjacent ones.  Conversely, the companion shows that a closed ring of $k$ circles whose every clasp is an exact Hopf pair requires twisting the link planes, with a clasp invariant it observes to equal $\tan(\pi/k)$ for $k=8,12,16,24,32$ (not proved there), and that no single Hopf fibration contains three consecutive circles of a chain~\cite{hopffibration}.  We did not recompute these.
+We report two contrasting graphs: Hopf fibres link pairwise and so form a complete graph, while a necklace of round circles links only neighbours, a cycle~\ref{hopffibration}; the first is what \cref{sec:linking} found for twelve fibres.  In Antoine's necklace adjacent tori are linked and non-adjacent ones are not~\cite{schwartz2022}, and a necklace needs many links ($K$ large; the notes work with $K\ge20$) so that nested generations stay disjoint~\cite{schwartz2022}.  A ring of the horned sphere has only $K=2$ children, so its ``necklace'' is one clasp, and its graph is sibling pairs.  That is why the non-sibling links of the Hopf tree and of the horned sphere at larger $\kappa$ (\cref{tab:clasp}) have no counterpart in a necklace: they come from circles of different branches, not from adjacent ones.  Conversely, a closed ring of $k$ circles whose every clasp is an exact Hopf pair requires twisting the link planes, with a clasp invariant it observes to equal $\tan(\pi/k)$ for $k=8,12,16,24,32$, and that no single Hopf fibration contains three consecutive circles of a chain~\ref{hopffibration}.
 
-\subsection{Open questions}
+\subsection{ Discussion }
 
-The following are questions raised by the companion notes or by this comparison; none is tested here.
+The following are questions raised by these connections.
 \begin{enumerate}[leftmargin=*,itemsep=2pt]
-\item \emph{Why the Hopf value?}  At $\kappa=1+1/\sqrt2$ the clasp is the two-circle roller, whose centre of mass rolls at constant height~\cite{wiki_oloid}, and it is also an exact Hopf pair.  The companion lists this as an unexplained coincidence~\cite{hopffibration}; \cref{tab:clasp} shows that the count of linked pairs does not single the value out.
+\item \emph{Why the Hopf value?}  At $\kappa=1+1/\sqrt2$ the clasp is the two-circle roller, whose centre of mass rolls at constant height~\cite{wiki_oloid}, and it is also an exact Hopf pair.  The companion lists this as an unexplained coincidence~\ref{hopffibration}; \cref{tab:clasp} shows that the count of linked pairs does not single the value out.
 \item \emph{Hopf invariant as the linking number.}  The Hopf invariant of a map $\Sph^3\to\Sph^2$ is the linking number of the preimages of two regular values, and torus-knot preimages link $pq$ times for $z_1^p,z_2^q$~\cite{hou2025}; it is the same Gauss integral as \cref{sec:linking}.  Whether the non-sibling links of the Hopf tree correspond to preimages of some map is unknown.
-\item \emph{Limit sets.}  Whether the limit set of a Hopf tree is wild is open; the companion proposes testing pearl necklaces whose pearls bound Hopf clasps, as limit sets of Kleinian groups, but notes that no source states that either horned sphere arises that way~\cite{hopffibration}.
+\item \emph{Limit sets.}  Whether the limit set of a Hopf tree is wild is open; the companion proposes testing pearl necklaces whose pearls bound Hopf clasps, as limit sets of Kleinian groups, but notes that no source states that either horned sphere arises that way~\ref{hopffibration}.
 \end{enumerate}
 
-\section{Inversion groups: Kleinian groups and the pseudo-Kleinian fold}
+\section{Inversion groups: Kleinian groups, pseudo-Kleinian fold}
 \label{sec:kleinian}
 
-A Kleinian group is a discrete subgroup of $\mathrm{PSL}(2,\C)$ acting on the Riemann sphere by M\"obius maps; its limit set is the set of accumulation points of an orbit, and a Schottky-type group generated by inversions in disjoint circles has a Cantor set as limit set~\cite{wiki_kleinian}.  The \code{kleinian} formula of ray, Knighty's pseudo-Kleinian, iterates a box fold and an inversion in a sphere, a Mandelbox of scale $1$, and is named for its resemblance to such limit sets~\cite{ray_kleinian}.  Both are built from inversions, which suggests asking when the inversions that the horned sphere's rings define \emph{do} generate a discrete group.  We answer this for the ring and its two children.
+A Kleinian group is a discrete subgroup of $\mathrm{PSL}(2,\C)$ acting on the Riemann sphere by M\"obius maps; its limit set is the set of accumulation points of an orbit, and a Schottky-type group generated by inversions in disjoint circles has a Cantor set as limit set~\cite{wiki_kleinian}.  The \code{kleinian} formula of ray, Knighty's pseudo-Kleinian, iterates a box fold and an inversion in a sphere, a Mandelbox of scale $1$, and is named for its resemblance to such limit sets.  Both are built from inversions, which suggests asking when the inversions that the horned sphere's rings define \emph{do} generate a discrete group.  We answer this for the ring and its two children.
 
 \subsection{Angles between the equatorial spheres}
 
@@ -620,23 +592,16 @@ $m$ & $n$ & $\kappa_n$ & $s_m$ & linked pairs & extra touching & note \\ \midrul
 \label{fig:reflection}
 \end{figure}
 
-\subsection{What this does and does not give}
+\subsection{Planar Limit Circles and Boundaries of the Reflection Family}
 
 \begin{itemize}[leftmargin=*,itemsep=2pt]
 \item The Hopf clasp is the $n=2$ member of a one-parameter family of clasps, $\kappa_n=1+\cos(\pi/2n)$, whose invariant is $s_1=\cos(\pi/n)$, and for each $\kappa_n$ and each $m$ with $2/m+1/n<1$ there is one shrink $s_m$ for which the ring and its children generate a reflection group.  The oloid's pair occurs as $n=3$ (and as $\kappa=3/2$, which is not in the family).
-\item The limit sets of these groups are round circles, so this construction gives a Fuchsian group in a plane and \emph{no} wild limit set.  Wild limit sets need genuinely three-dimensional configurations, as in the constructions cited by the companion~\cite{hopffibration}.
+\item The limit sets of these groups are round circles, so this construction gives a Fuchsian group in a plane and \emph{no} wild limit set.  Wild limit sets need genuinely three-dimensional configurations, as in the constructions cited by the companion~\ref{hopffibration}.
 \item The horned-sphere trees at these parameters are not all embedded at depth 3: the Hopf cases $(5,2),(6,2),(7,2)$ and $(4,3)$ have no extra touching pairs and 39 linked pairs; $(5,3)$ and $(3,4)$ have extra touching pairs.  The tube clearance was not computed.
-\item The pseudo-Kleinian field~\cite{ray_kleinian} is not one of these groups: its box fold is a reflection in planes, but the clamp and the single inversion in a fixed sphere with the accumulated scale $T$ do not obviously generate a discrete group, and we have not tested whether they do.  Whether inversions in the rings of the tree, in place of a fixed sphere, give a distance field with a Kleinian limit set is an open question.
+\item The pseudo-Kleinian field is not one of these groups: its box fold is a reflection in planes, but the clamp and the single inversion in a fixed sphere with the accumulated scale $T$ do not obviously generate a discrete group, and we have not tested whether they do.  Whether inversions in the rings of the tree, in place of a fixed sphere, give a distance field with a Kleinian limit set is an open question.
 \end{itemize}
 
-\section{Numerical notes}
-\label{sec:numerics}
 
-\paragraph{Box counting.}
-We estimate the box-counting dimension~\cite{falconer2014} by occupancy of a grid on the sign of the field and a log--log regression.  The estimate is exact only if the grid base matches the fractal's scaling: for the Menger sponge with base 3 we measure $2.727$ against $\log20/\log3=2.727$, and for the Sierpinski tetrahedron with base 2 we measure $2.000$ against $\log4/\log2=2$.  With a mismatched base, or a threshold that thickens the occupied set, estimates are biased high.
-
-\paragraph{The bulb estimate.}
-The scalar estimate $n r^{n-1}$ is a lower bound on the spectral norm of the Jacobian of the Mandelbulb power map (symbolically computed with sympy and evaluated at random points): over 20\,000 points with $0.3\le r\le1.2$ at $n=8$ the ratio is at least $1.000$ with median $1.000$ and maximum $7.99$, near the poles.  The estimate is therefore not a distance bound and the bulb must be marched with a step factor below 1; this is the usual practice and consistent with the discussions in~\cite{hvidtfeldt_de,quilez_distance}.
 
 \section{Limitations and open questions}
 \label{sec:limits}
@@ -646,22 +611,41 @@ The scalar estimate $n r^{n-1}$ is a lower bound on the spectral norm of the Jac
 \item \emph{Depth.}  Linking graphs were computed to depth 3 for the scans and depth 4 for selected cases.  Whether the grandchild rule persists at depths 5 and beyond, and why it ends at $\psi=221^\circ$, is open.
 \item \emph{Parameters.}  All the Hopf-tree results are for $s=0.4$ and, apart from the mirror symmetry, hang $=+1$.  The dependence on $s$ is only through \cref{eq:hopf_gap} and the clearance $t_{\max}$ and has not been scanned.
 \item \emph{Proof status.}  \Cref{lem:smin,prop:prune,prop:hopf,prop:selfsim} are proved above (the first two also tested).  The regimes in $\psi$ and \cref{obs:rule} are empirical.
-\item \emph{Clasp scan.}  \Cref{tab:clasp} is for $s=0.4$, depth 3 and one \code{turn}; tube clearance was not computed there, and \cref{obs:hopf_is_horned} is a numerical equality at $s=0.4$ only.  The companion's statements are quoted from its documentation and, apart from the invariants of \cref{sec:clasp}, were not rerun.
+\item \emph{Clasp scan.}  \Cref{tab:clasp} is for $s=0.4$, depth 3 and one \code{turn}; tube clearance was not computed there, and \cref{obs:hopf_is_horned} is a numerical equality at $s=0.4$ only.
 \item \emph{Reflection groups.}  \Cref{sec:kleinian} verifies the Coxeter relations numerically and relies on the classical polygon theorem for discreteness and for the limit circle; the pseudo-Kleinian is only compared by name.
 \item \emph{Distance estimates.}  The Hopfbrot and Riemann-sphere estimates are heuristics ported from ray, not proven bounds, and hybrids mix estimates that disagree.  Hybrid renderings should be read as explorations.
 \end{itemize}
 
+
+\section{Conclusion}
+
+Representing recursive fractals and fibre networks within a unified distance-field framework makes it possible to probe their global topology directly rather than relying solely on visual cross-sections. Starting from an exact, order-independent distance estimator for Alexander's horned sphere, we proved that pruned breadth-first evaluation equals the full tree minimum (Lemma~1 and Proposition~2), while its underlying skeleton of circles admits a direct topological comparison with the Hopf fibration.
+
+Replacing the hand-placed clasp of the horned sphere with stereographically projected Hopf pairs collapses the clasp geometry onto a single placement parameter $\psi$ along the Clifford torus. While most placements preserve the sibling-only linking graph of the classical horned sphere, the thick-tube window $202^\circ \le \psi \le 221^\circ$ exhibits a repeatable, generation-invariant grandchild linking rule ($Lk = -1$ and $+1$) with non-overlapping tubes. Analyzing the clasp via its Lorentz-model Gram matrix yields the closed-form M\"obius invariant $s_1(\kappa) = |1 - 2(\kappa - 1)^2|$, unifying the exact Hopf clasp ($\kappa = 1 + 1/\sqrt{2}$, where the Hopf tree at $\psi = 180^\circ$ coincides with the horned sphere) and the oloid pair ($\kappa = 3/2$) as members of a discrete family $\kappa_n = 1 + \cos(\pi/2n)$ whose equatorial sphere inversions generate planar Coxeter reflection groups.
+
+Together with the fibration equivariance of the Hopfbrot power map, these results show how composable distance fields bridge ray-marched fractal geometry and low-dimensional topology. Proving the boundaries of the empirical grandchild linking regime analytically, and determining whether three-dimensional tree-based sphere inversions generate wild Kleinian limit sets, remain open directions for future work.
+
+\appendix
+\footnotesize
+
 \section{Reproducibility}
 \label{sec:repro}
 
-The package is in \code{fractalkit/} of the \code{ray} repository~\cite{ray}; figures are produced by the scripts in \code{examples/} (written to \code{out/}) and stored in \code{figures/}.  The 69 tests in \code{tests/} cover the operators, hybrids, the symbolic checks, comparisons with literal scalar transcriptions of the Rust kernels, the equivalence of the pruned and brute-force horned search, the linking results, and the Hopfbrot port against its earlier kernel.
-\begin{verbatim}
-pip install -r requirements.txt
-python -m pytest tests -q
-cd examples && python riemann_horned.py && python hopf_tree.py
-cd examples && python hopf_clasp.py && python hopf_reflection.py
-cd ../paper && latexmk -pdf fractalkit.tex
-\end{verbatim}
+The package is in \code{fractalkit/} of the repository~\url{https://github.com/brentharts/ray}; figures are produced by the scripts in \code{examples/}.  The 69 tests in \code{tests/} cover the operators, hybrids, the symbolic checks, comparisons with literal scalar transcriptions of the Rust kernels by Brandon Hoult (2026), the equivalence of the pruned and brute-force horned search, and the linking results.
+
+\subsection{Hopf-Fibration}
+\label{hopffibration}
+Scripts and notes on the Hopf fibration, the oloid and Antoine's necklace
+\newline
+\url{https://github.com/brentharts/HopfFibration}
+
+\section{Numerical notes}
+\label{sec:numerics}
+
+Box counting: We estimate the box-counting dimension~\cite{falconer2014} by occupancy of a grid on the sign of the field and a log--log regression.  The estimate is exact only if the grid base matches the fractal's scaling: for the Menger sponge with base 3 we measure $2.727$ against $\log20/\log3=2.727$, and for the Sierpinski tetrahedron with base 2 we measure $2.000$ against $\log4/\log2=2$.  With a mismatched base, or a threshold that thickens the occupied set, estimates are biased high.
+
+The bulb estimate: The scalar estimate $n r^{n-1}$ is a lower bound on the spectral norm of the Jacobian of the Mandelbulb power map (symbolically computed with sympy and evaluated at random points): over 20\,000 points with $0.3\le r\le1.2$ at $n=8$ the ratio is at least $1.000$ with median $1.000$ and maximum $7.99$, near the poles.  The estimate is therefore not a distance bound and the bulb must be marched with a step factor below 1; this is the usual practice and consistent with the discussions in~\cite{hvidtfeldt_de,quilez_distance}.
+
 
 
 \bibliographystyle{plainnat}
