@@ -1,5 +1,9 @@
 # fractalkit
 
+From Horned Spheres to Hopf Trees: Linking Graphs, Möbius Invariants, and Coxeter Reflection Families
+https://doi.org/10.21203/rs.3.rs-11763427/v1
+
+
 ## Riemann sphere and horned sphere
 
 ![Slices through the horned sphere and the Riemann sphere](figures/riemann_horned_slices.png)
