@@ -101,6 +101,63 @@ What the numbers say:
 
 Limits: volumes are Monte Carlo (150,000 points), the box-counting range is short, and the fusing checks only go to depth 2. The Hat Trick is built from hexasphere's frequency-3, variant-0 tiling only; hexasphere finds no symmetric tiling at other odd frequencies. The seam trees have no tests yet.
 
+### Further experiments on the seam trees
+
+Each item below has a script in `examples/` or `tools/`; the figures are copies of what they write to `out/`.
+
+**Deep clasp: thin tubes.** The depth-2 failure above comes from fat tubes. `tools/phase_tube.py` sweeps `shrink` (0.30 to 0.70) against `tube` (0.003 to 0.05) for the clasp placement. 16 of the 72 cells keep every within-trio pair linked *and* have no fused tubes at depth 2: `shrink` 0.30 to 0.70 with `tube` at most 0.015. `TriondaHorned.deep_clasp()` is one of them (`shrink` 0.35, `tube` 0.01): all 120 pairs in its 40 trios are linked and the clearance is positive but small. Sampling the curves at step 0.005 instead of 0.02 gives +0.0019 rather than +0.0032, so the margin is thin. The wider sweeps over `shrink` x `lateral`, `lean` x `turn` and `shrink` x `sink` at the default tube (`tools/phase_trionda.py`, `examples/phase_trionda.py`) found no cell that keeps the clasp to depth 2, so the window exists only because the tubes are thin.
+
+![Phase diagrams](figures/phase_trionda.png)
+![Shrink against tube](figures/phase_tube.png)
+![Deep clasp](figures/deep_clasp.png)
+
+**Does chirality matter?** No. Keeping the clasp placement and scaling the seam amplitude `amp` from 0 (the achiral tetrahedron) up, the number of random placements with a full clasp is 7 of 39 at `amp` 0, 17 of 47 at 0.07, 13 of 39 at 0.14, 3 of 29 at 0.21 and 2 of 30 at 0.28. The achiral ball clasps as often as the chiral ones, so the ball's chirality is not what makes the children link; the sideways shift does (`figures/chirality_control.png`).
+
+![Chirality control](figures/chirality_control.png)
+
+**Coxeter seam trees.** `PolyBall` (`fractalkit/polyballs.py`) builds straight tetrahedron, cube and icosahedron balls on their vertices, faces or edges, with the rotation group or the full reflection group (A3, B3, H3). `tools/coxeter_scan.py` samples placements and `examples/coxeter_seamtrees.py` plots them. With the full group, no placement clasped in any configuration I tried (0 of 2 to 24 tested per cell). With the rotation group, clasps occur at tetrahedron edges (8 of 14), cube vertices (10 of 22) and cube edges (10 of 20) with random shift, turn and lean. The reason is geometric: two children related by a mirror have linking number 0, so reflection can never produce a clasp. The icosahedron samples are tiny (3 and 0 tested) and prove nothing. These trees reflect through planes that pass through the ball's centre; they are not the sphere inversions that `hopf_reflection.py` uses for rings.
+
+![Coxeter clasp rates](figures/coxeter_clasp_rates.png)
+![Coxeter gallery](figures/coxeter_gallery.png)
+
+**Mixed generations.** `MixedSeamTree` (`fractalkit/mixedtree.py`) gives each generation its own ball; the child's axis 0 is turned onto its parent's, and `turn` absorbs the mismatch between axis orders. At `shrink` 0.35 and depth 2 (`examples/mixed_seamtrees.py`):
+
+| tree | networks per generation | fused pairs |
+|---|---|---|
+| Trionda, then Hat Trick | 1, 4, 44 | 8 |
+| Hat Trick, then Trionda | 1, 12, 36 | 0 |
+| Trionda, then cube, then Hat Trick | 1, 4, 28 | 0 |
+| alternating Trionda / Hat Trick | 1, 4, 44 | 12 |
+
+In every case the parent-child tubes touch (clearance -0.07 to -0.01), as in the plain trees.
+
+![Mixed generations](figures/mixed_seamtrees.png)
+
+**Mixing with the other fractals.** `rs.blend(tree, t)` morphs the Riemann sphere into a seam tree, and `smooth_union` joins a tree to Hopf fibres taken over its own axes (4 fibres over the Trionda vertices, 6 over its edge midpoints, 12 over the Hat Trick pentagons). Two caveats: the blend with the Riemann sphere is dominated by the Trionda for most `t`, and the Hopf fibres come out very different in size under stereographic projection. These are for looking at, with no numbers behind them.
+
+![Riemann morph](figures/mix_riemann_seamtrees.png)
+![Hopf union](figures/mix_hopf_seamtrees.png)
+
+**Trionda as an IFS.** `TriondaIFS` (`fractalkit/trionda_ifs.py`) is the Sierpinski tetrahedron IFS with a twist about each vertex axis: four contractions fixed at the tetrahedron vertices, tetrahedrally symmetric, chiral for any twist other than 0. It can be seeded with the straight tetrahedron edges or the Trionda seams. It has no seam tubes of its own beyond the seed, so it is not a seam tree.
+
+![Twist sweep](figures/trionda_ifs_twist.png)
+![Depth and shrink](figures/trionda_ifs_depth.png)
+
+### Sphere eversion
+
+`fractalkit/eversion.py` follows the explicit analytic eversion of Bednorz and Bednorz ([arXiv 1711.10466](https://arxiv.org/abs/1711.10466)): a twisted cylinder (here n = 2) whose time-dependent family goes through Boy's surface at n = 3, closed at infinity by a damping map and an inversion (their equations 3, 4, 7, 8, 12 and 15, with the parameter schedule of their Table 1, Q = 2/3). The intermediate surfaces are immersions with double curves, so they have no signed distance field and cannot go through the ray marcher. This module is a mesh pipeline: a triangle mesh, a triangle-pair self-intersection finder, a signed volume, and a depth-sorted two-sided renderer. The paint is defined on the parameter sphere, so it follows the surface through the homotopy.
+
+- **The open cylinder** (`examples/eversion_stage1.py`, `tools/eversion_double_curve.py`). The surface is regular for every t tried (smallest |r_h x r_phi| is 0.895). The double curve has 3 pieces for about 0.65 < |t| < 1, 1 piece for |t| < 0.62, and 2 pieces beyond |t| = 1. The change at |t| = 1 matches the paper's D0 and D2 events; the change near 0.62 to 0.66 is about 10% from the paper's T events at 0.56, and the count depends on the cut-off, mesh and joining radius, so I do not claim that match.
+- **The closed sphere** (`tools/eversion_sphere_census.py`). The start and end are embedded spheres of radius sqrt(2/3). The signed volume goes from +2.28 through 0 at t = 0 to -2.28 (the sphere's volume 4/3 pi R^3 is 2.28), so the surface really is turned inside out. The surface is embedded for the first and last eighth of the movie and has its most intersecting triangle pairs (2,490 at a 101 x 200 mesh) at t = 0.
+- **Trionda paint** (`examples/eversion_trionda.py`). The four panels and six seams are paint on the sphere: saturated colours on the +n side, a dark cool variant on the -n side. The first frame shows the panels from outside and the last frame shows the same ball with the inside paint outward.
+
+![Everting Trionda](figures/eversion_trionda.png)
+![Stage 1 surface](figures/eversion_stage1.png)
+![Double curve against t](figures/eversion_double_curve.png)
+![Census along the movie](figures/eversion_sphere_census.png)
+
+Limits: the renderer is a painter's sort, so the interpenetrating middle frames have artifacts; the poles are cut at 0.002; 6 triangle pairs intersect at about 15 to 25% of the way through the movie, which I have not traced to the paper's point at infinity or to a mesh artifact; and the map's symmetry is not tetrahedral, so the Trionda's 3-fold axes are not axes of the eversion. The eversion code has no tests.
+
 ## Model
 Everything is a `Field`: `field.de(P)` -> `(distance, trap)` for points `(...,3)`, the same
 contract as ray's Rust kernels (`src/formulas`, `src/render/vm.rs`).
