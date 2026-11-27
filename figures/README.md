@@ -19,3 +19,11 @@
 ![fig](horned_generations.png)
 
 ![fig](gallery.png)
+
+![fig](trionda_horned_gallery.png)
+
+![fig](hattrick_horned_gallery.png)
+
+![fig](trionda_clasp_gallery.png)
+
+![fig](seamtree_compare.png)
