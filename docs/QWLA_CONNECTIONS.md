@@ -25,8 +25,8 @@ I read qwla's `README.md`, `HAT_TIME.md` and the roadmap stages that mention thi
 qwla's tiers are *nested regions of one tiling*: each patch contains the smaller one, and the tile counts follow N_k = 8 N_(k-1) - N_(k-2) (1, 9, 71, 559, 4401), whose growth rate is the larger root of x^2 - 8x + 1, namely 4 + sqrt 15 = 7.873 (**Known**, arithmetic). A seam tree is different: copies shrunk by `shrink` are hung on the axes, and the number of balls per generation is a geometric sequence (Trionda 1, 4, 12, 36; Hat Trick 1, 12, 132).
 
 - Both are self-similar, but only the tiers sit inside each other; the tree's copies are attached outside the parent.
-- A measurement that compares them is the *growth of counts against scale*. For the tree it is the similarity dimension log(children)/log(1/shrink) (**Counted** here: Trionda 1.20, Hat Trick 1.99). For the tiers the count ratio per level is 7.873, and the matching length ratio would be the Spectre inflation factor, which I have not looked up, so I do not give a dimension for the tiers.
-- **Not done.** A dimension for the tier sequence, and a nested (inside, not attached) variant of the seam tree.
+- A measurement that compares them is the *growth of counts against scale*. For the tree it is the similarity dimension log(children)/log(1/shrink) (**Counted** here: Trionda 1.20, Hat Trick 1.99). For the tiers, qwla's roadmap (R4) gives the inflation `lambda^2 = 4 + sqrt 15`, which is the count ratio 7.873, so the linear factor is `lambda` and the similarity dimension is log(`lambda^2`)/log(`lambda`) = 2 exactly: the tiers fill a region of the plane, whatever the tiling. The trees' fractional dimensions are what a plane-filling nesting is not.
+- **Not done.** A nested (inside, not attached) variant of the seam tree.
 
 ## 3. Chirality
 
