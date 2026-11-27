@@ -8,7 +8,7 @@ from .clasptree import ClaspTree, Ring
 from .horned import HornedSphere
 from .seamtree import SeamTree
 from .trionda_horned import TriondaHorned
-from .hattrick_horned import HatTrickHorned
+from .hattrick_horned import HatTrickHorned, AntipodalHatTrick, PairHatTrick
 from .trionda_ifs import TriondaIFS
 from .polyballs import PolyBall
 from .mixedtree import MixedSeamTree

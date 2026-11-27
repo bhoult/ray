@@ -99,6 +99,7 @@ def fibonacci(n: int) -> np.ndarray:
 class SeamTree(Field):
     bound = 2.0
     n_classes = 1        # panel colour classes per generation
+    root_site0 = True    # False: the root also keeps site 0 free (no child there), like every later network
 
     def setup(self, curves, panels, classes, sites, group, order, shrink, sink, turn, tube, body,
               blend, iters, lookup=40000, lateral=0.0, lean=0.0):
@@ -237,7 +238,7 @@ class SeamTree(Field):
             reach_k = blend * tube * sc2
             nidx, nq, nsc, ndp, nbd = [], [], [], [], []
             for k, (R, t) in enumerate(self.maps):
-                if gen > 0 and self.map_site[k] == 0:
+                if (gen > 0 or not self.root_site0) and self.map_site[k] == 0:
                     continue
                 c = ((q - t) @ R) / s
                 bound = self.subtree(c) * sc2
@@ -256,7 +257,7 @@ class SeamTree(Field):
             for pi in frontier:
                 M, t, S = poses[pi][:3]
                 for k, (R, tc) in enumerate(self.maps):
-                    if gen > 0 and self.map_site[k] == 0:
+                    if (gen > 0 or not self.root_site0) and self.map_site[k] == 0:
                         continue
                     poses.append((M @ R, t + S * (M @ tc), S * self.s, gen + 1, pi)); nxt.append(len(poses) - 1)
             frontier = nxt
