@@ -61,7 +61,7 @@ In the horned sphere the two children link each other. For a seam tree I count a
 - **Default Trionda tree (children at the vertices).** Each child links its parent's panel loops (6 of 16 loop pairs at the defaults). This is close to automatic: the child's axis sits inside the parent sphere (`sink` < 1), so its loops pass through the parent's surface. Siblings never link, because they are about 1 unit apart. Tubes are clear to depth 2 (0 fused pairs).
 - **Sibling clasp.** Pushing one child sideways breaks the tetrahedral symmetry, so the preset puts a symmetric *trio* of children around each vertex (the 3-fold rotations of one child), 12 on the root and 9 on later networks. `tools/scan_clasp.py` searched 500 random placements: 15 had all 12 within-trio pairs linked (4 linked loop pairs each) with tubes not fused. A local search then raised the smallest clearance to 0.029 (tube 0.05). The preset is `shrink` 0.628, `sink` 0.003, `lateral` 0.79, `lean` 326, `turn` 7.6. Trios do not link each other.
 - **The clasp does not survive recursion.** At depth 2, 264 pairs of tubes fuse (clearance -0.055). A further local search only reached -0.047. Nine children per network at `shrink` 0.63 give a similarity dimension of 4.7, above 3, so the copies are forced to overlap; the solid's volume grows 3.7, 11.5, 21.4 with depth. Treat the clasp as a depth-1 construction.
-- **Hat Trick.** None of the 144 pentagon-loop pairs between a parent and a child are linked, and 60 pairs of tubes fuse at depth 2 at the default `tube` 0.025, `shrink` 0.3, `turn` 10. Only pentagon loops were tested, since linking all 72 panel loops per network is too slow. The defaults were not tuned for linking or clearance.
+- **Hat Trick.** None of the 144 pentagon-loop pairs between a parent and a child are linked, and 60 pairs of tubes fuse at depth 2 at the default `tube` 0.025, `shrink` 0.3, `turn` 10. Only pentagon loops were tested here; a later test with all 72 panel loops of a child against its parent (`docs/HAT_TRICK_HORN_SITES.md`, section 4) does find linked loop pairs, so this 0 of 144 does not mean the tree never clasps its parent. The defaults were not tuned for linking or clearance.
 
 ![Trionda sibling clasp, depth 1 to 3](figures/trionda_clasp_gallery.png)
 
@@ -157,6 +157,9 @@ In every case the parent-child tubes touch (clearance -0.07 to -0.01), as in the
 ![Census along the movie](figures/eversion_sphere_census.png)
 
 Limits: the renderer is a painter's sort, so the interpenetrating middle frames have artifacts; the poles are cut at 0.002; 6 triangle pairs intersect at about 15 to 25% of the way through the movie, which I have not traced to the paper's point at infinity or to a mesh artifact; and the map's symmetry is not tetrahedral, so the Trionda's 3-fold axes are not axes of the eversion. The eversion code has no tests.
+
+Notes on how these results connect to other work: [`docs/QWLA_CONNECTIONS.md`](docs/QWLA_CONNECTIONS.md) (the shared Hat Trick ball with [qwla](https://github.com/brentharts/qwla)), [`docs/HAT_TRICK_HORN_SITES.md`](docs/HAT_TRICK_HORN_SITES.md) and [`docs/EVERSION.md`](docs/EVERSION.md).
+
 
 ## Model
 Everything is a `Field`: `field.de(P)` -> `(distance, trap)` for points `(...,3)`, the same
