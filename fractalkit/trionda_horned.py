@@ -69,3 +69,11 @@ class TriondaHorned(SeamTree):
         d = dict(shrink=0.628, sink=0.003, lateral=0.792, lean=325.85, turn=7.61, tube=0.05)
         d.update(kw)
         return cls(**d)
+
+    @classmethod
+    def deep_clasp(cls, **kw):
+        """The sibling clasp that survives to depth 2: thin tubes (found by ``tools/phase_tube.py``).  All 120 sibling
+        pairs in the 40 clusters of depths 1-2 are linked and no tubes fuse, but the smallest gap is only 0.003."""
+        d = dict(shrink=0.35, sink=0.003, lateral=0.792, lean=325.85, turn=7.61, tube=0.01)
+        d.update(kw)
+        return cls(**d)
