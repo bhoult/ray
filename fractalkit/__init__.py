@@ -6,6 +6,9 @@ from .fractals import (Apollonian, Hopfbrot, KIFS, Mandelbox, Mandelbulb, Menger
                        PseudoKleinian, QuaternionJulia, RiemannSphere, Sierpinski)
 from .clasptree import ClaspTree, Ring
 from .horned import HornedSphere
+from .seamtree import SeamTree
+from .trionda_horned import TriondaHorned
+from .hattrick_horned import HatTrickHorned
 from .hopftree import HopfTree, hopf_pair
 from .folds import AbsFold, BoxFold, Offset, Rotate, Scale, SphereFold
 from .geometry import (Box, FiberNetwork, HopfFibers, Implicit, Plane, Sphere, Torus,

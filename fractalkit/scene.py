@@ -19,6 +19,8 @@ from functools import reduce
 from . import fractals as F
 from . import geometry as G
 from .horned import HornedSphere
+from .trionda_horned import TriondaHorned
+from .hattrick_horned import HatTrickHorned
 from .hopftree import HopfTree
 from .core import Field, Hybrid
 
@@ -26,7 +28,7 @@ REGISTRY = {
     "mandelbulb": F.Mandelbulb, "juliabulb": lambda **k: F.Mandelbulb(julia=k.pop("c", (0.2, -0.64, 0.2)), **k),
     "mandelbox": F.Mandelbox, "kifs": F.KIFS, "menger_kifs": lambda iters=8, **k: F.Menger_kifs(iters),
     "sierpinski": F.Sierpinski, "apollonian": F.Apollonian, "pseudo_kleinian": F.PseudoKleinian,
-    "menger": F.Menger, "riemann_sphere": F.RiemannSphere, "horned_sphere": HornedSphere, "hopf_tree": HopfTree, "quaternion_julia": F.QuaternionJulia, "hopfbrot": F.Hopfbrot,
+    "menger": F.Menger, "riemann_sphere": F.RiemannSphere, "horned_sphere": HornedSphere, "trionda_horned": TriondaHorned, "hattrick_horned": HatTrickHorned, "hopf_tree": HopfTree, "quaternion_julia": F.QuaternionJulia, "hopfbrot": F.Hopfbrot,
     "sphere": G.Sphere, "box": G.Box, "torus": G.Torus, "plane": G.Plane,
     "hopf_fibers": G.HopfFibers, "torus_knot": G.FiberNetwork.torus_knot,
     "lattice": G.FiberNetwork.lattice, "gyroid": G.gyroid, "clifford_torus": G.clifford_torus,

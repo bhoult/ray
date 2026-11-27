@@ -94,7 +94,7 @@ class Camera:
 
 def render(field: Field, size=(320, 240), camera: Camera | None = None, max_steps: int = 200,
            step: float = 0.9, eps: float = 1.0e-3, palette: str = "magma", trap_weight: float = 0.65,
-           light=(0.5, -0.4, 0.8), background=(0.05, 0.06, 0.09), tmax: float = 20.0) -> np.ndarray:
+           light=(0.5, -0.4, 0.8), background=(0.97, 0.97, 0.975), tmax: float = 20.0) -> np.ndarray:
     """Sphere-trace ``field`` and return an ``(h, w, 3)`` float image in 0..1.
 
     ``eps`` is a *cone* tolerance (hit when ``d < eps * t``), so distant
@@ -133,7 +133,7 @@ def render(field: Field, size=(320, 240), camera: Camera | None = None, max_step
         alive[t > tmax] = False
     img = np.tile(np.asarray(background, float), (n, 1))
     # vertical sky gradient
-    img *= (1.0 + 0.8 * (1 - np.linspace(0, 1, h))[:, None].repeat(w, 1).reshape(-1, 1))
+    img *= (1.0 - 0.07 * (np.linspace(0, 1, h))[:, None].repeat(w, 1).reshape(-1, 1))   # a little greyer towards the bottom
     hi = np.nonzero(hit)[0]
     if len(hi):
         Ph = O[hi] + D[hi] * t[hi, None]
@@ -143,7 +143,7 @@ def render(field: Field, size=(320, 240), camera: Camera | None = None, max_step
         diff = np.clip(N @ L, 0, 1)
         rim = np.clip(1 + (N * D[hi]).sum(-1), 0, 1) ** 2
         ao = np.clip(1 - steps[hi] / (0.6 * max_steps), 0.15, 1)
-        cmap = matplotlib.colormaps[palette]
+        cmap = palette if callable(palette) else matplotlib.colormaps[palette]
         base = cmap(np.clip(trap, 0, 1) * trap_weight + 0.15)[:, :3]
         col = base * (0.25 + 0.85 * diff[:, None]) * ao[:, None] + 0.15 * rim[:, None]
         img[hi] = col
